@@ -110,8 +110,8 @@ func main() {
 			proof.Must(proof.WritePNG(fmt.Sprintf("out/anim-%02d.png", i),
 				cells.CellsToPixels(cs, 2, 3), 2))
 		}
-		proof.Must(os.WriteFile("out/sunset-frames.ansi",
-			[]byte(strings.Join(frames, "\x1b[H")), 0o644))
+		proof.Must(write("out/sunset-frames.ansi",
+			[]byte(strings.Join(frames, "\x1b[H"))))
 		fmt.Println("wrote", n, "frames")
 		return
 	case "anim":
