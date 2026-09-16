@@ -3,8 +3,8 @@ package main
 import (
 	"image/color"
 
-	"miami/cells"
-	"miami/compose"
+	"github.com/janearc/miami/cells"
+	"github.com/janearc/miami/compose"
 )
 
 // roles: the alphabet, painted in a colourway so the names have colours

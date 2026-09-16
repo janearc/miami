@@ -3,8 +3,8 @@ package scenes
 import (
 	"image/color"
 
-	"miami/geom"
-	"miami/raster"
+	"github.com/janearc/miami/geom"
+	"github.com/janearc/miami/raster"
 )
 
 // two bottlenose dolphins leaving the water, heads to the left, drawn from the

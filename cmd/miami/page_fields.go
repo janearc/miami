@@ -3,9 +3,9 @@ package main
 import (
 	"github.com/janearc/libdaffy/field"
 
-	"miami/cells"
-	"miami/grade"
-	"miami/scenes"
+	"github.com/janearc/miami/cells"
+	"github.com/janearc/miami/grade"
+	"github.com/janearc/miami/scenes"
 )
 
 // fields: the three shapes libdaffy ships, painted side by side through one

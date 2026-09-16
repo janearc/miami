@@ -6,10 +6,10 @@ import (
 	"os"
 	"strings"
 
-	"miami/geom"
-	"miami/motifs"
-	"miami/raster"
-	"miami/typeset"
+	"github.com/janearc/miami/geom"
+	"github.com/janearc/miami/motifs"
+	"github.com/janearc/miami/raster"
+	"github.com/janearc/miami/typeset"
 )
 
 // the role mapping lives HERE, in one place, because the eleven-character

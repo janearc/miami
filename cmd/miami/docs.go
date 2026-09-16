@@ -28,8 +28,8 @@ import (
 	"os"
 	"strings"
 
-	"miami/cells"
-	"miami/proof"
+	"github.com/janearc/miami/cells"
+	"github.com/janearc/miami/proof"
 )
 
 //go:embed page_*.go

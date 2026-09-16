@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"miami/canvas"
-	"miami/cells"
-	"miami/raster"
+	"github.com/janearc/miami/canvas"
+	"github.com/janearc/miami/cells"
+	"github.com/janearc/miami/raster"
 )
 
 // RenderScene runs one scene all the way to cells and drops the three review

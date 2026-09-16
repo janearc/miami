@@ -6,9 +6,9 @@ import (
 	"github.com/janearc/libdaffy/field"
 	"github.com/janearc/libtheme-css/primitives/functions"
 
-	"miami/geom"
-	"miami/grade"
-	"miami/raster"
+	"github.com/janearc/miami/geom"
+	"github.com/janearc/miami/grade"
+	"github.com/janearc/miami/raster"
 )
 
 // The cards: one piece of art per repository, seventy-five columns by seventeen

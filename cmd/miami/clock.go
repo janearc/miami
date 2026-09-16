@@ -6,12 +6,12 @@ import (
 	"os"
 	"time"
 
-	"miami/app"
-	"miami/cells"
-	"miami/grade"
-	"miami/proof"
-	"miami/sky"
-	"miami/view"
+	"github.com/janearc/miami/app"
+	"github.com/janearc/miami/cells"
+	"github.com/janearc/miami/grade"
+	"github.com/janearc/miami/proof"
+	"github.com/janearc/miami/sky"
+	"github.com/janearc/miami/view"
 )
 
 // A clock, written on miami's own public library.

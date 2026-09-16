@@ -1,8 +1,8 @@
 package motifs
 
 import (
+	"github.com/janearc/miami/geom"
 	"math"
-	"miami/geom"
 )
 
 // a frond launches straight and curls late: the bearing turns by bend*(i/n)^2,

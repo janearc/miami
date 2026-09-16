@@ -7,9 +7,9 @@ import (
 	"sort"
 	"unicode"
 
-	"miami/cells"
-	"miami/paint"
-	"miami/raster"
+	"github.com/janearc/miami/cells"
+	"github.com/janearc/miami/paint"
+	"github.com/janearc/miami/raster"
 )
 
 // the gate from ~/.claude/legibility.md, run on what was RENDERED: every text

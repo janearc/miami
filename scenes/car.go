@@ -1,9 +1,9 @@
 package scenes
 
 import (
+	"github.com/janearc/miami/geom"
+	"github.com/janearc/miami/raster"
 	"image/color"
-	"miami/geom"
-	"miami/raster"
 )
 
 // mid-eighties italian wedge, side on, facing left. the read is the profile

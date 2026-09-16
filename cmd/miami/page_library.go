@@ -3,11 +3,11 @@ package main
 import (
 	"time"
 
-	"miami/app"
-	"miami/cells"
-	"miami/grade"
-	"miami/sky"
-	"miami/view"
+	"github.com/janearc/miami/app"
+	"github.com/janearc/miami/cells"
+	"github.com/janearc/miami/grade"
+	"github.com/janearc/miami/sky"
+	"github.com/janearc/miami/view"
 )
 
 // library: what another program gets. This page is drawn by calling the public

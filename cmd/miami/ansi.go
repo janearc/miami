@@ -5,8 +5,8 @@ import (
 	"image/color"
 	"os"
 
-	"miami/cells"
-	"miami/proof"
+	"github.com/janearc/miami/cells"
+	"github.com/janearc/miami/proof"
 )
 
 // Turning an ansi file into a picture, so it can be looked at.

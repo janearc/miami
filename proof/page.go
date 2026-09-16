@@ -6,10 +6,10 @@ import (
 	"os"
 	"strings"
 
-	"miami/canvas"
-	"miami/cells"
-	"miami/raster"
-	"miami/typeset"
+	"github.com/janearc/miami/canvas"
+	"github.com/janearc/miami/cells"
+	"github.com/janearc/miami/raster"
+	"github.com/janearc/miami/typeset"
 )
 
 // Page renders a tall scene at a locked width and writes what is needed to

@@ -3,7 +3,7 @@ package scene
 import (
 	"testing"
 
-	"miami/grade"
+	"github.com/janearc/miami/grade"
 )
 
 // The document must paint what the Go scene painted. That is the only

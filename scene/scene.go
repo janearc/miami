@@ -36,7 +36,7 @@
 //
 //	{"from": a, "to": b, "ease": "smooth"}   travels once across the scene
 //	{"mid": m, "amp": a, "period": s}        oscillates, seconds per turn
-//	{"mul": [v, v]}  {"add": [v, v]}  {"clamp": v}
+//	{"mul": [v, v]}  {"add": [v, v]}  {"clamp": v}  {"abs": v}
 //
 // A colour is a hex string or {"from": hex, "to": hex, "ease": "smooth"}.
 package scene
@@ -54,7 +54,7 @@ import (
 	"github.com/janearc/libtheme-css/spaces/ok"
 	"github.com/janearc/libtheme-css/spaces/srgb"
 
-	"miami/grade"
+	"github.com/janearc/miami/grade"
 )
 
 // Doc is a whole scene.
@@ -168,6 +168,7 @@ type Value struct {
 	mul    []Value
 	add    []Value
 	clamp  *Value
+	abs    *Value
 }
 
 // UnmarshalJSON reads a value: a number, an @constant, or a binding.
@@ -186,16 +187,16 @@ func (v *Value) UnmarshalJSON(b []byte) error {
 		return nil
 	}
 	var raw struct {
-		From, To, Mid, Amp, Period, Phase, Clamp *Value
-		Ease                                     string
-		Mul, Add                                 []Value
+		From, To, Mid, Amp, Period, Phase, Clamp, Abs *Value
+		Ease                                          string
+		Mul, Add                                      []Value
 	}
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return fmt.Errorf("value: %w", err)
 	}
 	v.from, v.to, v.ease = raw.From, raw.To, raw.Ease
 	v.mid, v.amp, v.period, v.phase = raw.Mid, raw.Amp, raw.Period, raw.Phase
-	v.mul, v.add, v.clamp = raw.Mul, raw.Add, raw.Clamp
+	v.mul, v.add, v.clamp, v.abs = raw.Mul, raw.Add, raw.Clamp, raw.Abs
 	return nil
 }
 
@@ -239,6 +240,11 @@ func (v Value) at(c ctx) float64 {
 		return r
 	case v.clamp != nil:
 		return clamp01(v.clamp.at(c))
+	case v.abs != nil:
+		// a bounce. a sine goes below the floor and comes back, and
+		// the half below is the ball underground; folding it up is
+		// what turns an oscillation into something landing.
+		return math.Abs(v.abs.at(c))
 	}
 	return 0
 }

@@ -8,9 +8,9 @@ import (
 
 	sprite "github.com/janearc/libdaffy-sprite"
 
-	"miami/effect"
-	"miami/motion"
-	"miami/scene"
+	"github.com/janearc/miami/effect"
+	"github.com/janearc/miami/motion"
+	"github.com/janearc/miami/scene"
 )
 
 // check: what a document holds, and what is wrong with it.

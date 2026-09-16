@@ -3,10 +3,10 @@ package main
 import (
 	"time"
 
-	"miami/cells"
-	"miami/compose"
-	"miami/motion"
-	"miami/view"
+	"github.com/janearc/miami/cells"
+	"github.com/janearc/miami/compose"
+	"github.com/janearc/miami/motion"
+	"github.com/janearc/miami/view"
 )
 
 // viewport: one sprite, three distances. Nothing here resizes anything; the

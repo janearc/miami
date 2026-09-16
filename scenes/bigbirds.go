@@ -2,14 +2,14 @@ package scenes
 
 import (
 	_ "embed"
+	"github.com/janearc/miami/canvas"
+	"github.com/janearc/miami/geom"
+	"github.com/janearc/miami/motifs"
+	"github.com/janearc/miami/paint"
+	"github.com/janearc/miami/raster"
+	"github.com/janearc/miami/typeset"
 	"image/color"
 	"math"
-	"miami/canvas"
-	"miami/geom"
-	"miami/motifs"
-	"miami/paint"
-	"miami/raster"
-	"miami/typeset"
 )
 
 // one dark silhouette family in front of one graded sky. no contours, no third

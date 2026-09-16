@@ -4,13 +4,13 @@ import (
 	"image/color"
 	"math"
 
-	"miami/canvas"
-	"miami/cells"
-	"miami/geom"
-	"miami/motifs"
-	"miami/paint"
-	"miami/raster"
-	"miami/typeset"
+	"github.com/janearc/miami/canvas"
+	"github.com/janearc/miami/cells"
+	"github.com/janearc/miami/geom"
+	"github.com/janearc/miami/motifs"
+	"github.com/janearc/miami/paint"
+	"github.com/janearc/miami/raster"
+	"github.com/janearc/miami/typeset"
 )
 
 // "let there be lights": a nineteen-fifties roadside church sign, on a pole, at

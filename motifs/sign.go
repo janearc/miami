@@ -3,7 +3,7 @@ package motifs
 import (
 	"math"
 
-	"miami/geom"
+	"github.com/janearc/miami/geom"
 )
 
 // ArchPanel is a sign face with a segmental arched top: straight sides from the

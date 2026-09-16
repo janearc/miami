@@ -1,10 +1,10 @@
 package proof
 
 import (
+	"github.com/janearc/miami/raster"
 	"image"
 	"image/color"
 	"image/png"
-	"miami/raster"
 	"os"
 	"path/filepath"
 )

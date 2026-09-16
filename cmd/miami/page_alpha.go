@@ -3,10 +3,10 @@ package main
 import (
 	"image/color"
 
-	"miami/cells"
-	"miami/compose"
-	"miami/effect"
-	"miami/motion"
+	"github.com/janearc/miami/cells"
+	"github.com/janearc/miami/compose"
+	"github.com/janearc/miami/effect"
+	"github.com/janearc/miami/motion"
 )
 
 // alpha: the bulb, the effect on its own, and the two composited. Three

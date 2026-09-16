@@ -6,8 +6,8 @@ import (
 
 	sprite "github.com/janearc/libdaffy-sprite"
 
-	"miami/effect"
-	"miami/motion"
+	"github.com/janearc/miami/effect"
+	"github.com/janearc/miami/motion"
 )
 
 // The animations, as library calls.

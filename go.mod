@@ -1,4 +1,4 @@
-module miami
+module github.com/janearc/miami
 
 go 1.26
 

@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"miami/motion"
+	"github.com/janearc/miami/motion"
 )
 
 // the library takes the sprite directory as an argument, so the test can point

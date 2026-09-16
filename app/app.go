@@ -35,11 +35,11 @@ import (
 	"syscall"
 	"time"
 
-	"miami/cells"
-	"miami/compose"
-	"miami/grade"
-	"miami/scene"
-	"miami/view"
+	"github.com/janearc/miami/cells"
+	"github.com/janearc/miami/compose"
+	"github.com/janearc/miami/grade"
+	"github.com/janearc/miami/scene"
+	"github.com/janearc/miami/view"
 )
 
 // Frame is what the caller is told about the moment being drawn.

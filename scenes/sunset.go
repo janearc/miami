@@ -5,7 +5,7 @@ import (
 
 	"github.com/janearc/libdaffy/field"
 
-	"miami/grade"
+	"github.com/janearc/miami/grade"
 )
 
 // The sunset is six gradients over each other, and it is here because it is the

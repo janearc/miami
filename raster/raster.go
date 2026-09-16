@@ -1,9 +1,9 @@
 package raster
 
 import (
+	"github.com/janearc/miami/canvas"
+	"github.com/janearc/miami/geom"
 	"image/color"
-	"miami/canvas"
-	"miami/geom"
 )
 
 // a Part is a region of the picture that means something anatomically. role

@@ -1,6 +1,6 @@
 package main
 
-import "miami/cells"
+import "github.com/janearc/miami/cells"
 
 // traps: the only page with nothing to paint, because a refusal has no picture.
 // Every one of these cost a rebuild to find.

@@ -4,9 +4,9 @@ import (
 	"image/color"
 	"math"
 
-	"miami/motifs"
-	"miami/paint"
-	"miami/raster"
+	"github.com/janearc/miami/motifs"
+	"github.com/janearc/miami/paint"
+	"github.com/janearc/miami/raster"
 )
 
 // BulbTest is the bulb on its own, at the size it will be used, so it can pass

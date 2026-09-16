@@ -1,9 +1,9 @@
 package typeset
 
 import (
+	"github.com/janearc/miami/canvas"
+	"github.com/janearc/miami/geom"
 	"math"
-	"miami/canvas"
-	"miami/geom"
 	"os"
 	"strings"
 )

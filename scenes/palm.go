@@ -1,10 +1,10 @@
 package scenes
 
 import (
+	"github.com/janearc/miami/geom"
+	"github.com/janearc/miami/motifs"
+	"github.com/janearc/miami/raster"
 	"image/color"
-	"miami/geom"
-	"miami/motifs"
-	"miami/raster"
 )
 
 // Palm is the palm: six fronds with a quadratic bend, because ten merged into a

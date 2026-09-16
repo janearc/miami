@@ -4,7 +4,7 @@ import (
 	"math"
 	"math/rand/v2"
 
-	"miami/geom"
+	"github.com/janearc/miami/geom"
 )
 
 // Wobble is the hand-set imperfection: every letter gets its own small tilt,

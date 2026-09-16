@@ -3,7 +3,7 @@ package motifs
 import (
 	"math"
 
-	"miami/geom"
+	"github.com/janearc/miami/geom"
 )
 
 // Bulb is an A19 incandescent lamp, upright. proportions come from the real

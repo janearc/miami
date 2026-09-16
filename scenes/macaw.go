@@ -1,9 +1,9 @@
 package scenes
 
 import (
+	"github.com/janearc/miami/geom"
+	"github.com/janearc/miami/raster"
 	"image/color"
-	"miami/geom"
-	"miami/raster"
 )
 
 // scarlet macaw, profile facing left, perched on a diagonal branch. every

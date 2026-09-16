@@ -48,7 +48,7 @@ import (
 	"github.com/janearc/libtheme-css/css"
 	"github.com/janearc/libtheme-css/spaces/ok"
 
-	"miami/motion"
+	"github.com/janearc/miami/motion"
 )
 
 // Ladder is the alpha ramp, dimmest first. One place; change it here and every

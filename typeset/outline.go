@@ -9,7 +9,7 @@ import (
 	"golang.org/x/image/font/sfnt"
 	"golang.org/x/image/math/fixed"
 
-	"miami/geom"
+	"github.com/janearc/miami/geom"
 )
 
 // a Face is an outline font we did not draw. letters come from a type designer;

@@ -7,7 +7,7 @@ import (
 
 	"github.com/janearc/libdaffy/field"
 
-	"miami/grade"
+	"github.com/janearc/miami/grade"
 )
 
 // Node is one field, named by its single key.

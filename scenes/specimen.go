@@ -3,10 +3,10 @@ package scenes
 import (
 	"image/color"
 
-	"miami/canvas"
-	"miami/geom"
-	"miami/raster"
-	"miami/typeset"
+	"github.com/janearc/miami/canvas"
+	"github.com/janearc/miami/geom"
+	"github.com/janearc/miami/raster"
+	"github.com/janearc/miami/typeset"
 )
 
 const (

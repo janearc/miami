@@ -22,8 +22,8 @@ import (
 	"github.com/janearc/libtheme-css/primitives/functions"
 	"github.com/janearc/libtheme-css/spaces/ok"
 
-	"miami/grade"
-	"miami/view"
+	"github.com/janearc/miami/grade"
+	"github.com/janearc/miami/view"
 )
 
 // The sky at a time of day.

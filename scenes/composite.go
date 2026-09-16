@@ -2,11 +2,11 @@ package scenes
 
 import (
 	"fmt"
+	"github.com/janearc/miami/canvas"
+	"github.com/janearc/miami/cells"
+	"github.com/janearc/miami/proof"
+	"github.com/janearc/miami/raster"
 	"image/color"
-	"miami/canvas"
-	"miami/cells"
-	"miami/proof"
-	"miami/raster"
 	"os"
 )
 

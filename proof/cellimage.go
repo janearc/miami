@@ -5,9 +5,9 @@ import (
 	"image/color"
 	"sync"
 
-	"miami/cells"
-	"miami/geom"
-	"miami/typeset"
+	"github.com/janearc/miami/cells"
+	"github.com/janearc/miami/geom"
+	"github.com/janearc/miami/typeset"
 )
 
 // CellImage draws cells the way a terminal would: block glyphs as exact

@@ -1,12 +1,12 @@
 package scenes
 
 import (
+	"github.com/janearc/miami/canvas"
+	"github.com/janearc/miami/geom"
+	"github.com/janearc/miami/paint"
+	"github.com/janearc/miami/raster"
 	"image/color"
 	"math"
-	"miami/canvas"
-	"miami/geom"
-	"miami/paint"
-	"miami/raster"
 )
 
 // the composite is defined in PHYSICAL units: 96 cells wide by 68 tall, where a

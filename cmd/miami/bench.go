@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"miami/app"
-	"miami/cells"
+	"github.com/janearc/miami/app"
+	"github.com/janearc/miami/cells"
 )
 
 // What a size costs, and which ceiling you hit first.

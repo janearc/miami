@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"miami/cells"
-	"miami/paint"
-	"miami/typeset"
+	"github.com/janearc/miami/cells"
+	"github.com/janearc/miami/paint"
+	"github.com/janearc/miami/typeset"
 )
 
 // The things drawn over a scene.

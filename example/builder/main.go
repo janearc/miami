@@ -18,10 +18,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"miami/app"
-	"miami/grade"
-	"miami/sky"
-	"miami/view"
+	"github.com/janearc/miami/app"
+	"github.com/janearc/miami/grade"
+	"github.com/janearc/miami/sky"
+	"github.com/janearc/miami/view"
 )
 
 // main sets a scene up, starts the work, and hands the loop over.

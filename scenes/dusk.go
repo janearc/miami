@@ -7,7 +7,7 @@ import (
 	"github.com/janearc/libtheme-css/primitives/functions"
 	"github.com/janearc/libtheme-css/spaces/ok"
 
-	"miami/grade"
+	"github.com/janearc/miami/grade"
 )
 
 // A dusk that does not repeat, because it is not a loop.
