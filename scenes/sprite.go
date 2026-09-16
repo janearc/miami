@@ -4,11 +4,7 @@ import (
 	"fmt"
 	"image/color"
 	"os"
-	"sort"
 	"strings"
-
-	"github.com/janearc/libtheme-css/spaces/ok"
-	"github.com/janearc/libtheme-css/spaces/srgb"
 
 	"miami/geom"
 	"miami/motifs"
@@ -199,48 +195,4 @@ func WordMask(text string, w int, aspect float64) [][]bool {
 		}
 	}
 	return out
-}
-
-// Ramp is a picture's palette sorted dark to light, for colouring a wordmark
-// set beside it.
-//
-// The palette is the point. A wordmark dropped next to a picture in colours
-// somebody liked reads as two pictures; one drawn from the subject's own
-// colours reads as one. Nothing here is chosen by hand.
-func Ramp(pal []color.RGBA) []color.RGBA {
-	out := append([]color.RGBA(nil), pal...)
-	sortByLightness(out)
-	return out
-}
-
-// Hot is the colour t of the way down a wordmark, brightest at the top running
-// into a hot mid at the bottom. The darkest colours in a picture like this are
-// its outlines and would put the word out of reach of a dark terminal.
-func Hot(ramp []color.RGBA, t float64) color.RGBA {
-	if len(ramp) < 2 {
-		if len(ramp) == 1 {
-			return ramp[0]
-		}
-		return color.RGBA{255, 255, 255, 255}
-	}
-	return lerpRGBA(ramp[len(ramp)-1], ramp[len(ramp)/2], t)
-}
-
-// sortByLightness orders colours dark to light, in oklab.
-func sortByLightness(p []color.RGBA) {
-	sort.Slice(p, func(i, j int) bool {
-		return lightnessOf(p[i]) < lightnessOf(p[j])
-	})
-}
-
-// lightnessOf is a colour's oklab lightness.
-func lightnessOf(c color.RGBA) float64 {
-	return ok.FromSwatch(srgb.RGB{R: float64(c.R) / 255, G: float64(c.G) / 255,
-		B: float64(c.B) / 255}.Swatch()).L
-}
-
-// lerpRGBA is two colours mixed, t of the way between them.
-func lerpRGBA(a, b color.RGBA, t float64) color.RGBA {
-	m := func(x, y uint8) uint8 { return uint8(float64(x)*(1-t) + float64(y)*t + 0.5) }
-	return color.RGBA{m(a.R, b.R), m(a.G, b.G), m(a.B, b.B), 255}
 }

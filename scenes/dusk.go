@@ -41,7 +41,7 @@ func stops(a, b []string, t float64) functions.Ramp {
 	for i := range a {
 		at := float64(i) / float64(n-1)
 		out[i] = functions.Stop{At: at,
-			Swatch: ok.Mix.Mix(hex(a[i]), hex(b[i]), t)}
+			Swatch: ok.Mix.Mix(grade.Swatch(a[i]), grade.Swatch(b[i]), t)}
 	}
 	return functions.New(ok.Mix, out...)
 }
@@ -77,7 +77,7 @@ func Dusk(sh grade.Sheet, t, dur float64) grade.Stack {
 			// them.
 			Name:  "stars",
 			Field: grade.Flat(0),
-			Ramp:  ramp(0.0, "e8ecff", 1.0, "e8ecff"),
+			Ramp:  grade.Ramp(0.0, "e8ecff", 1.0, "e8ecff"),
 			Alpha: field.Func(func(u, v float64) float64 {
 				if v > horizon-0.02 {
 					return 0
@@ -125,7 +125,7 @@ func Dusk(sh grade.Sheet, t, dur float64) grade.Stack {
 		{
 			Name:  "sun",
 			Field: field.Linear{A: field.Point{U: 0.42, V: sunV - 0.075}, B: field.Point{U: 0.42, V: sunV + 0.075}},
-			Ramp:  ramp(0.0, "fff3bc", 0.5, "ffb03a", 1.0, "ff5a5a"),
+			Ramp:  grade.Ramp(0.0, "fff3bc", 0.5, "ffb03a", 1.0, "ff5a5a"),
 			Alpha: grade.Times(
 				grade.Inside(field.Radial{Centre: sunC, Radius: 0.098}, 0.80, 0.12),
 				grade.Flat(clamp01(sunGain*1.4))),
@@ -134,7 +134,7 @@ func Dusk(sh grade.Sheet, t, dur float64) grade.Stack {
 		{
 			Name:  "bloom",
 			Field: grade.Flat(0),
-			Ramp:  ramp(0.0, "ffcf8a", 1.0, "ffcf8a"),
+			Ramp:  grade.Ramp(0.0, "ffcf8a", 1.0, "ffcf8a"),
 			Alpha: grade.Inside(field.Radial{Centre: sunC, Radius: 0.42}, 0.0, 0.95),
 			Blend: grade.Add,
 			Gain:  0.26 * sunGain,
@@ -161,26 +161,20 @@ func Dusk(sh grade.Sheet, t, dur float64) grade.Stack {
 func twinkle(u, v, t float64) float64 {
 	const grid = 42.0
 	cu, cv := math.Floor(u*grid), math.Floor(v*grid)
-	h := hash2(cu, cv)
+	h := grade.Hash2(cu, cv)
 	if h < 0.90 {
 		return 0
 	}
 	// where in its cell the star sits, so they are not on a lattice
-	ou, ov := hash2(cu+13, cv), hash2(cu, cv+7)
+	ou, ov := grade.Hash2(cu+13, cv), grade.Hash2(cu, cv+7)
 	du := (u*grid - cu - ou) / 1.0
 	dv := (v*grid - cv - ov) / 1.0
 	d := math.Hypot(du, dv)
 	if d > 0.16 {
 		return 0
 	}
-	bright := 0.55 + 0.45*math.Sin(t*(0.7+2.3*hash2(cu+3, cv+5))+h*40)
+	bright := 0.55 + 0.45*math.Sin(t*(0.7+2.3*grade.Hash2(cu+3, cv+5))+h*40)
 	return (1 - d/0.16) * bright
-}
-
-// hash2 is a repeatable number from a pair of coordinates, so a star stays put.
-func hash2(x, y float64) float64 {
-	s := math.Sin(x*127.1+y*311.7) * 43758.5453
-	return s - math.Floor(s)
 }
 
 // smooth is nought below a, one above b, and eased between.

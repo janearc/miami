@@ -1,4 +1,19 @@
-package scenes
+// Package sky paints the sky for a time of day.
+//
+// It is its own package because of who needs it. The pictures in scenes are
+// this project's own -- a macaw, a car, a card for porter -- and a program
+// building against miami has no business importing a gallery to get a backdrop.
+//
+// A sky driven by a sun is not one of miami's pictures. It is the thing
+// anyone's picture stands in front of.
+//
+//	sun := view.SunAt(time.Now())
+//	st := sky.At(sh, sun, eye.HorizonV(aspect))
+//
+// The sun it takes is the same one the tracer casts shadows from, which is the
+// point of passing it rather than the hour: the sky and the ground then agree
+// about where the light is, and they cannot drift.
+package sky
 
 import (
 	"math"
@@ -26,15 +41,15 @@ var (
 	skyGold  = []string{"2a1040", "7a2a6a", "d1496a", "ff8f4a", "ffd08a"}
 )
 
-// SkyAt is the sky, and the sun in it, for a sun at a given height.
-func SkyAt(sh grade.Sheet, sun view.Sun, horizon float64) grade.Stack {
+// At is the sky, and the sun in it, for a sun at a given height.
+func At(sh grade.Sheet, sun view.Sun, horizon float64) grade.Stack {
 	up, gold := sun.Up(), sun.Golden()
 
 	stops := make([]functions.Stop, len(skyNight))
 	for i := range skyNight {
 		at := float64(i) / float64(len(skyNight)-1)
-		c := ok.Mix.Mix(hex(skyNight[i]), hex(skyDay[i]), up)
-		c = ok.Mix.Mix(c, hex(skyGold[i]), gold)
+		c := ok.Mix.Mix(grade.Swatch(skyNight[i]), grade.Swatch(skyDay[i]), up)
+		c = ok.Mix.Mix(c, grade.Swatch(skyGold[i]), gold)
 		stops[i] = functions.Stop{At: at, Swatch: c}
 	}
 
@@ -54,7 +69,7 @@ func SkyAt(sh grade.Sheet, sun view.Sun, horizon float64) grade.Stack {
 		// stars, out only when the sky is dark enough to hold them
 		Name:  "stars",
 		Field: grade.Flat(0),
-		Ramp:  ramp(0.0, "e8ecff", 1.0, "e8ecff"),
+		Ramp:  grade.Ramp(0.0, "e8ecff", 1.0, "e8ecff"),
 		Alpha: field.Func(func(u, v float64) float64 {
 			if v > horizon-0.02 {
 				return 0
@@ -74,14 +89,14 @@ func SkyAt(sh grade.Sheet, sun view.Sun, horizon float64) grade.Stack {
 			Field: field.Linear{
 				A: field.Point{U: sunU, V: sunV - 0.07},
 				B: field.Point{U: sunU, V: sunV + 0.07}},
-			Ramp: ramp(0.0, "fff6cc", 0.5, "ffc24a", 1.0, "ff6a5a"),
+			Ramp: grade.Ramp(0.0, "fff6cc", 0.5, "ffc24a", 1.0, "ff6a5a"),
 			Alpha: grade.Inside(field.Radial{
 				Centre: field.Point{U: sunU, V: sunV}, Radius: 0.095}, 0.78, 0.14),
 			Gain: 1,
 		}, grade.Layer{
 			Name:  "bloom",
 			Field: grade.Flat(0),
-			Ramp:  ramp(0.0, "ffcf8a", 1.0, "ffcf8a"),
+			Ramp:  grade.Ramp(0.0, "ffcf8a", 1.0, "ffcf8a"),
 			Alpha: grade.Inside(field.Radial{
 				Centre: field.Point{U: sunU, V: sunV}, Radius: 0.5}, 0.0, 0.95),
 			Blend: grade.Add,
@@ -96,11 +111,11 @@ func SkyAt(sh grade.Sheet, sun view.Sun, horizon float64) grade.Stack {
 func starAt(u, v float64) float64 {
 	const grid = 42.0
 	cu, cv := math.Floor(u*grid), math.Floor(v*grid)
-	h := hash2(cu, cv)
+	h := grade.Hash2(cu, cv)
 	if h < 0.9 {
 		return 0
 	}
-	ou, ov := hash2(cu+13, cv), hash2(cu, cv+7)
+	ou, ov := grade.Hash2(cu+13, cv), grade.Hash2(cu, cv+7)
 	d := math.Hypot(u*grid-cu-ou, v*grid-cv-ov)
 	if d > 0.16 {
 		return 0

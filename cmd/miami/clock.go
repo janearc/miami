@@ -10,7 +10,7 @@ import (
 	"miami/cells"
 	"miami/grade"
 	"miami/proof"
-	"miami/scenes"
+	"miami/sky"
 	"miami/view"
 )
 
@@ -102,7 +102,7 @@ func newClock(at time.Time) *clockApp {
 	// horizon: the one the camera's pitch puts it at
 	st.Sky = func(sh grade.Sheet, _ time.Time) grade.Stack {
 		aspect := (float64(sh.H) * 4) / (float64(sh.W) * 3)
-		return scenes.SkyAt(sh, view.SunAt(c.now()), st.Lit.Eye.HorizonV(aspect))
+		return sky.At(sh, view.SunAt(c.now()), st.Lit.Eye.HorizonV(aspect))
 	}
 	return c
 }

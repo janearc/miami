@@ -134,6 +134,13 @@ func ToCells(rgb [][]color.RGBA, subW, subH int) [][]Cell {
 
 // ANSI is the cells as escape sequences: colour and glyphs, nothing that moves
 // the cursor, so the output can be cat'd inside a readme.
+//
+// Every cell gets both colours stated, which means a transparent background is
+// written as black rather than left to the terminal.
+//
+// That is the trap in this function and it has been fallen into: a caller that
+// set a background transparent to mean "leave what is behind it" got opaque
+// boxes stamped over a picture. If transparency is meant, use ANSIAlpha.
 func ANSI(cells [][]Cell) string {
 	var b strings.Builder
 	for _, row := range cells {

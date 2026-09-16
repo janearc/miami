@@ -5,8 +5,6 @@ import (
 
 	"github.com/janearc/libdaffy/field"
 	"github.com/janearc/libtheme-css/primitives/functions"
-	"github.com/janearc/libtheme-css/spaces/ok"
-	"github.com/janearc/libtheme-css/spaces/srgb"
 
 	"miami/geom"
 	"miami/grade"
@@ -84,7 +82,7 @@ func Libtheme(sh grade.Sheet) grade.Stack {
 		st = append(st, grade.Layer{
 			Name:  "band",
 			Field: field.Linear{A: field.Point{U: 0.03}, B: field.Point{U: 0.97}},
-			Ramp:  ramp(stops...),
+			Ramp:  grade.Ramp(stops...),
 			// a hard band: the edge between two ramps is the only
 			// line in the picture, and a soft one would read as a
 			// seventh colour
@@ -181,38 +179,5 @@ func Bender() *raster.Scene {
 // and magenta to gold, which shows a mixer doing its job because a
 // magenta-to-orange run is exactly where a bad one goes through mud.
 func PageRamp() functions.Ramp {
-	return ramp(0.0, "120631", 0.3, "5a2071", 0.55, "c63f6b", 0.8, "ff8f4a", 1.0, "ffd08a")
-}
-
-// Hex is a hex colour as a terminal colour, for callers outside this package
-// that need one of a card's own colours.
-func Hex(s string) color.RGBA {
-	c, _ := srgb.FromSwatch(hex(s))
-	q := func(v float64) uint8 {
-		if v < 0 {
-			v = 0
-		}
-		if v > 1 {
-			v = 1
-		}
-		return uint8(v*255 + 0.5)
-	}
-	return color.RGBA{q(c.R), q(c.G), q(c.B), 255}
-}
-
-// Blend is two hex colours mixed in oklab, which is the library's own line
-// between two colours and the reason a gold-to-blue run does not go through mud
-// on the way.
-func Blend(a, b string, t float64) color.RGBA {
-	c, _ := srgb.FromSwatch(ok.Mix.Mix(hex(a), hex(b), t))
-	q := func(v float64) uint8 {
-		if v < 0 {
-			v = 0
-		}
-		if v > 1 {
-			v = 1
-		}
-		return uint8(v*255 + 0.5)
-	}
-	return color.RGBA{q(c.R), q(c.G), q(c.B), 255}
+	return grade.Ramp(0.0, "120631", 0.3, "5a2071", 0.55, "c63f6b", 0.8, "ff8f4a", 1.0, "ffd08a")
 }

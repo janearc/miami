@@ -3,6 +3,8 @@ package paint
 import (
 	"image/color"
 	"math"
+
+	"github.com/janearc/libtheme-css/spaces/ok"
 )
 
 // Stop is one colour at one position along a ramp.
@@ -144,6 +146,18 @@ func Hex(s string) color.RGBA {
 // Blend is two hex colours mixed in oklab, which is the library's own line
 // between two colours and the reason a gold-to-blue run does not go through
 // mud on the way.
+//
+// It said this before and did not do it -- it lerped the sRGB bytes, which is
+// the mud -- while a second copy of the same function elsewhere did it
+// properly. Two implementations of one name is how that survives: nobody
+// compares them, because nobody knows there are two.
 func Blend(a, b string, t float64) color.RGBA {
-	return Lerp(Hex(a), Hex(b), t)
+	if t < 0 {
+		t = 0
+	}
+	if t > 1 {
+		t = 1
+	}
+	return RGBA(ok.FromSwatch(ok.Mix.Mix(
+		Lab(Hex(a)).Swatch(), Lab(Hex(b)).Swatch(), t)))
 }

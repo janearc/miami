@@ -3,6 +3,7 @@ package paint
 import (
 	"image/color"
 	"math"
+	"sort"
 
 	"github.com/janearc/libtheme-css/spaces/ok"
 	"github.com/janearc/libtheme-css/spaces/srgb"
@@ -96,4 +97,34 @@ func (p *Palette) At(i int, t float64) color.RGBA {
 		A: a.A + (b.A-a.A)*t,
 		B: a.B + (b.B-a.B)*t,
 	})
+}
+
+// ByLightness is a palette sorted dark to light.
+//
+// For colouring a wordmark set beside a picture. The palette is the point: a
+// wordmark dropped next to a picture in colours somebody liked reads as two
+// pictures, and one drawn from the subject's own colours reads as one. Nothing
+// here is chosen by hand.
+func ByLightness(pal []color.RGBA) []color.RGBA {
+	out := append([]color.RGBA(nil), pal...)
+	sort.Slice(out, func(i, j int) bool {
+		return Lab(out[i]).L < Lab(out[j]).L
+	})
+	return out
+}
+
+// Hot is the colour t of the way down a wordmark, brightest at the top running
+// into a hot mid at the bottom.
+//
+// It runs from the lightest colour to the middle one rather than to the
+// darkest, because the darkest colours in a picture are its outlines and would
+// put the word out of reach of a dark terminal.
+func Hot(ramp []color.RGBA, t float64) color.RGBA {
+	if len(ramp) < 2 {
+		if len(ramp) == 1 {
+			return ramp[0]
+		}
+		return color.RGBA{255, 255, 255, 255}
+	}
+	return Lerp(ramp[len(ramp)-1], ramp[len(ramp)/2], t)
 }

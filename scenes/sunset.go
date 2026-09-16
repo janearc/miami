@@ -4,10 +4,6 @@ import (
 	"math"
 
 	"github.com/janearc/libdaffy/field"
-	"github.com/janearc/libtheme-css/primitives/functions"
-	"github.com/janearc/libtheme-css/primitives/swatch"
-	"github.com/janearc/libtheme-css/spaces/ok"
-	"github.com/janearc/libtheme-css/spaces/srgb"
 
 	"miami/grade"
 )
@@ -27,39 +23,6 @@ import (
 // The horizon is the one number that several layers share, so it is a parameter
 // rather than a constant repeated six times.
 
-// hex is a hex string as a physical colour.
-func hex(s string) swatch.Swatch {
-	var r, g, b uint8
-	for i, c := range []byte(s) {
-		v := byte(0)
-		switch {
-		case c >= '0' && c <= '9':
-			v = c - '0'
-		case c >= 'a' && c <= 'f':
-			v = c - 'a' + 10
-		}
-		switch i / 2 {
-		case 0:
-			r = r<<4 | v
-		case 1:
-			g = g<<4 | v
-		case 2:
-			b = b<<4 | v
-		}
-	}
-	return srgb.RGB{R: float64(r) / 255, G: float64(g) / 255, B: float64(b) / 255}.Swatch()
-}
-
-// ramp is stops at given positions, mixed in oklab, which is the mixer that
-// keeps a magenta-to-orange run from going through mud on the way.
-func ramp(stops ...any) functions.Ramp {
-	var s []functions.Stop
-	for i := 0; i < len(stops); i += 2 {
-		s = append(s, functions.Stop{At: stops[i].(float64), Swatch: hex(stops[i+1].(string))})
-	}
-	return functions.New(ok.Mix, s...)
-}
-
 // Sunset is the stack at time t, in turns. Time is folded into the fields when
 // they are built, exactly as libdaffy's field package says to do it: there is
 // no clock inside a field and no t coordinate on the sheet.
@@ -68,7 +31,7 @@ func Sunset(sh grade.Sheet, horizon, phase float64) grade.Stack {
 
 	// the sun's colour runs top to bottom and knows nothing about being
 	// round
-	sunRamp := ramp(0.0, "fff1a8", 0.34, "ffb03a", 0.62, "ff4d7e", 1.0, "8e2a86")
+	sunRamp := grade.Ramp(0.0, "fff1a8", 0.34, "ffb03a", 0.62, "ff4d7e", 1.0, "8e2a86")
 	sunBody := field.Linear{
 		A: field.Point{U: 0.5, V: sunC.V - 0.145},
 		B: field.Point{U: 0.5, V: sunC.V + 0.145},
@@ -90,14 +53,14 @@ func Sunset(sh grade.Sheet, horizon, phase float64) grade.Stack {
 		{
 			Name:  "sky",
 			Field: field.Linear{A: field.Point{U: 0.5}, B: field.Point{U: 0.5, V: horizon}},
-			Ramp: ramp(0.0, "120631", 0.30, "3b0f63", 0.58, "7a1b6d",
+			Ramp: grade.Ramp(0.0, "120631", 0.30, "3b0f63", 0.58, "7a1b6d",
 				0.82, "c63f6b", 1.0, "ff8a4c"),
 			Gain: 1,
 		},
 		{
 			Name:  "ground",
 			Field: field.Linear{A: field.Point{U: 0.5, V: horizon}, B: field.Point{U: 0.5, V: 1}},
-			Ramp:  ramp(0.0, "2a0b44", 1.0, "07021a"),
+			Ramp:  grade.Ramp(0.0, "2a0b44", 1.0, "07021a"),
 			// the horizon line itself, as an alpha: nought above it
 			// and one below, over the space of a couple of
 			// subpixels
@@ -112,7 +75,7 @@ func Sunset(sh grade.Sheet, horizon, phase float64) grade.Stack {
 			// non-linear space.
 			Name:  "haze",
 			Field: grade.Flat(0),
-			Ramp:  ramp(0.0, "ff6a3c", 1.0, "ff6a3c"),
+			Ramp:  grade.Ramp(0.0, "ff6a3c", 1.0, "ff6a3c"),
 			// squashed flat: wide across the horizon and thin
 			// through it. the matrix magnifies v before the radial
 			// reads it, so a circle becomes a long low ellipse --
@@ -137,7 +100,7 @@ func Sunset(sh grade.Sheet, horizon, phase float64) grade.Stack {
 		{
 			Name:  "grid",
 			Field: field.Linear{A: field.Point{U: 0.5, V: horizon}, B: field.Point{U: 0.5, V: 1}},
-			Ramp:  ramp(0.0, "2de2e6", 0.55, "ff2a9d", 1.0, "ff2a9d"),
+			Ramp:  grade.Ramp(0.0, "2de2e6", 0.55, "ff2a9d", 1.0, "ff2a9d"),
 			Alpha: perspectiveGrid(sh, horizon, phase),
 			Blend: grade.Add,
 			Gain:  0.60,
@@ -147,7 +110,7 @@ func Sunset(sh grade.Sheet, horizon, phase float64) grade.Stack {
 			// so it sits over the grid as well as the sky
 			Name:  "bloom",
 			Field: grade.Flat(0),
-			Ramp:  ramp(0.0, "ffd08a", 1.0, "ffd08a"),
+			Ramp:  grade.Ramp(0.0, "ffd08a", 1.0, "ffd08a"),
 			Alpha: grade.Inside(field.Radial{Centre: sunC, Radius: 0.44}, 0.0, 0.95),
 			Blend: grade.Add,
 			Gain:  0.16,
@@ -255,7 +218,7 @@ func Effects(sh grade.Sheet, horizon, phase float64) grade.Stack {
 			// terminal can carry.
 			Name:  "scan",
 			Field: grade.Flat(0),
-			Ramp:  ramp(0.0, "000000", 1.0, "000000"),
+			Ramp:  grade.Ramp(0.0, "000000", 1.0, "000000"),
 			Alpha: grade.Stripes(2*sh.Dv(), 0.5, phase*0.5*sh.Dv(), 0),
 			Blend: grade.Mul,
 			Gain:  0.30,
@@ -267,7 +230,7 @@ func Effects(sh grade.Sheet, horizon, phase float64) grade.Stack {
 			// the stack.
 			Name:  "glare",
 			Field: grade.Flat(0),
-			Ramp:  ramp(0.0, "b9e6ff", 1.0, "b9e6ff"),
+			Ramp:  grade.Ramp(0.0, "b9e6ff", 1.0, "b9e6ff"),
 			Alpha: grade.Band(
 				field.Linear{A: field.Point{U: 0, V: 0.25}, B: field.Point{U: 1, V: 0.75}},
 				mod1(phase*0.5+0.15), 0.06, 0.20),

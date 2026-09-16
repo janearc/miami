@@ -250,12 +250,12 @@ func main() {
 		// only the bright half of the palette: Hot runs from the
 		// lightest colour to the middle one, and on a card that is
 		// mostly dark ground the middle one is nearly the ground itself
-		ramp := scenes.Ramp(pal)
+		ramp := paint.ByLightness(pal)
 		if len(ramp) > 3 {
 			ramp = ramp[len(ramp)/2:]
 		}
 		ink := func(x, y int) color.RGBA {
-			return scenes.Hot(ramp, float64(y)/math.Max(1, float64(len(art)-1)))
+			return paint.Hot(ramp, float64(y)/math.Max(1, float64(len(art)-1)))
 		}
 		if name == "libtheme-css" {
 			// coloured from the ramps it stands above, column by
@@ -277,9 +277,9 @@ func main() {
 				t := float64(x) / math.Max(1, float64(wide-1)) * float64(len(marks)-1)
 				i := int(t)
 				if i >= len(marks)-1 {
-					return scenes.Hex(marks[len(marks)-1])
+					return paint.Hex(marks[len(marks)-1])
 				}
-				return scenes.Blend(marks[i], marks[i+1], t-float64(i))
+				return paint.Blend(marks[i], marks[i+1], t-float64(i))
 			}
 		}
 		if art != nil {
@@ -777,10 +777,10 @@ func main() {
 		}
 		cs := cells.ToCellsAlpha(px, 2, 3, 128)
 		if art != nil {
-			ramp := scenes.Ramp(cells.PaletteOf(px, n, 0.055))
+			ramp := paint.ByLightness(cells.PaletteOf(px, n, 0.055))
 			top := (len(cs) - len(art)) / 2
 			cells.Letters(cs, art, cols+2, top, func(x, y int) color.RGBA {
-				return scenes.Hot(ramp, float64(y)/math.Max(1, float64(len(art)-1)))
+				return paint.Hot(ramp, float64(y)/math.Max(1, float64(len(art)-1)))
 			})
 		}
 		name := fmt.Sprintf("out/emoji-%X", cp)

@@ -20,7 +20,7 @@ import (
 
 	"miami/app"
 	"miami/grade"
-	"miami/scenes"
+	"miami/sky"
 	"miami/view"
 )
 
@@ -35,7 +35,7 @@ func main() {
 	// a sky that knows the time of day, and a ball on a floor under it
 	stage.Sky = func(sh grade.Sheet, at time.Time) grade.Stack {
 		aspect := (float64(sh.H) * 4) / (float64(sh.W) * 3)
-		return scenes.SkyAt(sh, view.SunAt(at), stage.Lit.Eye.HorizonV(aspect))
+		return sky.At(sh, view.SunAt(at), stage.Lit.Eye.HorizonV(aspect))
 	}
 	stage.Lit = &view.Lit{
 		Eye: view.Eye{At: view.Vec{Y: 0.05}, Lens: 1, Near: 0.05},
