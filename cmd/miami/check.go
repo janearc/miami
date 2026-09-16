@@ -21,7 +21,13 @@ import (
 // put behind an agent that will run it two hundred times without watching.
 func checkFile(path string) {
 	if strings.HasSuffix(path, ".json") {
-		if b, err := os.ReadFile(path); err == nil && strings.Contains(string(b), "\"layers\"") {
+		// a scene is known by what it holds. it was known by "layers"
+		// alone until a scene could be shapes instead, and then a
+		// document with no layers went to the sprite reader, which
+		// failed on the first comment and blamed the comment.
+		if b, err := os.ReadFile(path); err == nil &&
+			(strings.Contains(string(b), "\"layers\"") ||
+				strings.Contains(string(b), "\"shapes\"")) {
 			checkScene(path)
 			return
 		}
@@ -53,7 +59,19 @@ func checkScene(path string) {
 		fmt.Println("REFUSED:", err)
 		os.Exit(1)
 	}
-	fmt.Printf("scene %q: %g seconds, %d layers\n", d.Name, d.Seconds, len(d.Layers))
+	fmt.Printf("scene %q: %g seconds, %d layers, %d shapes\n",
+		d.Name, d.Seconds, len(d.Layers), len(d.Shapes))
+	for _, sh := range d.Shapes {
+		name := sh.Name
+		if name == "" {
+			name = "--"
+		}
+		what := ""
+		if sh.Texture != nil {
+			what = " in " + sh.Texture.Kind
+		}
+		fmt.Printf("  %-9s %-8s%s\n", sh.Kind, name, what)
+	}
 	for _, at := range []float64{0, d.Seconds / 2, d.Seconds} {
 		st, err := d.At(at)
 		if err != nil {

@@ -2,26 +2,24 @@ package main
 
 import (
 	"fmt"
-	"math"
 	"os"
 	"time"
 
 	"github.com/janearc/miami/app"
 	"github.com/janearc/miami/cells"
-	"github.com/janearc/miami/grade"
 	"github.com/janearc/miami/proof"
-	"github.com/janearc/miami/sky"
-	"github.com/janearc/miami/view"
 )
 
-// A clock, written on miami's own public library.
+// A clock, and nothing of it written here.
 //
-// It is here as the demonstration and it is here as the proof. Every piece of
-// it -- the loop, the terminal contract, the keyboard, the scrim, the digits --
-// comes out of package app, which is what any other program gets.
+// It is the demonstration and it is the proof, and what it proves has changed.
+// It used to prove that the flagship could be built on the public library
+// rather than by reaching inside it.
 //
-// If the flagship could only be written by reaching inside, the library would
-// not be one.
+// It proves something stronger now. The scene is scenes/clock.json, and this
+// file has no sky in it, no ball, no floor, no lights, no digits and no bar.
+// What is left is the four things that are genuinely this program's: which
+// file, which clock, what the keys do, and when to stop.
 //
 //	q  ctrl-c   stop
 //	+  -        the clock's size
@@ -31,7 +29,6 @@ import (
 type clockApp struct {
 	stage *app.Stage
 	face  *app.Digits
-	ball  *view.Ball
 	fonts []string
 	size  int
 	at    time.Time // fixed, for --at; zero means the wall clock
@@ -68,7 +65,8 @@ func clock(args []string) {
 		}
 	}
 
-	c := newClock(at)
+	c, err := newClock(at)
+	proof.Must(err)
 	if once {
 		cs := c.Draw(app.Frame{At: c.now()}, cols, rows)
 		proof.Must(write("out/clock.ansi", []byte(cells.ANSI(cs))))
@@ -79,36 +77,23 @@ func clock(args []string) {
 		Run(c, c.keys))
 }
 
-// newClock builds the scene: a stage with a sky that knows the hour, a lit
-// floor for the ball to sit on, and the face over the top of both.
-func newClock(at time.Time) *clockApp {
-	st, err := app.NewStage("", "sprites/made/starling.css")
-	proof.Must(err)
+// newClock loads the scene and finds the one shape the keyboard steers.
+func newClock(at time.Time) (*clockApp, error) {
+	st, err := app.NewStage("scenes/clock.json", "sprites/made/starling.css")
+	if err != nil {
+		return nil, err
+	}
 	c := &clockApp{
 		stage: st,
+		face:  st.Digits("face"),
 		fonts: []string{"mini", "small", "smslant", "chunky"},
 		size:  1,
 		at:    at,
 	}
-	c.face = &app.Digits{Font: "small", Row: 2, Col: -1,
-		Ink: app.Vaporwave, Scrim: 0.40, Flicker: true, At: c.now}
-	st.Add(c.face)
-	c.ball = &view.Ball{Radius: 0.34, Spin: view.Vec{X: 0.11, Y: 0.43, Z: 0.07}}
-	st.Lit = &view.Lit{
-		Eye: view.Eye{At: view.Vec{Y: 0.05}, Lens: 1, Near: 0.05},
-		Solids: []view.Solid{
-			view.Floor{Y: -0.55, Tile: 0.62, Far: 9.5, A: 'V', B: 'K',
-				Shade: map[byte]byte{'V': 'K', 'K': 'D', 'D': 'E'}},
-			c.ball,
-		},
+	if c.face == nil {
+		return nil, fmt.Errorf("scenes/clock.json has no clock named face")
 	}
-	// the sky is painted and the floor is traced, so both are told the same
-	// horizon: the one the camera's pitch puts it at
-	st.Sky = func(sh grade.Sheet, _ time.Time) grade.Stack {
-		aspect := (float64(sh.H) * 4) / (float64(sh.W) * 3)
-		return sky.At(sh, view.SunAt(c.now()), st.Lit.Eye.HorizonV(aspect))
-	}
-	return c
+	return c, nil
 }
 
 // now is the clock this is drawn from: the wall, or whatever --at pinned.
@@ -119,22 +104,14 @@ func (c *clockApp) now() time.Time {
 	return c.at
 }
 
-// Draw places the ball for the moment and hands the rest to the stage.
+// Draw hands the moment to the stage, on the wall clock rather than the loop's.
+//
+// The scene's own time is the second hand, so the ball's minute is the clock's
+// minute. A ball on the loop's clock drifts against the time it is standing in
+// front of, and after a while it reads as two scenes sharing a screen.
 func (c *clockApp) Draw(f app.Frame, cols, rows int) [][]cells.Cell {
 	n := c.now()
 	sec := float64(n.Second()) + float64(n.Nanosecond())/1e9
-	minute := sec / 60
-	c.ball.At = view.Vec{
-		X: 1.3 * math.Sin(2*math.Pi*minute),
-		Y: -0.21 + 0.66*math.Abs(math.Sin(math.Pi*sec/4)),
-		Z: 3.6 - 0.7*math.Cos(2*math.Pi*minute),
-	}
-	// a lamp that is always there, and the sun, which is off at night and
-	// so takes a shade off the whole floor when it is
-	c.stage.Lit.Lights = []view.Light{
-		{At: view.Vec{X: -1.2, Y: 3.0, Z: 1.6}},
-		view.SunAt(n).Light(),
-	}
 	f.At = n
 	f.Since = time.Duration(sec * float64(time.Second))
 	return c.stage.Draw(f, cols, rows)
@@ -151,13 +128,13 @@ func (c *clockApp) keys(f app.Frame) bool {
 		case k.Rune == '-' || k.Rune == '_':
 			c.resize(-1)
 		case k.Rune == '[':
-			c.stage.Lit.Eye.Yaw -= 0.04
+			c.stage.Eye().Yaw -= 0.04
 		case k.Rune == ']':
-			c.stage.Lit.Eye.Yaw += 0.04
+			c.stage.Eye().Yaw += 0.04
 		case k.Rune == '{':
-			c.stage.Lit.Eye.Pitch -= 0.03
+			c.stage.Eye().Pitch -= 0.03
 		case k.Rune == '}':
-			c.stage.Lit.Eye.Pitch += 0.03
+			c.stage.Eye().Pitch += 0.03
 		case k.Name == "up":
 			c.face.Row--
 		case k.Name == "down":

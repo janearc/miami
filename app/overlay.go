@@ -155,6 +155,12 @@ type Bar struct {
 	Label string
 	Scrim float64
 
+	// From drives the bar from a function instead of from Set: a document
+	// binding, or anything else a caller wants to read per frame. A bar
+	// with one ignores Set, because two sources for one number is how a
+	// bar ends up showing neither.
+	From func(Frame) float64
+
 	mu          sync.Mutex
 	done, total int
 	note        string
@@ -200,7 +206,10 @@ func (b *Bar) Over(cs [][]cells.Cell, f Frame) {
 	}
 
 	frac := 0.0
-	if total > 0 {
+	switch {
+	case b.From != nil:
+		frac = math.Max(0, math.Min(1, b.From(f)))
+	case total > 0:
 		frac = math.Max(0, math.Min(1, float64(done)/float64(total)))
 	}
 	if b.Scrim > 0 {
@@ -233,7 +242,7 @@ func (b *Bar) Over(cs [][]cells.Cell, f Frame) {
 		if note != "" {
 			s = b.Label + "  " + note
 		}
-		if total > 0 {
+		if total > 0 || b.From != nil {
 			s += "  " + itoa(int(frac*100)) + "%"
 		}
 		writeText(cs, row-1, col, s, ink.At(0.15))

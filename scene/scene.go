@@ -63,6 +63,11 @@ type Doc struct {
 	Seconds float64            `json:"seconds"`
 	Const   map[string]float64 `json:"const"`
 	Layers  []Layer            `json:"layers"`
+
+	// The rest of the composition. All optional: a document with only
+	// layers is the picture this package started as, and still works.
+	Eye    *Eye    `json:"eye"`
+	Shapes []Shape `json:"shapes"`
 }
 
 // Layer is one gradient, exactly as grade means it.

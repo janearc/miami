@@ -246,15 +246,15 @@ func (f Floor) Hit(r Ray, _ float64, near, far float64) (float64, byte, bool) {
 		return 0, 0, false // past where a square can still be resolved
 	}
 	if f.Texture != nil {
-		// a plane has no edges, so there is no nought to one to hand a
-		// texture. the tile is the unit instead: one square of floor is
-		// one square of pattern, which is what makes a texture on a
-		// floor the same size wherever it is standing.
+		// a plane has no edges, so there is no nought to one to hand
+		// a texture. the tile is the unit, and the count is not
+		// wrapped: handed only the fraction within a tile, every tile
+		// looks identical and a checker comes out a flat colour.
 		tile := f.Tile
 		if tile == 0 {
 			tile = 1
 		}
-		return t, f.Texture.At(frac(p.X/tile), frac(p.Z/tile)), true
+		return t, f.Texture.At(p.X/tile, p.Z/tile), true
 	}
 	role := f.A
 	if (int(math.Floor(p.X/f.Tile))+int(math.Floor(p.Z/f.Tile)))&1 == 0 {
@@ -269,10 +269,3 @@ func (f Floor) Hit(r Ray, _ float64, near, far float64) (float64, byte, bool) {
 // that blocks light blocks all of it -- every point on it is below the floor
 // from the point of view of a light above, so the whole world goes dark.
 func (Floor) Blocks(Ray, float64, float64) bool { return false }
-
-// frac is the fractional part, always positive, so a pattern does not mirror
-// itself across the origin.
-func frac(v float64) float64 {
-	f := v - math.Floor(v)
-	return f
-}

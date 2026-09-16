@@ -48,6 +48,11 @@ type Frame struct {
 	Since time.Duration // since the loop started
 	Keys  []Key
 	N     int // how many frames have been drawn
+
+	// Scene is the same moment as a document sees it: the scene's own
+	// clock, its constants, and the few things only the program knows --
+	// the hour, the sun's height, how much of the day is gone.
+	Scene scene.Ctx
 }
 
 // Key is a keypress. Arrows and the like arrive as a Name; everything else as a
@@ -203,8 +208,29 @@ type Stage struct {
 	Colours  map[byte]color.RGBA
 	Overlays []Overlay
 
+	// What a document built, and what it needs to move each frame.
+	eye     view.Eye
+	solids  []view.Solid
+	lights  []view.Light
+	sun     []bool      // per light: it is the sun, so the hour places it
+	lightAt []scene.Vec // per light: where a lamp is, as the document says
+	moving  []mover
+	named   map[string]any
+	at      scene.Ctx // the moment being drawn, for a texture that asks
+
 	mu sync.Mutex
 }
+
+// mover is one thing whose place is a binding: where it should be, and how to
+// put it there. A closure rather than an index, because the shapes it moves are
+// different types and what they have in common is only that they have a place.
+type mover struct {
+	at  scene.Vec
+	set func(view.Vec)
+}
+
+// now is the moment being drawn, for a texture evaluated per subpixel.
+func (s *Stage) now() scene.Ctx { return s.at }
 
 // NewStage loads a scene document and a colourway.
 func NewStage(doc, colourway string) (*Stage, error) {
@@ -223,6 +249,11 @@ func NewStage(doc, colourway string) (*Stage, error) {
 		}
 		st.Colours = c
 	}
+	if st.Doc != nil {
+		if err := st.fromDoc(st.Doc); err != nil {
+			return nil, fmt.Errorf("%s: %w", doc, err)
+		}
+	}
 	return st, nil
 }
 
@@ -235,6 +266,15 @@ func (s *Stage) Add(o Overlay) {
 
 // Draw composes one frame.
 func (s *Stage) Draw(f Frame, cols, rows int) [][]cells.Cell {
+	// the moment, as the document sees it, before anything is asked where
+	// it is: a texture reads this per subpixel and it has to be the frame
+	// being drawn rather than the one before.
+	if s.Doc != nil {
+		f.Scene = s.Doc.Ctx(f.Since.Seconds(), runtimeConsts(f.At))
+	}
+	s.at = f.Scene
+	s.place(f)
+
 	sh := grade.Sextants(cols, rows)
 	var px [][]color.RGBA
 	switch {

@@ -6,6 +6,7 @@ import (
 
 	"github.com/janearc/miami/app"
 	"github.com/janearc/miami/cells"
+	"github.com/janearc/miami/proof"
 )
 
 // What a size costs, and which ceiling you hit first.
@@ -25,7 +26,8 @@ func bench(args []string) {
 	sizes := [][2]int{{80, 24}, {96, 28}, {120, 34}, {160, 44}, {200, 56}, {240, 68}}
 	const runs = 12
 
-	c := newClock(time.Time{})
+	c, err := newClock(time.Time{})
+	proof.Must(err)
 
 	fmt.Printf("%-10s %8s %9s %9s %9s %9s\n",
 		"size", "cells", "build", "full", "delta", "ceiling")
