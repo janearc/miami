@@ -1,0 +1,30 @@
+# An effect, authored as a sprite because that is what an effect is here: one
+# more layer with its own clock, not a filter on the thing underneath. A
+# twinkle, five by three, that a compositor would stamp over a wing tip or a
+# bill. It uses light and eye-ring only, so a colourway dresses it with the
+# same two colours it dresses any highlight with.
+sprite glint
+
+frame 90ms
+art
+.....
+..X..
+.....
+
+frame 70ms
+art
+..X..
+.XWX.
+..X..
+
+frame 50ms
+art
+.X.X.
+..W..
+.X.X.
+
+frame 260ms
+art
+.....
+.....
+.....

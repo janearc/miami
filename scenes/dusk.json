@@ -1,0 +1,170 @@
+{
+  "name": "dusk",
+  "seconds": 20,
+
+  // one number several layers share, so the horizon can be moved in one place
+  "const": { "horizon": 0.62 },
+
+  "layers": [
+    {
+      // the sky itself. every stop travels: at dusk the whole ramp moves,
+      // it is not one picture fading into another.
+      "name": "sky",
+      "field": { "linear": { "a": [0.5, 0.0], "b": [0.5, "@horizon"] } },
+      "ramp": [
+        { "at": 0.00, "c": { "from": "1b1040", "to": "03040f", "ease": "smooth" } },
+        { "at": 0.25, "c": { "from": "5a2071", "to": "090a24", "ease": "smooth" } },
+        { "at": 0.50, "c": { "from": "b8446b", "to": "141038", "ease": "smooth" } },
+        { "at": 0.75, "c": { "from": "ff8f4a", "to": "241a47", "ease": "smooth" } },
+        { "at": 1.00, "c": { "from": "ffd08a", "to": "3a2452", "ease": "smooth" } }
+      ],
+      "gain": 1
+    },
+
+    {
+      // stars come up as the sky goes down. they never move; the sky darkens
+      // around them. the gain is what brings them out, starting a third of
+      // the way through.
+      "name": "stars",
+      "field": { "flat": 0 },
+      "ramp": [
+        { "at": 0.0, "c": "e8ecff" },
+        { "at": 1.0, "c": "e8ecff" }
+      ],
+      "alpha": {
+        "times": [
+          { "stars": { "grid": 42, "threshold": 0.90, "size": 0.16, "rate": 2.3 } },
+          { "vband": { "min": 0, "max": { "add": ["@horizon", -0.02] } } }
+        ]
+      },
+      "blend": "add",
+      "gain": { "clamp": { "add": [{ "mul": ["@e", 1.8] }, -0.5] } }
+    },
+
+    {
+      // cloud. three drifts at 19.1, 11.7 and 7.3 seconds: no shared factor,
+      // so the sky never returns to an arrangement it has already been in.
+      "name": "cloud",
+      "field": { "linear": { "a": [0.5, 0.10], "b": [0.5, "@horizon"] } },
+      "ramp": [
+        { "at": 0.0, "c": { "from": "ffb27a", "to": "2a2340", "ease": "smooth" } },
+        { "at": 0.5, "c": { "from": "e2708a", "to": "1a1730", "ease": "smooth" } },
+        { "at": 1.0, "c": { "from": "6c2f63", "to": "0d0b1c", "ease": "smooth" } }
+      ],
+      "alpha": {
+        "times": [
+          {
+            "smooth": {
+              "a": 0.30, "b": 0.52,
+              "field": {
+                "waves": {
+                  "terms": [
+                    { "u": 1.7, "v": 0.0, "period": 19.1, "amp": 1.0 },
+                    { "u": 3.1, "v": 2.0, "period": 11.7, "amp": 0.7 },
+                    { "u": 5.3, "v": -1.4, "period": 7.3, "amp": 0.5 }
+                  ],
+                  "scale": 0.28, "bias": 0.5,
+                  "slope": -1.1, "from": "@horizon"
+                }
+              }
+            }
+          },
+          { "flat": 0.85 },
+          { "vband": { "min": 0, "max": { "add": ["@horizon", -0.005] } } }
+        ]
+      },
+      "gain": 1
+    },
+
+    {
+      // the light left in the air along the horizon, squashed flat by the
+      // matrix: wide across, thin through. it goes out with the sun.
+      "name": "haze",
+      "field": { "flat": 0 },
+      "ramp": [{ "at": 0.0, "c": { "from": "ff7a3c", "to": "271a3a", "ease": "smooth" } }],
+      "alpha": {
+        "inside": {
+          "at": 0.02, "soft": 0.86,
+          "field": {
+            "through": {
+              "m": [[0.5, 0], [0, 6.0]],
+              "field": { "radial": { "centre": [0.42, "@horizon"], "radius": 0.7 } }
+            }
+          }
+        }
+      },
+      "blend": "add",
+      "gain": { "mul": [0.42, { "clamp": { "add": [1.25, { "mul": ["@e", -1.5] }] } }] }
+    },
+
+    {
+      // the sun. its colour runs top to bottom and has never heard of
+      // circles; the alpha makes it round. it sinks a fifth of the sheet.
+      "name": "sun",
+      "field": {
+        "linear": {
+          "a": [0.42, { "add": ["@horizon", { "from": -0.150, "to": 0.050, "ease": "smooth" }] }],
+          "b": [0.42, { "add": ["@horizon", { "from": 0.000, "to": 0.200, "ease": "smooth" }] }]
+        }
+      },
+      "ramp": [
+        { "at": 0.0, "c": "fff3bc" },
+        { "at": 0.5, "c": "ffb03a" },
+        { "at": 1.0, "c": "ff5a5a" }
+      ],
+      "alpha": {
+        "times": [
+          {
+            "inside": {
+              "at": 0.80, "soft": 0.12,
+              "field": {
+                "radial": {
+                  "centre": [0.42, { "add": ["@horizon", { "from": -0.075, "to": 0.125, "ease": "smooth" }] }],
+                  "radius": 0.098
+                }
+              }
+            }
+          },
+          { "flat": { "clamp": { "mul": [{ "clamp": { "add": [1.25, { "mul": ["@e", -1.5] }] } }, 1.4] } } }
+        ]
+      },
+      "gain": 1
+    },
+
+    {
+      "name": "bloom",
+      "field": { "flat": 0 },
+      "ramp": [{ "at": 0.0, "c": "ffcf8a" }],
+      "alpha": {
+        "inside": {
+          "at": 0.0, "soft": 0.95,
+          "field": {
+            "radial": {
+              "centre": [0.42, { "add": ["@horizon", { "from": -0.075, "to": 0.125, "ease": "smooth" }] }],
+              "radius": 0.42
+            }
+          }
+        }
+      },
+      "blend": "add",
+      "gain": { "mul": [0.26, { "clamp": { "add": [1.25, { "mul": ["@e", -1.5] }] } }] }
+    },
+
+    {
+      // last, so the sun sets behind it rather than on it
+      "name": "ground",
+      "field": { "linear": { "a": [0.5, "@horizon"], "b": [0.5, 1.0] } },
+      "ramp": [
+        { "at": 0.0, "c": { "from": "2a1030", "to": "0a0616", "ease": "smooth" } },
+        { "at": 1.0, "c": { "from": "070314", "to": "020108", "ease": "smooth" } }
+      ],
+      "alpha": {
+        "linear": {
+          "a": [0.5, { "add": ["@horizon", -0.004] }],
+          "b": [0.5, { "add": ["@horizon", 0.004] }]
+        }
+      },
+      "gain": 1
+    }
+  ]
+}

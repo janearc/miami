@@ -1,0 +1,348 @@
+// Package scene reads a painted scene from JSON.
+//
+// A grade layer is already data -- a field, a ramp, an alpha, a blend and a
+// gain -- so the stack was always a document pretending to be Go. What was
+// not obvious is that the layers are the easy half. Three things in a moving
+// scene resist being written down, and how each is handled is the whole of
+// this package:
+//
+//	a value that changes    the sun's height, the gain of a glow going out
+//	a colour that changes   a sky whose every ramp stop travels at dusk
+//	a field with maths in   a sum of drifting waves, a field of stars
+//
+// The first two are solved by letting every number and every colour be a
+// binding rather than a constant. The third is solved by naming them: they
+// are primitives, not scene logic, and a scene that needs a shape none of the
+// primitives describe needs a new primitive, not an escape hatch.
+//
+// There is deliberately no expression language. The moment a scene file can
+// evaluate arithmetic it is a programming language with no debugger, no line
+// numbers and no way to test a fragment. A binding is a shape -- travel from
+// here to there, oscillate about a mid -- and a shape can be reported, drawn
+// and checked. Anything a binding cannot say belongs in Go, behind a name.
+//
+// The document, in full:
+//
+//	{
+//	  "name": "dusk", "seconds": 20,
+//	  "const": { "horizon": 0.62 },
+//	  "layers": [ { "name", "field", "ramp", "alpha", "blend", "gain" } ]
+//	}
+//
+// A value is a number, "@name" for a constant, or one of:
+//
+//	{"from": a, "to": b, "ease": "smooth"}   travels once across the scene
+//	{"mid": m, "amp": a, "period": s}        oscillates, seconds per turn
+//	{"mul": [v, v]}  {"add": [v, v]}  {"clamp": v}
+//
+// A colour is a hex string or {"from": hex, "to": hex, "ease": "smooth"}.
+package scene
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"math"
+	"os"
+
+	"github.com/janearc/libdaffy/field"
+	"github.com/janearc/libtheme-css/primitives/functions"
+	"github.com/janearc/libtheme-css/primitives/swatch"
+	"github.com/janearc/libtheme-css/spaces/ok"
+	"github.com/janearc/libtheme-css/spaces/srgb"
+
+	"miami/grade"
+)
+
+// Doc is a whole scene.
+type Doc struct {
+	Name    string             `json:"name"`
+	Seconds float64            `json:"seconds"`
+	Const   map[string]float64 `json:"const"`
+	Layers  []Layer            `json:"layers"`
+}
+
+// Layer is one gradient, exactly as grade means it.
+type Layer struct {
+	Name  string `json:"name"`
+	Field Node   `json:"field"`
+	Ramp  []Stop `json:"ramp"`
+	Alpha *Node  `json:"alpha,omitempty"`
+	Blend string `json:"blend,omitempty"`
+	Gain  Value  `json:"gain"`
+}
+
+// Stop is a ramp stop, whose colour may itself travel.
+type Stop struct {
+	At float64 `json:"at"`
+	C  Colour  `json:"c"`
+}
+
+// ctx is everything a binding is allowed to know: where the scene is in its
+// own time, and the constants it declared. Not the sheet, not the pixel --
+// a binding is a function of time and nothing else, which is what keeps it
+// cheap enough to evaluate once per frame instead of once per sample.
+type ctx struct {
+	t, dur, e float64
+	c         map[string]float64
+}
+
+// Load reads a scene document.
+func Load(path string) (*Doc, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var d Doc
+	dec := json.NewDecoder(newTrimmer(b))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&d); err != nil {
+		return nil, fmt.Errorf("%s: %w", path, err)
+	}
+	if d.Seconds <= 0 {
+		d.Seconds = 1
+	}
+	return &d, nil
+}
+
+// At builds the stack for a moment in the scene.
+func (d *Doc) At(t float64) (grade.Stack, error) {
+	c := ctx{t: t, dur: d.Seconds, e: clamp01(t / d.Seconds), c: d.Const}
+	out := make(grade.Stack, 0, len(d.Layers))
+	for _, l := range d.Layers {
+		f, err := l.Field.field(c)
+		if err != nil {
+			return nil, fmt.Errorf("layer %q field: %w", l.Name, err)
+		}
+		var a field.Field
+		if l.Alpha != nil {
+			if a, err = l.Alpha.field(c); err != nil {
+				return nil, fmt.Errorf("layer %q alpha: %w", l.Name, err)
+			}
+		}
+		blend, err := blendOf(l.Blend)
+		if err != nil {
+			return nil, fmt.Errorf("layer %q: %w", l.Name, err)
+		}
+		stops := make([]functions.Stop, len(l.Ramp))
+		for i, s := range l.Ramp {
+			stops[i] = functions.Stop{At: s.At, Swatch: s.C.at(c)}
+		}
+		out = append(out, grade.Layer{
+			Name: l.Name, Field: f, Alpha: a, Blend: blend,
+			Gain: l.Gain.at(c), Ramp: functions.New(ok.Mix, stops...),
+		})
+	}
+	return out, nil
+}
+
+func blendOf(s string) (grade.Blend, error) {
+	switch s {
+	case "", "over":
+		return grade.Over, nil
+	case "add":
+		return grade.Add, nil
+	case "mul":
+		return grade.Mul, nil
+	}
+	return 0, fmt.Errorf("unknown blend %q", s)
+}
+
+// ---------------------------------------------------------------- values
+
+// Value is a number that may change with time.
+type Value struct {
+	fixed  *float64
+	ref    string
+	from   *Value
+	to     *Value
+	ease   string
+	mid    *Value
+	amp    *Value
+	period *Value
+	phase  *Value
+	mul    []Value
+	add    []Value
+	clamp  *Value
+}
+
+func (v *Value) UnmarshalJSON(b []byte) error {
+	var n float64
+	if json.Unmarshal(b, &n) == nil {
+		v.fixed = &n
+		return nil
+	}
+	var s string
+	if json.Unmarshal(b, &s) == nil {
+		if len(s) < 2 || s[0] != '@' {
+			return fmt.Errorf("a value string must be \"@constant\", got %q", s)
+		}
+		v.ref = s[1:]
+		return nil
+	}
+	var raw struct {
+		From, To, Mid, Amp, Period, Phase, Clamp *Value
+		Ease                                     string
+		Mul, Add                                 []Value
+	}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return fmt.Errorf("value: %w", err)
+	}
+	v.from, v.to, v.ease = raw.From, raw.To, raw.Ease
+	v.mid, v.amp, v.period, v.phase = raw.Mid, raw.Amp, raw.Period, raw.Phase
+	v.mul, v.add, v.clamp = raw.Mul, raw.Add, raw.Clamp
+	return nil
+}
+
+func (v Value) at(c ctx) float64 {
+	switch {
+	case v.fixed != nil:
+		return *v.fixed
+	case v.ref != "":
+		return c.lookup(v.ref)
+	case v.from != nil && v.to != nil:
+		return v.from.at(c) + (v.to.at(c)-v.from.at(c))*curve(v.ease, c.e)
+	case v.period != nil:
+		p := v.period.at(c)
+		if p == 0 {
+			p = 1
+		}
+		ph := 0.0
+		if v.phase != nil {
+			ph = v.phase.at(c)
+		}
+		a, m := 1.0, 0.0
+		if v.amp != nil {
+			a = v.amp.at(c)
+		}
+		if v.mid != nil {
+			m = v.mid.at(c)
+		}
+		return m + a*math.Sin(2*math.Pi*(c.t/p+ph))
+	case len(v.mul) > 0:
+		r := 1.0
+		for _, x := range v.mul {
+			r *= x.at(c)
+		}
+		return r
+	case len(v.add) > 0:
+		r := 0.0
+		for _, x := range v.add {
+			r += x.at(c)
+		}
+		return r
+	case v.clamp != nil:
+		return clamp01(v.clamp.at(c))
+	}
+	return 0
+}
+
+func curve(name string, e float64) float64 {
+	e = clamp01(e)
+	switch name {
+	case "", "linear":
+		return e
+	case "smooth":
+		return e * e * (3 - 2*e)
+	case "in":
+		return e * e
+	case "out":
+		return 1 - (1-e)*(1-e)
+	}
+	return e
+}
+
+// Colour is a hex colour that may travel.
+type Colour struct {
+	fixed    string
+	from, to string
+	ease     string
+}
+
+func (c *Colour) UnmarshalJSON(b []byte) error {
+	var s string
+	if json.Unmarshal(b, &s) == nil {
+		c.fixed = s
+		return nil
+	}
+	var raw struct{ From, To, Ease string }
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return fmt.Errorf("colour: %w", err)
+	}
+	c.from, c.to, c.ease = raw.From, raw.To, raw.Ease
+	return nil
+}
+
+func (c Colour) at(x ctx) swatch.Swatch {
+	if c.fixed != "" {
+		return hex(c.fixed)
+	}
+	// each stop travels on its own. a sky that changes colour is not a
+	// crossfade between two pictures -- that goes through a grey middle where
+	// the two disagree -- it is one ramp whose stops each move.
+	return ok.Mix.Mix(hex(c.from), hex(c.to), curve(c.ease, x.e))
+}
+
+func hex(s string) swatch.Swatch {
+	var v [3]uint8
+	for i := 0; i < len(s) && i < 6; i++ {
+		d := byte(0)
+		switch ch := s[i]; {
+		case ch >= '0' && ch <= '9':
+			d = ch - '0'
+		case ch >= 'a' && ch <= 'f':
+			d = ch - 'a' + 10
+		case ch >= 'A' && ch <= 'F':
+			d = ch - 'A' + 10
+		}
+		v[i/2] = v[i/2]<<4 | d
+	}
+	return srgb.RGB{R: float64(v[0]) / 255, G: float64(v[1]) / 255,
+		B: float64(v[2]) / 255}.Swatch()
+}
+
+func clamp01(v float64) float64 { return math.Max(0, math.Min(1, v)) }
+
+// newTrimmer strips // line comments outside of strings.
+//
+// JSON has no comments and a scene file badly wants them: which layer is
+// which, why a period is 19.1 and not 19. The house argument against JSON was
+// that plain text reads in a terminal and can be hand-edited, and a document
+// nobody can annotate loses half of that. Stripping comments on the way in
+// costs twenty lines and gives it back.
+func newTrimmer(b []byte) *bytes.Reader {
+	out := make([]byte, 0, len(b))
+	inStr, esc := false, false
+	for i := 0; i < len(b); i++ {
+		switch {
+		case esc:
+			esc = false
+		case inStr && b[i] == '\\':
+			esc = true
+		case b[i] == '"':
+			inStr = !inStr
+		case !inStr && b[i] == '/' && i+1 < len(b) && b[i+1] == '/':
+			for i < len(b) && b[i] != '\n' {
+				i++
+			}
+			out = append(out, '\n')
+			continue
+		}
+		out = append(out, b[i])
+	}
+	return bytes.NewReader(out)
+}
+
+// built-in constants a binding may name. Scene progress and elapsed seconds
+// are the two every moving scene needs and neither belongs in the document.
+func (c ctx) lookup(name string) float64 {
+	switch name {
+	case "e":
+		return c.e
+	case "t":
+		return c.t
+	case "dur":
+		return c.dur
+	}
+	return c.c[name]
+}

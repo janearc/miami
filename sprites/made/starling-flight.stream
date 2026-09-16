@@ -1,0 +1,40 @@
+# A starling's wingbeat: up, level, down, level. The body never moves; only
+# the wings do, which is what makes eight by six read as flight rather than
+# as a shape changing. The down stroke holds longest, as it does on a bird.
+sprite starling-flight
+
+frame 110ms
+art
+VV....VV
+.VKEXKV.
+..KRRK..
+..KKKK..
+...OO...
+........
+
+frame 90ms
+art
+........
+VVKEXKVV
+..KRRK..
+..KKKK..
+...OO...
+........
+
+frame 150ms
+art
+........
+..KEXK..
+..KRRK..
+.VKKKKV.
+VV.OO.VV
+V......V
+
+frame 90ms
+art
+........
+VVKEXKVV
+..KRRK..
+..KKKK..
+...OO...
+........
