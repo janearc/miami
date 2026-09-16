@@ -2,8 +2,10 @@ package app
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/janearc/miami/grade"
@@ -131,7 +133,8 @@ func (s *Stage) addShape(sh scene.Shape) error {
 			return err
 		}
 		c := &view.Cylinder{Radius: sh.Radius, Length: sh.Length,
-			Caps: sh.Caps, Texture: tex, Axis: vecAt(sh.Axis, scene.Ctx{})}
+			Caps: sh.Caps, Texture: s.ownFill(sh.Name, tex),
+			Axis: vecAt(sh.Axis, scene.Ctx{})}
 		s.solids = append(s.solids, c)
 		s.moving = append(s.moving, mover{at: sh.At, set: func(v view.Vec) {
 			c.At = v
@@ -368,4 +371,64 @@ func emojiFrom(sh scene.Shape) (*Emoji, error) {
 	}
 	return &Emoji{Rune: rune(n), Cols: sh.Cols, Colours: sh.Colours,
 		Row: sh.Row, Col: sh.Col}, nil
+}
+
+// Fill is how far along a shape that fills is, set from wherever the work is.
+//
+// A cylinder's texture asks a function how full it should be. When the document
+// binds that to something -- "@daylight", say -- the document owns it. When the
+// document names the shape and binds nothing, the program owns it, and this is
+// the handle it owns it by.
+//
+// Safe from any goroutine, because that is the whole point: the work runs on
+// its own clock and the loop reads whatever is there when a frame falls due.
+type Fill struct {
+	mu   sync.Mutex
+	frac float64
+}
+
+// Set says how far along the work is.
+func (f *Fill) Set(done, total int) {
+	if total <= 0 {
+		f.SetFrac(0)
+		return
+	}
+	f.SetFrac(float64(done) / float64(total))
+}
+
+// SetFrac says how full it is directly, nought to one.
+func (f *Fill) SetFrac(x float64) {
+	f.mu.Lock()
+	f.frac = math.Max(0, math.Min(1, x))
+	f.mu.Unlock()
+}
+
+// Frac is how full it is.
+func (f *Fill) Frac() float64 {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.frac
+}
+
+// Fill is the fillable shape of that name, or nil.
+func (s *Stage) Fill(name string) *Fill {
+	f, _ := s.find(name + "\x00fill").(*Fill)
+	return f
+}
+
+// ownFill gives a named shape whose fill nothing binds a handle the program can
+// set, and points its texture at it.
+//
+// Returns the texture to use, which is the same one unless it had to be rebuilt
+// -- a Split is a value, so pointing its function somewhere means making
+// another one.
+func (s *Stage) ownFill(name string, tex texture.Texture) texture.Texture {
+	sp, ok := tex.(texture.Split)
+	if !ok || sp.Frac != nil || name == "" {
+		return tex
+	}
+	f := &Fill{}
+	s.remember(name+"\x00fill", f)
+	sp.Frac = f.Frac
+	return sp
 }
