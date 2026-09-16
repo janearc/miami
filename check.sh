@@ -14,6 +14,14 @@ go vet ./...
 go build -o bin/miami ./cmd/miami
 go test ./...
 
+# the library embeds a copy of the colourway, because a program importing
+# miami cannot read files out of miami's working directory. two copies is
+# two things that drift, so this is the gate that says they have not.
+if ! cmp -s app/builtin/starling.css sprites/made/starling.css; then
+	echo "DIFFERS  app/builtin/starling.css is not sprites/made/starling.css"
+	exit 1
+fi
+
 rm -rf regress && mkdir -p regress out
 bin/miami macaw term 34 > regress/macaw.ansi 2>/dev/null
 bin/miami palm term 22 > regress/palm.ansi 2>/dev/null

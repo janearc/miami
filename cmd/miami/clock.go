@@ -16,8 +16,8 @@ import (
 // It used to prove that the flagship could be built on the public library
 // rather than by reaching inside it.
 //
-// It proves something stronger now. The scene is scenes/clock.json, and this
-// file has no sky in it, no ball, no floor, no lights, no digits and no bar.
+// It proves something stronger now. The scene is app/builtin/clock.json, and
+// this file has no sky in it, no ball, no floor, no lights and no digits.
 // What is left is the four things that are genuinely this program's: which
 // file, which clock, what the keys do, and when to stop.
 //
@@ -79,7 +79,7 @@ func clock(args []string) {
 
 // newClock loads the scene and finds the one shape the keyboard steers.
 func newClock(at time.Time) (*clockApp, error) {
-	st, err := app.NewStage("scenes/clock.json", "sprites/made/starling.css")
+	st, err := app.NewStage("@clock", "@starling")
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func newClock(at time.Time) (*clockApp, error) {
 		at:    at,
 	}
 	if c.face == nil {
-		return nil, fmt.Errorf("scenes/clock.json has no clock named face")
+		return nil, fmt.Errorf("the clock scene has no clock named face")
 	}
 	return c, nil
 }

@@ -101,11 +101,18 @@ func Load(path string) (*Doc, error) {
 	if err != nil {
 		return nil, err
 	}
+	return Read(path, b)
+}
+
+// Read is a document that is already in hand, named only so an error can say
+// which one it was. For a caller holding bytes rather than a path: a document
+// compiled into a program, or one that arrived down a pipe.
+func Read(name string, b []byte) (*Doc, error) {
 	var d Doc
 	dec := json.NewDecoder(newTrimmer(b))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&d); err != nil {
-		return nil, fmt.Errorf("%s: %w", path, err)
+		return nil, fmt.Errorf("%s: %w", name, err)
 	}
 	if d.Seconds <= 0 {
 		d.Seconds = 1

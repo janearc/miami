@@ -236,14 +236,14 @@ func (s *Stage) now() scene.Ctx { return s.at }
 func NewStage(doc, colourway string) (*Stage, error) {
 	st := &Stage{}
 	if doc != "" {
-		d, err := scene.Load(doc)
+		d, err := loadScene(doc)
 		if err != nil {
 			return nil, err
 		}
 		st.Doc = d
 	}
 	if colourway != "" {
-		c, err := compose.Colours(colourway)
+		c, err := loadColours(colourway)
 		if err != nil {
 			return nil, err
 		}

@@ -44,6 +44,16 @@ func Colours(path string) (map[byte]color.RGBA, error) {
 	if err != nil {
 		return nil, err
 	}
+	c, err := ColoursFrom(src)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", path, err)
+	}
+	return c, nil
+}
+
+// ColoursFrom is a colourway already in hand, for a caller holding the
+// stylesheet rather than a path to it.
+func ColoursFrom(src []byte) (map[byte]color.RGBA, error) {
 	cw := css.Read(string(src))
 	out := map[byte]color.RGBA{}
 	for name, r := range roles {
@@ -64,7 +74,7 @@ func Colours(path string) (map[byte]color.RGBA, error) {
 		out[r] = color.RGBA{q(c.R), q(c.G), q(c.B), 255}
 	}
 	if len(out) == 0 {
-		return nil, fmt.Errorf("%s: no roles of the alphabet found", path)
+		return nil, fmt.Errorf("no roles of the alphabet found")
 	}
 	return out, nil
 }
