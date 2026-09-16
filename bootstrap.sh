@@ -13,13 +13,25 @@ cd "$(dirname "$0")"
 ROOTS="${GAME_ROOTS:-$HOME/mesh/frontier/roots}"
 mkdir -p libs
 
-for repo in libdaffy libdaffy-sprite libtheme-css bandersnatch; do
+# the name on the left is what go.work calls it; the name on the right is what
+# the root is actually called. they differ because some of these have a working
+# remote and a clean one, and it is the working one a build wants -- cloning
+# from the name go uses got "does not exist" on a fresh machine and nowhere
+# else, which is the only kind of bug a bootstrap has.
+for pair in libdaffy:libdaffy-road libdaffy-sprite:libdaffy-sprite \
+	libtheme-css:libtheme-css-road bandersnatch:bandersnatch; do
+	repo=${pair%%:*}
+	from=${pair##*:}
 	if [ -d "libs/$repo" ] && [ "${1:-}" != "--force" ]; then
 		echo "have  libs/$repo"
 		continue
 	fi
+	if [ ! -d "$ROOTS/$from.git" ]; then
+		echo "skip  libs/$repo (no $ROOTS/$from.git)"
+		continue
+	fi
 	rm -rf "libs/$repo"
-	git clone -q "$ROOTS/$repo.git" "libs/$repo"
+	git clone -q "$ROOTS/$from.git" "libs/$repo"
 	echo "clone libs/$repo"
 done
 
