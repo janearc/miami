@@ -2,203 +2,192 @@ package main
 
 import (
 	"fmt"
-	"image/color"
 	"math"
 	"os"
-	"os/signal"
-	"strings"
-	"syscall"
 	"time"
 
+	"miami/app"
 	"miami/cells"
-	"miami/compose"
+	"miami/grade"
 	"miami/proof"
 	"miami/scenes"
-	"miami/typeset"
 	"miami/view"
 )
 
-// A clock, generated as it is shown.
+// A clock, written on miami's own public library.
 //
-// Everything else here renders to a file and plays it back. This does not:
-// each frame is built from the wall clock at the moment it is due and written
-// straight out, so there is nothing on disk and nothing to get stale.
+// It is here as the demonstration and it is here as the proof. Every piece of
+// it -- the loop, the terminal contract, the keyboard, the scrim, the digits --
+// comes out of package app, which is what any other program gets.
 //
-// That is the shape a stream wants anyway -- frames arrive and are drawn as
-// they arrive, and nothing waits for the whole file.
+// If the flagship could only be written by reaching inside, the library would
+// not be one.
 //
-// It also happens to exercise most of the library at once: a traced ball over
-// a floor with a cast shadow, type set from a figlet font and coloured from a
-// ramp, and the two composited by alpha into cells. If one of those is broken
-// this is where it shows.
+//	q  ctrl-c   stop
+//	+  -        the clock's size
+//	arrows      where it sits
+//	[  ]        yaw
+//	{  }        pitch
+type clockApp struct {
+	stage *app.Stage
+	face  *app.Digits
+	fonts []string
+	size  int
+	at    time.Time // fixed, for --at; zero means the wall clock
+}
+
+// clock reads the arguments and either writes one frame or runs the loop.
+//
+//	miami clock [COLS ROWS [FPS]] [--once] [--at HH:MM]
 func clock(args []string) {
 	cols, rows, fps := 96, 28, 12
 	if len(args) > 1 {
 		fmt.Sscan(args[0], &cols)
 		fmt.Sscan(args[1], &rows)
 	}
-	if len(args) > 2 && args[2] != "--once" {
+	if len(args) > 2 && args[2] != "--once" && args[2] != "--at" {
 		fmt.Sscan(args[2], &fps)
 	}
-	// one frame and out, so a clock can be looked at. a thing that only
-	// exists while it is running cannot be checked, and this one is made of
-	// six other things that can each be wrong.
-	once := false
-	for _, a := range args {
+
+	// --once writes a single frame and --at sets the clock it is drawn
+	// from. a picture that changes with the hour cannot be checked at the
+	// hour it happens to be; --at is how dawn gets looked at in the
+	// afternoon.
+	once, at := false, time.Time{}
+	for i, a := range args {
 		if a == "--once" {
 			once = true
 		}
+		if a == "--at" && i+1 < len(args) {
+			if t, err := time.Parse("15:04", args[i+1]); err == nil {
+				n := time.Now()
+				at = time.Date(n.Year(), n.Month(), n.Day(),
+					t.Hour(), t.Minute(), 0, 0, n.Location())
+			}
+		}
 	}
 
-	col, err := compose.Colours("sprites/made/starling.css")
-	proof.Must(err)
-	fig, err := typeset.LoadFig("small")
-	proof.Must(err)
-
-	// vaporwave: the digits run hot pink through magenta into cyan, across
-	// the face rather than down it, so the hour and the seconds are
-	// different colours and the thing reads as one object moving through a
-	// spectrum rather than as eight separate numbers.
-	marks := []string{"ff2a9d", "c44fb0", "8a5ad8", "3f7ad6", "2de2e6"}
-
-	// the terminal is put back the way it was found however this ends
-	restore := func() { fmt.Print("\x1b[?25h\x1b[0m\n") }
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
-	go func() { <-sig; restore(); os.Exit(0) }()
-	defer restore()
-
+	c := newClock(at)
 	if once {
-		cs := clockFrame(time.Now(), cols, rows, col, fig, marks)
+		cs := c.Draw(app.Frame{At: c.now()}, cols, rows)
 		proof.Must(write("out/clock.ansi", []byte(cells.ANSI(cs))))
 		fmt.Fprintln(os.Stderr, "wrote out/clock.ansi")
 		return
 	}
-
-	fmt.Print("\x1b[?25l\x1b[2J")
-	var prev [][]cells.Cell
-	tick := time.Duration(float64(time.Second) / float64(fps))
-	for {
-		start := time.Now()
-		cs := clockFrame(start, cols, rows, col, fig, marks)
-
-		fmt.Print("\x1b[?2026h")
-		if prev == nil {
-			fmt.Print("\x1b[H")
-			fmt.Print(cells.ANSI(cs))
-		} else {
-			fmt.Print(cells.Delta(prev, cs))
-		}
-		fmt.Print("\x1b[?2026l")
-		prev = cs
-
-		if d := tick - time.Since(start); d > 0 {
-			time.Sleep(d)
-		}
-	}
+	proof.Must(app.Screen{Cols: cols, Rows: rows, FPS: fps, Raw: true}.
+		Run(c, c.keys))
 }
 
-// clockFrame is the whole picture at one instant.
-func clockFrame(now time.Time, cols, rows int, col map[byte]color.RGBA,
-	fig *typeset.FigFont, marks []string) [][]cells.Cell {
-	// the ball is driven by the clock rather than by a frame counter, so it
-	// is in the same place at the same second whenever this is started
-	sec := float64(now.Second()) + float64(now.Nanosecond())/1e9
-	minute := sec / 60
-	sc := view.Lit{
-		Eye: view.Eye{At: view.Vec{Y: 0.05}, Lens: 1.0, Near: 0.05},
+// newClock builds the scene: a stage with a sky that knows the hour, a lit
+// floor for the ball to sit on, and the face over the top of both.
+func newClock(at time.Time) *clockApp {
+	st, err := app.NewStage("", "sprites/made/starling.css")
+	proof.Must(err)
+	c := &clockApp{
+		stage: st,
+		fonts: []string{"mini", "small", "smslant", "chunky"},
+		size:  1,
+		at:    at,
+	}
+	c.face = &app.Digits{Font: "small", Row: 2, Col: -1,
+		Ink: app.Vaporwave, Scrim: 0.40, Flicker: true, At: c.now}
+	st.Add(c.face)
+	st.Lit = &view.Lit{
+		Eye: view.Eye{At: view.Vec{Y: 0.05}, Lens: 1, Near: 0.05},
 		Floor: view.Floor{Y: -0.55, Tile: 0.62, Far: 9.5, A: 'V', B: 'K',
-			Shade: map[byte]byte{'V': 'K', 'K': 'D'}},
-		Light: view.Vec{X: -1.2, Y: 3.0, Z: 1.6},
-		Ball: view.Ball{
-			At: view.Vec{
-				// once across the floor a minute, and a bounce
-				// every four seconds
-				X: 1.3 * math.Sin(2*math.Pi*minute),
-				Y: -0.21 + 0.66*math.Abs(math.Sin(math.Pi*sec/4)),
-				Z: 3.6 - 0.7*math.Cos(2*math.Pi*minute),
-			},
-			Radius: 0.34,
-			Spin:   view.Vec{X: 0.11, Y: 0.43, Z: 0.07},
-		},
+			Shade: map[byte]byte{'V': 'K', 'K': 'D', 'D': 'E'}},
+		Ball: view.Ball{Radius: 0.34, Spin: view.Vec{X: 0.11, Y: 0.43, Z: 0.07}},
 	}
-	f := sc.Trace(time.Duration(sec*float64(time.Second)), cols, rows)
-
-	px := make([][]color.RGBA, rows*3)
-	for y := range px {
-		px[y] = make([]color.RGBA, cols*2)
-		for x := range px[y] {
-			px[y][x] = color.RGBA{10, 9, 16, 255}
-		}
+	// the sky is painted and the floor is traced, so both are told the same
+	// horizon: the one the camera's pitch puts it at
+	st.Sky = func(sh grade.Sheet, _ time.Time) grade.Stack {
+		aspect := (float64(sh.H) * 4) / (float64(sh.W) * 3)
+		return scenes.SkyAt(sh, view.SunAt(c.now()), st.Lit.Eye.HorizonV(aspect))
 	}
-	compose.Blit(px, f, col, 0, 0)
-	cs := cells.ToCells(px, 2, 3)
-
-	// the colons are off for the second half of every second. rendered
-	// character by character rather than as one string, because a kerned
-	// render gives no way to say which columns a colon occupies, and
-	// blanking the wrong ones eats a digit.
-	on := now.Nanosecond() < 5e8
-	art, spans := setDigits(fig, now.Format("15:04:05"))
-	if !on {
-		art = blankSpans(art, spans)
-	}
-	wide := 0
-	for _, l := range art {
-		if len(l) > wide {
-			wide = len(l)
-		}
-	}
-	cells.Letters(cs, art, (cols-wide)/2, 2, func(x, _ int) color.RGBA {
-		t := float64(x) / math.Max(1, float64(wide-1)) * float64(len(marks)-1)
-		i := int(t)
-		if i >= len(marks)-1 {
-			return scenes.Hex(marks[len(marks)-1])
-		}
-		return scenes.Blend(marks[i], marks[i+1], t-float64(i))
-	})
-	return cs
+	return c
 }
 
-// setDigits lays characters side by side without kerning, and says which
-// columns each colon took. Without the spans a colon cannot be turned off:
-// the only way to find one in a kerned render is to guess.
-func setDigits(f *typeset.FigFont, s string) ([]string, [][2]int) {
-	out := make([]string, f.Height)
-	var spans [][2]int
-	for _, r := range s {
-		g := typeset.Trim(f.Render(string(r)))
-		w := 0
-		for _, l := range g {
-			if len(l) > w {
-				w = len(l)
-			}
-		}
-		if r == ':' {
-			spans = append(spans, [2]int{len(out[0]), len(out[0]) + w})
-		}
-		for i := range out {
-			line := ""
-			if i < len(g) {
-				line = g[i]
-			}
-			out[i] += line + strings.Repeat(" ", w-len(line)) + " "
-		}
+// now is the clock this is drawn from: the wall, or whatever --at pinned.
+func (c *clockApp) now() time.Time {
+	if c.at.IsZero() {
+		return time.Now()
 	}
-	return out, spans
+	return c.at
 }
 
-// blankSpans clears the columns a set of characters occupied.
-func blankSpans(art []string, spans [][2]int) []string {
-	out := make([]string, len(art))
-	for i, l := range art {
-		b := []byte(l)
-		for _, s := range spans {
-			for x := s[0]; x < s[1] && x < len(b); x++ {
-				b[x] = ' '
-			}
-		}
-		out[i] = string(b)
+// Draw places the ball for the moment and hands the rest to the stage.
+func (c *clockApp) Draw(f app.Frame, cols, rows int) [][]cells.Cell {
+	n := c.now()
+	sec := float64(n.Second()) + float64(n.Nanosecond())/1e9
+	minute := sec / 60
+	c.stage.Lit.Ball.At = view.Vec{
+		X: 1.3 * math.Sin(2*math.Pi*minute),
+		Y: -0.21 + 0.66*math.Abs(math.Sin(math.Pi*sec/4)),
+		Z: 3.6 - 0.7*math.Cos(2*math.Pi*minute),
 	}
-	return out
+	// a lamp that is always there, and the sun, which is off at night and
+	// so takes a shade off the whole floor when it is
+	c.stage.Lit.Lights = []view.Light{
+		{At: view.Vec{X: -1.2, Y: 3.0, Z: 1.6}},
+		view.SunAt(n).Light(),
+	}
+	f.At = n
+	f.Since = time.Duration(sec * float64(time.Second))
+	return c.stage.Draw(f, cols, rows)
+}
+
+// keys steers it, and says when to stop.
+func (c *clockApp) keys(f app.Frame) bool {
+	for _, k := range f.Keys {
+		switch {
+		case k.Rune == 'q' || k.Rune == 3:
+			return false
+		case k.Rune == '+' || k.Rune == '=':
+			c.resize(1)
+		case k.Rune == '-' || k.Rune == '_':
+			c.resize(-1)
+		case k.Rune == '[':
+			c.stage.Lit.Eye.Yaw -= 0.04
+		case k.Rune == ']':
+			c.stage.Lit.Eye.Yaw += 0.04
+		case k.Rune == '{':
+			c.stage.Lit.Eye.Pitch -= 0.03
+		case k.Rune == '}':
+			c.stage.Lit.Eye.Pitch += 0.03
+		case k.Name == "up":
+			c.face.Row--
+		case k.Name == "down":
+			c.face.Row++
+		case k.Name == "left":
+			c.nudge(-1)
+		case k.Name == "right":
+			c.nudge(1)
+		}
+	}
+	return true
+}
+
+// resize steps through the faces.
+//
+// The size is a choice of font rather than a scale factor: a figlet glyph is
+// made of characters and there is no half of one, so doubling a small face
+// gives a blocky copy of it rather than a large face.
+func (c *clockApp) resize(d int) {
+	c.size += d
+	if c.size < 0 {
+		c.size = 0
+	}
+	if c.size >= len(c.fonts) {
+		c.size = len(c.fonts) - 1
+	}
+	c.face.Font = c.fonts[c.size]
+}
+
+// nudge moves the face sideways. A Col of -1 means centred, so the first nudge
+// has to leave that behind rather than treat it as a coordinate.
+func (c *clockApp) nudge(d int) {
+	if c.face.Col < 0 {
+		c.face.Col = 0
+	}
+	c.face.Col += d * 2
 }

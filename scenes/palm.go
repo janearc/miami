@@ -7,8 +7,8 @@ import (
 	"miami/raster"
 )
 
-// Palm is the palm: six fronds with a quadratic bend, because ten merged into
-// a solid T and a linear droop read as a spider on a stick.
+// Palm is the palm: six fronds with a quadratic bend, because ten merged into a
+// solid T and a linear droop read as a spider on a stick.
 func Palm() *raster.Scene {
 	// leans left, so it frames the left edge of the composite and arches
 	// away from the subject rather than into it.

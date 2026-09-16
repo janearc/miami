@@ -340,6 +340,9 @@ func main() {
 			proof.NewCellImageOn(proof.Mono(), 9, 18, color.RGBA{16, 14, 24, 255}).Draw(cs)))
 		fmt.Printf("dist/%s.ansi  %d cols x %d rows\n", name, cols, rows)
 		return
+	case "bench":
+		bench(os.Args[2:])
+		return
 	case "clock":
 		clock(os.Args[2:])
 		return
@@ -372,14 +375,14 @@ func main() {
 					// in it was already chosen by the
 					// colourway
 					Shade: map[byte]byte{'V': 'K', 'K': 'D'}},
-				// the lamp: high, and behind the ball as
-				// well as above it, so its shadow is
-				// thrown toward the viewer.
+				// the lamp: high, and behind the ball as well
+				// as above it, so its shadow is thrown toward
+				// the viewer.
 				//
-				// with the lamp in front, every shadow
-				// fell away from the camera and hid
-				// behind the thing casting it.
-				Light: view.Vec{X: -1.2, Y: 3.0, Z: 1.6},
+				// with the lamp in front, every shadow fell
+				// away from the camera and hid behind the thing
+				// casting it.
+				Lights: []view.Light{{At: view.Vec{X: -1.2, Y: 3.0, Z: 1.6}}},
 				Ball: view.Ball{
 					At: view.Vec{
 						X: 1.30 * math.Sin(2*math.Pi*e),

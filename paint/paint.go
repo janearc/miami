@@ -122,3 +122,28 @@ func HueApart(a, b color.RGBA) float64 {
 	}
 	return d
 }
+
+// Hex is a hex colour as a terminal colour. Six digits, no hash.
+func Hex(s string) color.RGBA {
+	var v [3]uint8
+	for i := 0; i < len(s) && i < 6; i++ {
+		d := byte(0)
+		switch c := s[i]; {
+		case c >= '0' && c <= '9':
+			d = c - '0'
+		case c >= 'a' && c <= 'f':
+			d = c - 'a' + 10
+		case c >= 'A' && c <= 'F':
+			d = c - 'A' + 10
+		}
+		v[i/2] = v[i/2]<<4 | d
+	}
+	return color.RGBA{v[0], v[1], v[2], 255}
+}
+
+// Blend is two hex colours mixed in oklab, which is the library's own line
+// between two colours and the reason a gold-to-blue run does not go through
+// mud on the way.
+func Blend(a, b string, t float64) color.RGBA {
+	return Lerp(Hex(a), Hex(b), t)
+}

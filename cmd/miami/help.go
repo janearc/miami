@@ -50,6 +50,7 @@ var verbs = []verb{
 	{"sunsetanim", "[cols rows n]", "the same with its effect layers running"},
 	{"anim", "[dir]", "rebuild every sprite animation, from the stencils"},
 	{"clock", "[cols rows fps]", "a vaporwave clock, generated as it is shown"},
+	{"bench", "", "what a size costs, and which ceiling it hits first"},
 	{"play", "<file.frames> [loop]", "play a frames file to this terminal"},
 	{"check", "<file>", "say what a document holds and what is wrong with it"},
 	{"docs", "[page] [--png|--go]", "the documentation, painted; --png so an agent can see it"},

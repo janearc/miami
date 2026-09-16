@@ -44,6 +44,31 @@ type Eye struct {
 	At   Vec     // where the viewer is
 	Lens float64 // picture-plane units across the sheet; smaller is longer lens
 	Near float64 // anything closer than this is behind the viewer
+	// Yaw and Pitch turn the view, in radians. Pitch is positive looking
+	// up. Only the ray tracer reads them: a billboard has nothing to
+	// rotate, and a sprite drawn from eight sides would need its poses
+	// re-picked, which is a different job.
+	Yaw, Pitch float64
+}
+
+// Aim turns a ray direction by the eye's yaw and pitch. Pitch first, about the
+// horizontal axis, then yaw about the vertical: the other order rolls the
+// horizon, which is the one thing a level camera must not do.
+func (e Eye) Aim(d Vec) Vec {
+	cp, sp := math.Cos(e.Pitch), math.Sin(e.Pitch)
+	d = Vec{d.X, d.Y*cp - d.Z*sp, d.Y*sp + d.Z*cp}
+	cy, sy := math.Cos(e.Yaw), math.Sin(e.Yaw)
+	return Vec{d.X*cy + d.Z*sy, d.Y, -d.X*sy + d.Z*cy}
+}
+
+// HorizonV is where the horizon falls on the sheet, nought at the top and one
+// at the bottom, for a sheet of the given aspect.
+//
+// The sky is painted in sheet coordinates and the floor is traced in world
+// ones, so the two have to be told the same thing or the painted horizon and
+// the traced one part company the moment the camera tips.
+func (e Eye) HorizonV(aspect float64) float64 {
+	return 0.5 + math.Tan(e.Pitch)/math.Max(1e-6, aspect)
 }
 
 // DefaultEye is a sensible camera for a scene a few units deep.

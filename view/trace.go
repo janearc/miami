@@ -105,7 +105,15 @@ type Floor struct {
 	Shade map[byte]byte
 }
 
-// Shadowed is the role a floor square takes when the light cannot reach it.
+// Light is a lamp, or the sun. Off is not the same as far away: a sun below the
+// horizon reaches nothing, and counting it as blocked everywhere is what makes
+// the floor go one step darker at night without a second rule for it.
+type Light struct {
+	At  Vec
+	Off bool
+}
+
+// Shadowed is the role a floor square takes when one light cannot reach it.
 //
 // A remap and not a darkening. The alphabet has no midpoint between two roles
 // and inventing one would put the shadow outside whatever the colourway chose;
@@ -120,15 +128,31 @@ func (f Floor) Shadowed(role byte) byte {
 	return role
 }
 
+// Darken steps a role down once for every light that cannot reach it.
+//
+// This is what a second light costs, and it is not a bigger boolean. With one
+// lamp a point is lit or it is not; with two it is lit by both, by one, or by
+// neither, and the middle case has to look different from the other two or the
+// second light might as well not be there.
+//
+// Stepping the role down once per blocked light gives three depths out of the
+// ladder a colourway already binds, and the shadows cross where they overlap.
+func (f Floor) Darken(role byte, blocked int) byte {
+	for i := 0; i < blocked; i++ {
+		role = f.Shadowed(role)
+	}
+	return role
+}
+
 // Lit is a scene a ray tracer can answer questions about: one ball, one floor,
 // one light. Deliberately not a general scene graph -- this is the smallest
 // arrangement in which a shadow means anything, and the shape of the code does
 // not change when there are nine balls.
 type Lit struct {
-	Ball  Ball
-	Floor Floor
-	Light Vec // where the lamp is, in world units
-	Eye   Eye
+	Ball   Ball
+	Floor  Floor
+	Lights []Light
+	Eye    Eye
 }
 
 // Trace renders a frame of roles by casting rays.
@@ -153,7 +177,8 @@ func (s Lit) Trace(t time.Duration, cols, rows int) sprite.Frame {
 		py := (0.5 - (float64(y)+0.5)/float64(h)) * aspect
 		for x := 0; x < w; x++ {
 			px := (float64(x)+0.5)/float64(w) - 0.5
-			eye := Ray{At: s.Eye.At, Dir: Vec{px / lens, py / lens, 1}}
+			eye := Ray{At: s.Eye.At,
+				Dir: s.Eye.Aim(Vec{px / lens, py / lens, 1})}
 
 			tb, hitBall := HitSphere(eye, ballAt, s.Ball.Radius, 1e-4, math.Inf(1))
 			tf, hitFloor := HitPlane(eye, s.Floor.Y, 1e-4, math.Inf(1))
@@ -174,15 +199,23 @@ func (s Lit) Trace(t time.Duration, cols, rows int) sprite.Frame {
 					int(math.Floor(p.Z/s.Floor.Tile)))&1 == 0 {
 					role = s.Floor.B
 				}
-				// the shadow ray. it stops at the light rather
-				// than running on for ever: something behind
-				// the lamp is not in the way.
-				toLight := sub(s.Light, p)
-				if _, blocked := HitSphere(
-					Ray{At: p, Dir: toLight}, ballAt, s.Ball.Radius, 1e-3, 1); blocked {
-					role = s.Floor.Shadowed(role)
+				// one shadow ray per light. each stops at its
+				// own light rather than running on for ever:
+				// something behind a lamp is not in the way of
+				// it.
+				blocked := 0
+				for _, l := range s.Lights {
+					if l.Off {
+						blocked++
+						continue
+					}
+					if _, hit := HitSphere(
+						Ray{At: p, Dir: sub(l.At, p)},
+						ballAt, s.Ball.Radius, 1e-3, 1); hit {
+						blocked++
+					}
 				}
-				row[x] = role
+				row[x] = s.Floor.Darken(role, blocked)
 
 			default:
 				row[x] = '.' // the sky, which is the terminal's own background
