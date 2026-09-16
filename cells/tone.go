@@ -8,12 +8,13 @@ import (
 
 // Tone renders a picture with no colour at all, for documents that ship as
 // plain text: shade characters carry fills and quadrant blocks carry edges,
-// which is how nfo art held an image together in one colour. every glyph used
-// here is in the block elements range, so it survives fonts that lack the
-// sextants the colour render depends on.
+// which is how nfo art held an image together in one colour.
 //
-// lit subcells are INK, and ink is drawn light: this assumes a dark
-// background, as a terminal usually is. on a light page it reads inverted.
+// every glyph used here is in the block elements range, so it survives fonts
+// that lack the sextants the colour render depends on.
+//
+// lit subcells are INK, and ink is drawn light: this assumes a dark background,
+// as a terminal usually is. on a light page it reads inverted.
 
 var shades = []struct {
 	g rune
@@ -54,12 +55,14 @@ func Lightness(rgb [][]color.RGBA) [][]float64 {
 // call. without it the edges of letters picked up half-tone ghost shadows.
 const shadeCost = 0.06
 
-// Tone folds a 2 by subH field of lightness into one glyph per cell. with
-// subH 3 each cell is fitted with an exact sextant mask, so a letter edge that
-// is two lit subcells and four dark is drawn as exactly that; folding three
-// subrows into two quadrant rows averaged those edges into grey shades, which
-// is what ghosted every letter in the first plain text render. subH 2 is the
-// quadrant fallback for fonts without sextants.
+// Tone folds a 2 by subH field of lightness into one glyph per cell.
+//
+// with subH 3 each cell is fitted with an exact sextant mask, so a letter edge
+// that is two lit subcells and four dark is drawn as exactly that; folding
+// three subrows into two quadrant rows averaged those edges into grey shades,
+// which is what ghosted every letter in the first plain text render.
+//
+// subH 2 is the quadrant fallback for fonts without sextants.
 func Tone(field [][]float64, subH int) [][]rune {
 	n := 2 * subH
 	glyph := sextant

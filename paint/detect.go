@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-// which ground a picture is being drawn on. the terminal can be asked -- OSC
-// 11 -- but that needs the tty in raw mode, and nothing here has a tty when it
+// which ground a picture is being drawn on. the terminal can be asked -- OSC 11
+// -- but that needs the tty in raw mode, and nothing here has a tty when it
 // renders to a file, so the answer comes from what the caller says, then from
 // what the shell was told, and only then from a default.
 
@@ -33,7 +33,8 @@ func DetectGround(want string) Ground {
 			return Ground{C: color.RGBA{uint8(v >> 16), uint8(v >> 8), uint8(v), 255}}
 		}
 	}
-	// COLORFGBG is "fg;bg" in terminal colour numbers; 0 to 6 and 8 are dark
+	// COLORFGBG is "fg;bg" in terminal colour numbers; 0 to 6 and 8 are
+	// dark
 	if v := os.Getenv("COLORFGBG"); v != "" {
 		parts := strings.Split(v, ";")
 		if n, err := strconv.Atoi(parts[len(parts)-1]); err == nil {

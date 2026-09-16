@@ -9,12 +9,13 @@ import (
 
 // A cassowary, from geometry rather than from a photograph.
 //
-// There is no photograph of one in this tree, and that turns out to be no
-// loss: a cassowary is almost all silhouette. Three things say cassowary and
-// nothing else says it -- the casque standing up off the skull like a blade,
-// the bare blue neck, and the two red wattles hanging at the throat. Get those
-// and the bird reads at any size; miss the casque and it is a large dark bird
-// of no particular kind.
+// There is no photograph of one in this tree, and that turns out to be no loss:
+// a cassowary is almost all silhouette. Three things say cassowary and nothing
+// else says it -- the casque standing up off the skull like a blade, the bare
+// blue neck, and the two red wattles hanging at the throat.
+//
+// Get those and the bird reads at any size; miss the casque and it is a large
+// dark bird of no particular kind.
 //
 // So it is drawn as a head and neck rather than a whole animal. At seventeen
 // rows the whole bird would put the casque at two rows tall, which is the one
@@ -28,16 +29,18 @@ func Cassowary() *raster.Scene {
 	at := func(x, y float64) geom.Vec { return geom.Vec{X: x, Y: y} }
 
 	// the head fills the frame and the neck only enters at the bottom. at
-	// seventeen rows every feature is worth three or four of them, so a whole
-	// bird would spend the casque -- the one thing that identifies it -- on
-	// two rows of tan. so: a portrait.
+	// seventeen rows every feature is worth three or four of them, so a
+	// whole bird would spend the casque -- the one thing that identifies it
+	// -- on two rows of tan. so: a portrait.
 	skull := geom.Ellipse{C: at(34.0, 20.6), Rx: 7.8, Ry: 7.0, Rot: -10}
 
-	// the casque: a narrow plate standing up off the crown and leaning back,
-	// as tall as the skull again. an early version made it round and as wide
-	// as the head, which turns a cassowary into a duck.
-	// the base sits on the crown and no lower. dipped into the skull it eats
-	// the blue face, and a cassowary without a blue face is a helmet.
+	// the casque: a narrow plate standing up off the crown and leaning
+	// back, as tall as the skull again. an early version made it round and
+	// as wide as the head, which turns a cassowary into a duck. the base
+	// sits on the crown and no lower.
+	//
+	// dipped into the skull it eats the blue face, and a cassowary without
+	// a blue face is a helmet.
 	casque := geom.Poly{P: geom.Pts(
 		at(30.2, 14.6), at(31.0, 8.0), at(32.8, 2.4), at(36.2, 1.6),
 		at(39.4, 3.8), at(40.4, 8.8), at(39.6, 13.2), at(38.0, 15.0),
@@ -67,8 +70,8 @@ func Cassowary() *raster.Scene {
 	// the nape: the back of the neck goes violet where the blue runs out
 	nape := geom.Intersect(neck, geom.HalfPlane{C: at(36.4, 0), N: geom.Vec{X: -1}})
 
-	// the body, only suggested: a dark shoulder at the corner, so the neck is
-	// attached to something
+	// the body, only suggested: a dark shoulder at the corner, so the neck
+	// is attached to something
 	body := geom.Ellipse{C: at(48, 52), Rx: 20, Ry: 13, Rot: -16}
 
 	sc := &raster.Scene{W: w, H: h}

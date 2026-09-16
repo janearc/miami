@@ -3,31 +3,34 @@
 // The sprite is daffy's: libdaffy-sprite owns the format, the frame type and
 // the reader, and nothing here redefines any of them. A Frame is rows of role
 // characters and how long they hold, and that is the currency throughout.
-// What this package adds is the half daffy does not do, because daffy
-// converges on stillness: turning one frame into a run of them.
 //
-// Every operator here is a function on a frame. There is no scene graph, no
-// timeline object and no animation type, because a sprite traced from a
-// photograph has no model underneath to re-pose -- there is a grid of role
-// characters and nothing else, so the only honest vocabulary is operations on
-// that grid. Two kinds earn their place:
+// What this package adds is the half daffy does not do, because daffy converges
+// on stillness: turning one frame into a run of them.
+//
+// Every operator here is a function on a frame.
+//
+// There is no scene graph, no timeline object and no animation type, because a
+// sprite traced from a photograph has no model underneath to re-pose -- there
+// is a grid of role characters and nothing else, so the only honest vocabulary
+// is operations on that grid. Two kinds earn their place:
 //
 //	Warp   an inverse-mapped resample of a region. rotate a wing about a
-//	       shoulder, pass a wave down a body, shift a foot. supersampled and
-//	       majority-voted per pixel, the same way a cell is decided, because a
-//	       nearest-neighbour rotation of a one-pixel feather tears it into
-//	       dashes.
+//	       shoulder, pass a wave down a body, shift a foot. supersampled
+//	       and majority-voted per pixel, the same way a cell is decided,
+//	       because a nearest-neighbour rotation of a one-pixel feather
+//	       tears it into dashes.
 //	Role   an edit addressed by what a pixel is, never by where it is. Blink
 //	       closes whatever the pupil and eye-ring roles cover; a stencil
 //	       carrying no eye gets no blink and no error.
 //
 // One warning worth putting at the top, because it cost a rebuild to find: a
 // warp that is not an exact whole-pixel translation runs the stencil through
-// the resampler. Smooth masses survive it. A dither does not -- a kingfisher's
-// crown of gold speckle on slate turns to mud under a five-degree rotation,
-// and next to an unrotated frame the texture visibly pops. Integer
-// translations resolve to exactly one source pixel per subsample and are
-// lossless; prefer them wherever the stencil is textured.
+// the resampler. Smooth masses survive it.
+//
+// A dither does not -- a kingfisher's crown of gold speckle on slate turns to
+// mud under a five-degree rotation, and next to an unrotated frame the texture
+// visibly pops. Integer translations resolve to exactly one source pixel per
+// subsample and are lossless; prefer them wherever the stencil is textured.
 package motion
 
 import (
@@ -47,9 +50,9 @@ const None = '.'
 // Map is an inverse map: where an output pixel reads from.
 type Map func(x, y float64) (float64, float64)
 
-// Mask says which output pixels an operation owns. Pixels it does not own
-// keep their source value, which is how one warp moves a wing and leaves the
-// body alone.
+// Mask says which output pixels an operation owns. Pixels it does not own keep
+// their source value, which is how one warp moves a wing and leaves the body
+// alone.
 type Mask func(x, y int) bool
 
 // All owns every pixel.
@@ -84,17 +87,17 @@ func Above(y int) Mask { return func(_, py int) bool { return py <= y } }
 // Warp resamples a region through an inverse map.
 //
 // Cover is the share of subsamples that must land on ink before the output
-// pixel is ink at all, and it is the one knob that matters: too high and a
-// thin feather dissolves into speckle, too low and the silhouette grows a
-// fringe. Sub is the supersampling; three is enough at these sizes.
+// pixel is ink at all, and it is the one knob that matters: too high and a thin
+// feather dissolves into speckle, too low and the silhouette grows a fringe.
+// Sub is the supersampling; three is enough at these sizes.
 type WarpOpts struct {
 	Cover float64 // default 0.34
 	Sub   int     // default 3
 }
 
-// Warp is the resample. The vote is by role, so a rotated pixel takes the
-// role most of its subsamples saw rather than an average of two roles, which
-// in an alphabet has no meaning.
+// Warp is the resample. The vote is by role, so a rotated pixel takes the role
+// most of its subsamples saw rather than an average of two roles, which in an
+// alphabet has no meaning.
 func Warp(f sprite.Frame, inv Map, owns Mask, o ...WarpOpts) sprite.Frame {
 	opt := WarpOpts{Cover: 0.34, Sub: 3}
 	if len(o) > 0 {
@@ -136,11 +139,14 @@ func Warp(f sprite.Frame, inv Map, owns Mask, o ...WarpOpts) sprite.Frame {
 					votes[c]++
 				}
 			}
-			// ties go to the role seen first, scanning the subsamples in
-			// order. two roles with equal support is a genuine coin toss, so
-			// what matters is not which rule but that there is one: an
-			// unstated tie-break makes a resample depend on iteration order
-			// and the same input stops giving the same bytes.
+			// ties go to the role seen first, scanning the
+			// subsamples in order. two roles with equal support is
+			// a genuine coin toss, so what matters is not which
+			// rule but that there is one:
+			//
+			// an unstated tie-break makes a resample depend on
+			// iteration order and the same input stops giving the
+			// same bytes.
 			best, bestN := byte(None), 0
 			for _, c := range seen {
 				if votes[c] > bestN {
@@ -168,8 +174,8 @@ func At(f sprite.Frame, x, y int) byte {
 }
 
 // Translate moves by a fixed offset. With whole-number arguments it is
-// lossless: every subsample of an output pixel rounds to the same source
-// pixel, so a dithered stencil comes through untouched.
+// lossless: every subsample of an output pixel rounds to the same source pixel,
+// so a dithered stencil comes through untouched.
 func Translate(dx, dy float64) Map {
 	return func(x, y float64) (float64, float64) { return x - dx, y - dy }
 }
@@ -192,10 +198,10 @@ func Rotate(cx, cy, deg, sx, sy float64) Map {
 	}
 }
 
-// Bend is a rotation whose angle grows with distance from the pivot, so the
-// tip turns further than the shoulder. A wing is not a plank: the hand lags
-// the arm through the stroke, and that lag is most of what separates a
-// wingbeat from a windmill.
+// Bend is a rotation whose angle grows with distance from the pivot, so the tip
+// turns further than the shoulder. A wing is not a plank: the hand lags the arm
+// through the stroke, and that lag is most of what separates a wingbeat from a
+// windmill.
 //
 // It inverts exactly, which is the only reason it is affordable. A rotation
 // preserves radius, so the angle to undo at an output point is the same angle
@@ -282,8 +288,8 @@ func Pad(f sprite.Frame, top, bottom, left, right int) sprite.Frame {
 type Pt struct{ X, Y int }
 
 // Components is the four-connected runs of ink, largest first. A cricket ball
-// is the only thing in its frame not touching the fielder, which is how a
-// catch gets animated without anybody naming a pixel.
+// is the only thing in its frame not touching the fielder, which is how a catch
+// gets animated without anybody naming a pixel.
 func Components(f sprite.Frame) [][]Pt {
 	h, w := f.Height(), f.Width()
 	seen := make([][]bool, h)
@@ -374,10 +380,11 @@ func Stamp(f sprite.Frame, p Piece, dx, dy int) sprite.Frame {
 // the top down, filling with whatever role surrounds the eye.
 //
 // No subject is named. The eye is wherever those roles are, which is the whole
-// point of having an alphabet: one cadence drives any stencil that carries an
-// eye, and a stencil that carries none is returned unchanged rather than
-// erroring, because a library of effects that refuses half its objects is
-// unusable.
+// point of having an alphabet:
+//
+// one cadence drives any stencil that carries an eye, and a stencil that
+// carries none is returned unchanged rather than erroring, because a library of
+// effects that refuses half its objects is unusable.
 func Blink(f sprite.Frame, shut float64, eye, crease string) sprite.Frame {
 	if eye == "" {
 		eye = "EX"
@@ -423,11 +430,12 @@ func Blink(f sprite.Frame, shut float64, eye, crease string) sprite.Frame {
 	if fillN == 0 {
 		return f
 	}
-	// do not introduce a role the stencil does not already use: a sprite's set
-	// of roles is what a colourway has to bind, and a lid is not worth adding
-	// a twelfth colour for. if the crease role is absent, the rarest role
-	// around the eye stands in, which on a puffin's white face is the dark of
-	// the eye patch.
+	// do not introduce a role the stencil does not already use: a sprite's
+	// set of roles is what a colourway has to bind, and a lid is not worth
+	// adding a twelfth colour for.
+	//
+	// if the crease role is absent, the rarest role around the eye stands
+	// in, which on a puffin's white face is the dark of the eye patch.
 	if !strings.ContainsRune(strings.Join(f.Art, ""), rune(crease[0])) {
 		rarest, rarestN := byte(0), 1<<30
 		for c, n := range count {
@@ -472,8 +480,10 @@ func Blink(f sprite.Frame, shut float64, eye, crease string) sprite.Frame {
 // A .sprite is not quite a stream: the stream grammar wants a "frame" line
 // before its art and a .sprite has none, so daffy's reader refuses one with
 // "art before any frame line". That is the same refusal that stops the player
-// opening a .sprite directly. Rather than write a second reader for a format
-// daffy owns, the missing line is supplied on the way in.
+// opening a .sprite directly.
+//
+// Rather than write a second reader for a format daffy owns, the missing line
+// is supplied on the way in.
 func ReadSprite(path string) (sprite.Frame, error) {
 	src, err := os.ReadFile(path)
 	if err != nil {
@@ -494,8 +504,9 @@ func ReadSprite(path string) (sprite.Frame, error) {
 	if err != nil {
 		return sprite.Frame{}, fmt.Errorf("%s: %w", path, err)
 	}
-	// a .sprite's rows may be ragged where trailing transparency was trimmed;
-	// every operator here indexes by column, so square it up once, on the way in
+	// a .sprite's rows may be ragged where trailing transparency was
+	// trimmed; every operator here indexes by column, so square it up once,
+	// on the way in
 	w := 0
 	for _, r := range f.Art {
 		w = max(w, len(r))
@@ -549,6 +560,7 @@ func WriteStreamFile(path, name, note string, frames []sprite.Frame) error {
 	return fh.Close()
 }
 
+// hold is a duration as a stream writes it, seconds when it divides evenly.
 func hold(d time.Duration) string {
 	if d == 0 {
 		d = 100 * time.Millisecond
@@ -559,6 +571,8 @@ func hold(d time.Duration) string {
 	return fmt.Sprintf("%dms", int(d/time.Millisecond))
 }
 
+// sameArt reports whether two frames hold the same picture, ignoring how long
+// each one is shown.
 func sameArt(a, b sprite.Frame) bool {
 	if len(a.Art) != len(b.Art) {
 		return false
@@ -577,6 +591,8 @@ func Hold(f sprite.Frame, ms int) sprite.Frame {
 	return f
 }
 
+// hasFrameLine reports whether a file already declares a frame, which is what
+// separates a stream from a bare sprite.
 func hasFrameLine(s string) bool {
 	for _, l := range strings.Split(s, "\n") {
 		if t := strings.TrimSpace(l); t == "frame" || strings.HasPrefix(t, "frame ") {

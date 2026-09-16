@@ -14,11 +14,12 @@ const made = "../sprites/made/"
 
 // The streams in sprites/made are golden. They were first produced by a
 // throwaway python pipeline and then this library was written to replace it;
-// the only test that a port is a port is that it emits the same bytes, so
-// that is the test. It also holds the library honest afterwards: the vote
-// tie-break, the alpha quantisation and the blink's fill role are all choices
-// with no single right answer, and this is what stops one of them drifting
-// silently the next time somebody tidies a loop.
+// the only test that a port is a port is that it emits the same bytes, so that
+// is the test. It also holds the library honest afterwards:
+//
+// the vote tie-break, the alpha quantisation and the blink's fill role are all
+// choices with no single right answer, and this is what stops one of them
+// drifting silently the next time somebody tidies a loop.
 func TestStreamsMatchGolden(t *testing.T) {
 	runs, err := Animations(made)
 	if err != nil {

@@ -11,6 +11,7 @@ type Stop struct {
 	C  color.RGBA
 }
 
+// Lerp is two colours mixed, t of the way from the first to the second.
 func Lerp(a, b color.RGBA, t float64) color.RGBA {
 	if t < 0 {
 		t = 0
@@ -22,6 +23,7 @@ func Lerp(a, b color.RGBA, t float64) color.RGBA {
 	return color.RGBA{f(a.R, b.R), f(a.G, b.G), f(a.B, b.B), 255}
 }
 
+// Ramp is the colour t of the way along a run of stops.
 func Ramp(stops []Stop, t float64) color.RGBA {
 	if t <= stops[0].At {
 		return stops[0].C
@@ -43,8 +45,8 @@ func Radial(cx, cy, r float64, stops []Stop) func(x, y float64) color.RGBA {
 	}
 }
 
-// Screen lays light over a colour: it brightens darks far more than lights
-// and can never exceed white, which is how glow behaves on a real surface.
+// Screen lays light over a colour: it brightens darks far more than lights and
+// can never exceed white, which is how glow behaves on a real surface.
 func Screen(c, light color.RGBA, amount float64) color.RGBA {
 	if amount <= 0 {
 		return c

@@ -13,23 +13,24 @@ import (
 // The animations, as library calls.
 //
 // What is per-subject is never the effect -- it is the rig. Where the shoulder
-// is, which columns are the near leg, which way the fluke points. The
-// operators in motion and effect name roles and extents and would run on any
-// of these stencils; everything specific to one bird lives in its function
+// is, which columns are the near leg, which way the fluke points.
+//
+// The operators in motion and effect name roles and extents and would run on
+// any of these stencils; everything specific to one bird lives in its function
 // here, and nowhere else.
 //
 // Each subject gets the one motion its photograph will support. A head study
-// blinks because there is nothing else in frame to move; a bird caught with
-// its wings spread can fly; a ball sitting off on its own can be caught. None
-// of them pretend to a motion the stencil cannot carry.
+// blinks because there is nothing else in frame to move; a bird caught with its
+// wings spread can fly; a ball sitting off on its own can be caught. None of
+// them pretend to a motion the stencil cannot carry.
 
 type run struct {
 	name, note string
 	frames     []sprite.Frame
 }
 
-// Animations builds every stream. Returning them rather than writing them
-// keeps the command in charge of where they land.
+// Animations builds every stream. Returning them rather than writing them keeps
+// the command in charge of where they land.
 func Animations(made string) ([]run, error) {
 	var out []run
 	for _, fn := range []func(string) (run, error){
@@ -46,8 +47,8 @@ func Animations(made string) ([]run, error) {
 }
 
 // blinkCadence is uneven on purpose: a metronome reads as a fault in the
-// terminal, a bird does not. A bird holds its eye open for seconds, shuts it
-// in under a fifth of one, and often blinks twice.
+// terminal, a bird does not. A bird holds its eye open for seconds, shuts it in
+// under a fifth of one, and often blinks twice.
 var blinkCadence = []struct {
 	shut float64
 	ms   int
@@ -56,6 +57,8 @@ var blinkCadence = []struct {
 	{0, 1100}, {0.5, 55}, {1, 70}, {0.5, 55}, {0, 1700},
 }
 
+// puffinBlink is the blink, and nothing else: a head study has no limb in
+// frame.
 func puffinBlink(made string) (run, error) {
 	base, err := motion.ReadSprite(made + "puffin.sprite")
 	if err != nil {
@@ -71,14 +74,16 @@ func puffinBlink(made string) (run, error) {
 # purpose: a metronome reads as a fault in the terminal, a bird does not.`, fs}, nil
 }
 
+// kingfisherHunt is a bob and a blink, the bob on whole pixels because the
+// crown is a dither and a resample turns it to mud.
 func kingfisherHunt(made string) (run, error) {
-	// room below only: the crown is cropped by the top of the photograph, so
-	// headroom above it would leave the bird floating in its own frame.
+	// room below only: the crown is cropped by the top of the photograph,
+	// so headroom above it would leave the bird floating in its own frame.
 	//
-	// the bob is a whole-pixel translation and it has to be. this crown is a
-	// dense dither of gold on slate, and rotating it even five degrees runs it
-	// through the resampler and turns the speckle to mud -- next to an
-	// unrotated frame the texture visibly pops.
+	// the bob is a whole-pixel translation and it has to be. this crown is
+	// a dense dither of gold on slate, and rotating it even five degrees
+	// runs it through the resampler and turns the speckle to mud -- next to
+	// an unrotated frame the texture visibly pops.
 	src, err := motion.ReadSprite(made + "kingfisher.sprite")
 	if err != nil {
 		return run{}, err
@@ -111,12 +116,15 @@ func kingfisherHunt(made string) (run, error) {
 # resampler and turns the speckle to mud.`, fs}, nil
 }
 
+// starlingFlight is the wingbeat, articulated from the traced photograph.
 func starlingFlight(made string) (run, error) {
-	// the photograph caught it head-on with both wings fully spread, which is
-	// the one pose a wingbeat can be built from. three things make it read:
-	// the wings mirror rather than scissor; the span foreshortens at the top
-	// and bottom of the stroke, because a wing at the extremes points partly
-	// at the viewer; and the tip turns further than the shoulder.
+	// the photograph caught it head-on with both wings fully spread, which
+	// is the one pose a wingbeat can be built from. three things make it
+	// read:
+	//
+	// the wings mirror rather than scissor; the span foreshortens at the
+	// top and bottom of the stroke, because a wing at the extremes points
+	// partly at the viewer; and the tip turns further than the shoulder.
 	src, err := motion.ReadSprite(made + "starling.sprite")
 	if err != nil {
 		return run{}, err
@@ -140,14 +148,16 @@ func starlingFlight(made string) (run, error) {
 			motion.Layer{Frame: motion.Warp(base, motion.Bend(lpx, lpy, deg, span, 1.6, sx), lw, opt), Owns: lw},
 			motion.Layer{Frame: motion.Warp(base, motion.Bend(rpx, rpy, -deg, span, 1.6, sx), rw, opt), Owns: rw})
 		if dy != 0 {
-			// the whole bird rises, not just its torso: translating only the
-			// body columns opens a seam where they meet the wings
+			// the whole bird rises, not just its torso: translating
+			// only the body columns opens a seam where they meet
+			// the wings
 			g = motion.Warp(g, motion.Translate(0, float64(dy)), motion.All, opt)
 		}
 		return g
 	}
-	// the body runs against the wings: lift is made on the downstroke, so the
-	// bird sits lowest with its wings raised. the downstroke holds longest.
+	// the body runs against the wings: lift is made on the downstroke, so
+	// the bird sits lowest with its wings raised. the downstroke holds
+	// longest.
 	beat := []struct {
 		deg float64
 		dy  int
@@ -166,11 +176,12 @@ func starlingFlight(made string) (run, error) {
 # holds longest; the recovery is quick and unloaded.`, fs}, nil
 }
 
+// daffyWalk is a waddle, read entirely from the ankles down.
 func daffyWalk(made string) (run, error) {
 	// two feet and no bird above them, so the motion has to be a walk read
-	// entirely from the ankles down. no padding above: the legs are cropped by
-	// the top of the frame in the photograph, so a lifted leg must slide off
-	// that edge.
+	// entirely from the ankles down. no padding above: the legs are cropped
+	// by the top of the frame in the photograph, so a lifted leg must slide
+	// off that edge.
 	//
 	// the feet are one connected mass -- their inner toes touch at a single
 	// pixel -- so the seam goes through that pixel and nowhere else. cut a
@@ -206,11 +217,12 @@ func daffyWalk(made string) (run, error) {
 # foot travels up and a little forward, then slaps down flat.`, fs}, nil
 }
 
+// gameCatch is the ball flying into the glove: the one loose component.
 func gameCatch(made string) (run, error) {
-	// the ball is the only thing in the frame not attached to the fielder, so
-	// the grid hands it over as its own component and the picture turns into
-	// the thing it was always about: a catch. the traced position is one frame
-	// of the flight, not the start of it.
+	// the ball is the only thing in the frame not attached to the fielder,
+	// so the grid hands it over as its own component and the picture turns
+	// into the thing it was always about: a catch. the traced position is
+	// one frame of the flight, not the start of it.
 	src, err := motion.ReadSprite(made + "game.sprite")
 	if err != nil {
 		return run{}, err
@@ -240,11 +252,12 @@ func gameCatch(made string) (run, error) {
 # the whole of the impact and is enough.`, fs}, nil
 }
 
+// dolphinsSwim is a wave travelling down each body.
 func dolphinsSwim(made string) (run, error) {
 	// a dolphin does not flap its tail, it passes a wave down its body. the
 	// amplitude grows from a head that barely moves to a fluke that moves a
-	// lot, and because the two animals sit at different points along the same
-	// wave they come out of step with each other for free.
+	// lot, and because the two animals sit at different points along the
+	// same wave they come out of step with each other for free.
 	src, err := motion.ReadSprite(made + "dolphins.sprite")
 	if err != nil {
 		return run{}, err
@@ -265,11 +278,12 @@ func dolphinsSwim(made string) (run, error) {
 # so they fall out of step with each other without being told to.`, fs}, nil
 }
 
-// Lit builds the light work: two still objects, two effects, and every
-// pairing. The bulb stencil is emitted cold from miami's own geometry and
-// never edited again; the word is set once by the typesetter and never edited
-// again; the halo and the sweep are written once each. Lighting the bulb costs
-// a line. Lighting the word costs the same line.
+// Lit builds the light work: two still objects, two effects, and every pairing.
+// The bulb stencil is emitted cold from miami's own geometry and never edited
+// again; the word is set once by the typesetter and never edited again; the
+// halo and the sweep are written once each. Lighting the bulb costs a line.
+//
+// Lighting the word costs the same line.
 func Lit(made, css string) ([]run, error) {
 	L, err := effect.Lightness(css)
 	if err != nil {
@@ -296,9 +310,9 @@ func Lit(made, css string) ([]run, error) {
 			Radius: 9, Gain: gain, Rays: 12, RayGain: 0.55 * gain,
 			RayReach: 0.30, RayInner: 1.25, RayTurn: 0.35})
 	}
-	// a bulb on an old sign does not come on, it catches. two failed strikes,
-	// then the filament takes and floods past where it settles, then it sits
-	// and breathes on the mains.
+	// a bulb on an old sign does not come on, it catches. two failed
+	// strikes, then the filament takes and floods past where it settles,
+	// then it sits and breathes on the mains.
 	cadence := []struct {
 		gain float64
 		ms   int
@@ -322,8 +336,8 @@ func Lit(made, css string) ([]run, error) {
 		if k == 18 {
 			at, ms = 2.0, 900 // dark, and a pause before it runs again
 		}
-		// clipped to the letters: a sweep is a highlight on a surface, and the
-		// night behind the sign has no surface to catch it
+		// clipped to the letters: a sweep is a highlight on a surface,
+		// and the night behind the sign has no surface to catch it
 		a := motion.Hold(effect.ClipTo(effect.Sweep(ww, wh, -62, 0.16, 0.30, at, 1.15), word, "K", 0), ms)
 		wordFx = append(wordFx, a)
 		wordLit = append(wordLit, motion.Hold(effect.Composite(word, a, L, 1, 0, 0), ms))
@@ -340,10 +354,10 @@ func Lit(made, css string) ([]run, error) {
 	}
 	wordBig := motion.Pad(wordSrc, 8, 8, 8, 8)
 	var wordGlow []sprite.Frame
-	// the word has no filament, so the halo is told to come out of the letters
-	// themselves: same effect, a different role named at the call site. the one
-	// knob that has to move is extent -- at the bulb's nine pixels the glow
-	// fills the counters and the word becomes a lozenge.
+	// the word has no filament, so the halo is told to come out of the
+	// letters themselves: same effect, a different role named at the call
+	// site. the one knob that has to move is extent -- at the bulb's nine
+	// pixels the glow fills the counters and the word becomes a lozenge.
 	for _, g := range []float64{0.30, 0.55, 0.80, 1.00, 0.80, 0.55} {
 		a := effect.Glow(wordBig, effect.GlowOpts{Source: "K", Radius: 2.6, Gain: g})
 		wordGlow = append(wordGlow, motion.Hold(effect.Composite(wordBig, a, L, 1, 0, 0), 150))
@@ -370,6 +384,7 @@ func Lit(made, css string) ([]run, error) {
 	}, nil
 }
 
+// bbox is the extent of a role in a frame.
 func bbox(f sprite.Frame, role byte) (x0, y0, x1, y1 int) {
 	x0, y0, x1, y1 = f.Width(), f.Height(), -1, -1
 	for y, r := range f.Art {
@@ -383,6 +398,7 @@ func bbox(f sprite.Frame, role byte) (x0, y0, x1, y1 int) {
 	return x0, y0, x1 + 1, y1 + 1
 }
 
+// blank is a frame of the same size with nothing in it.
 func blank(f sprite.Frame) sprite.Frame {
 	out := make([]string, f.Height())
 	for i := range out {
@@ -399,12 +415,14 @@ func blank(f sprite.Frame) sprite.Frame {
 }
 
 // WriteAll writes a set of runs into a directory.
-func WriteAll(dir string, runs []run) error {
+func WriteAll(dir string, runs []run) ([]string, error) {
+	var out []string
 	for _, r := range runs {
 		if err := motion.WriteStreamFile(dir+r.name+".stream", r.name, r.note, r.frames); err != nil {
-			return err
+			return nil, err
 		}
-		fmt.Printf("%-22s %2d frames -> %s%s.stream\n", r.name, len(r.frames), dir, r.name)
+		out = append(out, fmt.Sprintf("%-22s %2d frames -> %s%s.stream",
+			r.name, len(r.frames), dir, r.name))
 	}
-	return nil
+	return out, nil
 }

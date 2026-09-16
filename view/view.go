@@ -1,12 +1,14 @@
 // Package view puts objects in space and asks them what they look like.
 //
 // The idea this rests on is not mine and is worth stating plainly, because it
-// is what makes three dimensions cheap here. A sprite already knows what it
-// is. If it also knows how to present itself from a given direction, then
-// rendering a scene is not "intersect geometry, shade fragments" -- it is
-// "ask each object what it looks like from here, and compose the answers by
-// alpha". The alpha channel already does the compositing, and it has been
-// doing it since the bulb was lit by a second sprite.
+// is what makes three dimensions cheap here. A sprite already knows what it is.
+//
+// If it also knows how to present itself from a given direction, then rendering
+// a scene is not "intersect geometry, shade fragments" -- it is "ask each
+// object what it looks like from here, and compose the answers by alpha".
+//
+// The alpha channel already does the compositing, and it has been doing it
+// since the bulb was lit by a second sprite.
 //
 // That turns the expensive parts of three dimensions into the cheap parts:
 //
@@ -16,14 +18,14 @@
 //	a ray       walk the objects front to back and stop at the first alpha
 //
 // The last one is the point. A ray does not need to intersect a surface; it
-// needs to find the first object whose alpha is set where it passes. That is
-// a lookup, not a solve, and it is why tracing is easier here than in a scene
+// needs to find the first object whose alpha is set where it passes. That is a
+// lookup, not a solve, and it is why tracing is easier here than in a scene
 // made of triangles.
 //
-// The camera is deliberately the simplest thing that works: the eye sits at
-// the origin looking down positive Z, the picture plane is one unit away, and
-// Lens is how many picture-plane units across the sheet is. Nothing here
-// rotates yet, because nothing has asked to.
+// The camera is deliberately the simplest thing that works: the eye sits at the
+// origin looking down positive Z, the picture plane is one unit away, and Lens
+// is how many picture-plane units across the sheet is. Nothing here rotates
+// yet, because nothing has asked to.
 package view
 
 import (
@@ -50,11 +52,12 @@ func DefaultEye() Eye { return Eye{Lens: 1.0, Near: 0.05} }
 // Object is anything that can say what it looks like from somewhere.
 //
 // This is the whole interface, on purpose. A billboard sprite implements it by
-// returning its frame; a thing with eight drawn angles implements it by
-// picking one; a procedurally drawn thing implements it by drawing. None of
-// them tell the renderer how they did it, and the renderer cannot ask.
+// returning its frame; a thing with eight drawn angles implements it by picking
+// one; a procedurally drawn thing implements it by drawing. None of them tell
+// the renderer how they did it, and the renderer cannot ask.
 type Object interface {
-	// Extent is where this object is and how tall it stands, in world units.
+	// Extent is where this object is and how tall it stands, in world
+	// units.
 	Extent(t time.Duration) (at Vec, height float64)
 
 	// Render is what it looks like from the eye, drawn rows subpixels tall.
@@ -63,16 +66,16 @@ type Object interface {
 	//
 	// The size is asked for rather than fixed because a thing that can draw
 	// itself at any size should never be drawn at one size and resampled to
-	// another. A billboard has no choice and scales; a ball has the maths in
-	// front of it and simply draws smaller.
+	// another. A billboard has no choice and scales; a ball has the maths
+	// in front of it and simply draws smaller.
 	Render(e Eye, t time.Duration, rows int) sprite.Frame
 }
 
 // Billboard is a sprite that always faces the viewer.
 //
 // Its own clock is its own: Phase offsets it in its loop, so a flock does not
-// beat its wings in unison, which is the single thing that would give away
-// that they are all the same animation.
+// beat its wings in unison, which is the single thing that would give away that
+// they are all the same animation.
 type Billboard struct {
 	Frames []sprite.Frame
 	At     Vec
@@ -90,9 +93,9 @@ func (b Billboard) Render(_ Eye, t time.Duration, rows int) sprite.Frame {
 	if f.Height() == 0 {
 		return f
 	}
-	// keep its proportions: a daffy pixel is one column by half a row, and a
-	// sextant subcell is half a column by a third, so a sprite pixel is two
-	// subcells across and one and a half down
+	// keep its proportions: a daffy pixel is one column by half a row, and
+	// a sextant subcell is half a column by a third, so a sprite pixel is
+	// two subcells across and one and a half down
 	w := int(float64(rows) * float64(f.Width()) / float64(f.Height()) * 2 / 3)
 	if w < 1 {
 		w = 1
@@ -104,17 +107,18 @@ func (b Billboard) Render(_ Eye, t time.Duration, rows int) sprite.Frame {
 // was drawn closest to the way it is being looked at.
 //
 // Poses go anticlockwise from facing the camera. This is how a sprite gets a
-// third dimension without a model: the artist draws it from eight sides and
-// the viewport picks. Doom did it, and it still costs nothing.
+// third dimension without a model: the artist draws it from eight sides and the
+// viewport picks. Doom did it, and it still costs nothing.
 type Turning struct {
 	Poses  [][]sprite.Frame // one animation per direction
 	At     Vec
 	Height float64
 	// Heading is the world direction the object faces, measured like the
 	// world's own angles: nought is towards positive Z. So an object facing
-	// a camera that sits at lower Z has a heading of pi. Pose zero is the
-	// object seen head on -- that is, seen from the direction it faces --
-	// and the rest follow anticlockwise.
+	// a camera that sits at lower Z has a heading of pi.
+	//
+	// Pose zero is the object seen head on -- that is, seen from the
+	// direction it faces -- and the rest follow anticlockwise.
 	Heading float64
 	Phase   time.Duration
 }
@@ -122,9 +126,9 @@ type Turning struct {
 // Extent is where the turning sprite stands.
 func (s Turning) Extent(time.Duration) (Vec, float64) { return s.At, s.Height }
 
-// Pose is the index of the drawn direction that best matches the line of
-// sight. Exposed because which pose was picked is the thing to check when a
-// turning sprite looks wrong, and guessing it from the picture is hopeless.
+// Pose is the index of the drawn direction that best matches the line of sight.
+// Exposed because which pose was picked is the thing to check when a turning
+// sprite looks wrong, and guessing it from the picture is hopeless.
 func (s Turning) Pose(e Eye) int {
 	if len(s.Poses) == 0 {
 		return 0
@@ -151,6 +155,7 @@ func (s Turning) Render(e Eye, t time.Duration, rows int) sprite.Frame {
 	return Scale(f, w, rows)
 }
 
+// norm wraps an angle into nought to a full turn.
 func norm(a float64) float64 {
 	for a < 0 {
 		a += 2 * math.Pi
@@ -158,8 +163,8 @@ func norm(a float64) float64 {
 	return math.Mod(a, 2*math.Pi)
 }
 
-// Placed is an object resolved for one frame: what to draw, where on the
-// sheet, how big, and how far away.
+// Placed is an object resolved for one frame: what to draw, where on the sheet,
+// how big, and how far away.
 type Placed struct {
 	Frame sprite.Frame
 	X, Y  int // subpixels, top left
@@ -169,9 +174,9 @@ type Placed struct {
 
 // Resolve asks every object what it looks like and works out where it lands.
 //
-// Objects behind the viewer, or off the sheet entirely, are dropped here
-// rather than drawn and clipped: a flock is mostly off-screen most of the
-// time and resampling a sprite nobody will see is the expensive part.
+// Objects behind the viewer, or off the sheet entirely, are dropped here rather
+// than drawn and clipped: a flock is mostly off-screen most of the time and
+// resampling a sprite nobody will see is the expensive part.
 func Resolve(objs []Object, e Eye, t time.Duration, subW, subH int) []Placed {
 	var out []Placed
 	for _, o := range objs {
@@ -180,8 +185,8 @@ func Resolve(objs []Object, e Eye, t time.Duration, subW, subH int) []Placed {
 		if d < e.Near {
 			continue // behind the viewer, or in their eye
 		}
-		// the picture plane is one unit out, so apparent size is size over
-		// distance and nothing more
+		// the picture plane is one unit out, so apparent size is size
+		// over distance and nothing more
 		scale := 1 / (d * e.Lens)
 		h := int(height * scale * float64(subH))
 		if h < 1 {
@@ -246,9 +251,10 @@ func Scale(f sprite.Frame, w, h int) sprite.Frame {
 					}
 				}
 			}
-			// a shrinking sprite keeps its silhouette while any of it is ink:
-			// requiring a majority would dissolve a thin wing into nothing
-			// long before the bird got small enough to stop mattering
+			// a shrinking sprite keeps its silhouette while any of
+			// it is ink: requiring a majority would dissolve a thin
+			// wing into nothing long before the bird got small
+			// enough to stop mattering
 			if ink*3 >= total {
 				row[x] = best
 			} else {
@@ -285,6 +291,7 @@ func at(frames []sprite.Frame, t time.Duration) sprite.Frame {
 	return frames[len(frames)-1]
 }
 
+// hold is a frame's duration, or the default when the stream did not say.
 func hold(f sprite.Frame) time.Duration {
 	if f.Hold <= 0 {
 		return 100 * time.Millisecond

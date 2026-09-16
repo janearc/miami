@@ -13,9 +13,9 @@ import (
 	"miami/typeset"
 )
 
-// "let there be lights": a nineteen-fifties roadside church sign, on a pole,
-// at dusk, with a light bulb where the cross would be. it is a manpage wide
-// and as tall as the descent from sky to road takes.
+// "let there be lights": a nineteen-fifties roadside church sign, on a pole, at
+// dusk, with a light bulb where the cross would be. it is a manpage wide and as
+// tall as the descent from sky to road takes.
 
 // the roles that are read, for the legibility gate
 var LightsText = []byte{'L', 's', 'b', 'x'}
@@ -43,8 +43,8 @@ func Lights(cv canvas.Canvas) (*raster.Scene, []cells.Mark) {
 	b := motifs.NewBulb(cx, 20, 52)
 	burst := motifs.Sunburst(b.Centre, b.R*1.42,
 		[]float64{b.R * 2.25, b.R * 1.62, b.R * 1.9, b.R * 1.62}, 28, -208, 28, b.R*0.07)
-	// a plain stem and a diamond finial where it meets the crown. scroll curls
-	// at this size read as a moustache.
+	// a plain stem and a diamond finial where it meets the crown. scroll
+	// curls at this size read as a moustache.
 	bracket := geom.Union(
 		geom.Taper{P: []geom.Vec{{X: cx, Y: b.Bottom - 0.5}, {X: cx, Y: 88}}, R: []float64{0.9, 1.3}},
 		geom.Poly{P: geom.Pts(geom.Vec{X: cx, Y: 79.5}, geom.Vec{X: cx + 2.6, Y: 83}, geom.Vec{X: cx, Y: 86.5}, geom.Vec{X: cx - 2.6, Y: 83})},
@@ -102,12 +102,14 @@ func Lights(cv canvas.Canvas) (*raster.Scene, []cells.Mark) {
 	}
 	ornament := geom.Union(flourish(-1), flourish(1))
 
-	// ---- the changeable letter board, hung below on two struts. three short
-	// lines rather than two long ones: at two lines the caps were under four
-	// rows and a real terminal read ALL BULBS WELCOME as ALL BULIS NELCOME.
+	// ---- the changeable letter board, hung below on two struts. three
+	// short lines rather than two long ones: at two lines the caps were
+	// under four rows and a real terminal read ALL BULBS WELCOME as ALL
+	// BULIS NELCOME.
 	const boardTop, pitch = 203.0, 17.0
 	boardLines := []string{"ALL BULBS", "WELCOME", "HUE & NANOLEAF"}
-	// the board ends a little below its last rail, not a whole empty line later
+	// the board ends a little below its last rail, not a whole empty line
+	// later
 	probeCap := 10.5
 	boardBot := boardTop + 4 + probeCap + pitch*float64(len(boardLines)-1) + 7
 	struts := geom.Union(
@@ -135,14 +137,15 @@ func Lights(cv canvas.Canvas) (*raster.Scene, []cells.Mark) {
 	horizon := 290.0 + drop
 	h := 366.0 + drop
 	roadEnd := 346.0 + drop
-	// the pole runs past the horizon into the near verge. stopping it at the
-	// horizon planted the sign at the vanishing point, miles off.
+	// the pole runs past the horizon into the near verge. stopping it at
+	// the horizon planted the sign at the vanishing point, miles off.
 	footY := horizon + 26
 	pole := geom.Union(
 		geom.Poly{P: geom.Pts(geom.Vec{X: cx - 2.4, Y: boardBot - 1}, geom.Vec{X: cx + 2.4, Y: boardBot - 1}, geom.Vec{X: cx + 3.0, Y: footY}, geom.Vec{X: cx - 3.0, Y: footY})},
 		geom.Poly{P: geom.Pts(geom.Vec{X: cx - 6, Y: footY - 1}, geom.Vec{X: cx + 6, Y: footY - 1}, geom.Vec{X: cx + 7, Y: footY + 2.5}, geom.Vec{X: cx - 7, Y: footY + 2.5})},
 	)
-	// shaft tall enough that the chaser bulbs clear the letters by a full row
+	// shaft tall enough that the chaser bulbs clear the letters by a full
+	// row
 	arrow := motifs.Arrow{X0: 10, X1: u - 5, Y: 256 + drop, Shaft: 16, Head: 28, HeadLen: 14}
 	bulbGlyph(arrow.Lights(1.6, 4.0), color.RGBA{110, 20, 26, 255})
 	exit, _ := setFit(typeset.Line{Text: "NEXT EXIT", Face: gothic, Tracking: 0.08, Weight: 0.13, Flat: true,
@@ -240,7 +243,8 @@ func Lights(cv canvas.Canvas) (*raster.Scene, []cells.Mark) {
 		{At: 0.20, C: color.RGBA{34, 24, 42, 255}},
 		{At: 1.00, C: color.RGBA{14, 10, 20, 255}}}
 	// fine print: real characters in real cells, sentence case, from the
-	// package's own description. held to the band against the ground under it.
+	// package's own description. held to the band against the ground under
+	// it.
 	footer := color.RGBA{14, 10, 20, 255}
 	for i, line := range []string{
 		"lights: one abstraction over Philips Hue and Nanoleaf --",
@@ -255,12 +259,13 @@ func Lights(cv canvas.Canvas) (*raster.Scene, []cells.Mark) {
 			marks = append(marks, cells.Mark{X: 5 + float64(j) + 0.5, Y: y + 1, Glyph: r, Fg: finePrint, Bg: &bg})
 		}
 	}
-	// the plain text palette. the sky is empty, which is the negative space;
-	// dark structure against it is a light shade so the pole still holds the
-	// sign up; letters are knocked out of full panels.
-	// ghostty draws the shade glyphs as flat greys beside full-bright sextants,
-	// so a part is ink or paper unless its grey is the point: rays at 0.75
-	// broke into two-tone segments in a real terminal.
+	// the plain text palette. the sky is empty, which is the negative
+	// space; dark structure against it is a light shade so the pole still
+	// holds the sign up; letters are knocked out of full panels.
+	//
+	// ghostty draws the shade glyphs as flat greys beside full-bright
+	// sextants, so a part is ink or paper unless its grey is the point:
+	// rays at 0.75 broke into two-tone segments in a real terminal.
 	sc.Tone = map[byte]float64{
 		'G': 1, 'f': 0, 'w': 0, 'h': 1, 'S': 1, 'g': 0, 'I': 0.25, 'T': 0.5,
 		'r': 1, 'q': 0.5, 'k': 1,
@@ -270,8 +275,9 @@ func Lights(cv canvas.Canvas) (*raster.Scene, []cells.Mark) {
 	}
 	sc.ToneBg = func(x, y float64) float64 {
 		if y < horizon {
-			// one thin band of tone right at the horizon; a deeper one read as a
-			// heavy bar across the page in a real terminal
+			// one thin band of tone right at the horizon; a deeper
+			// one read as a heavy bar across the page in a real
+			// terminal
 			return math.Max(0, (y-(horizon-5))/5) * 0.3
 		}
 		return 0

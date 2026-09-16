@@ -12,13 +12,14 @@ import (
 	"miami/typeset"
 )
 
-// one dark silhouette family in front of one graded sky. no contours, no
-// third value: a two-mass picture is the only kind that still reads after
-// being halved twice.
+// one dark silhouette family in front of one graded sky. no contours, no third
+// value: a two-mass picture is the only kind that still reads after being
+// halved twice.
 
 var bbSky = []paint.Stop{
-	// the horizon must stay DARKER than the sun. ramping the sky to gold made
-	// the sky brighter than the disc and the sun lost its edge entirely.
+	// the horizon must stay DARKER than the sun. ramping the sky to gold
+	// made the sky brighter than the disc and the sun lost its edge
+	// entirely.
 	{At: 0.00, C: color.RGBA{24, 8, 60, 255}},
 	{At: 0.30, C: color.RGBA{86, 18, 104, 255}},
 	{At: 0.55, C: color.RGBA{170, 34, 108, 255}},
@@ -40,13 +41,15 @@ var (
 	bbSunFrac   = 0.420
 )
 
+// BigBirds is the negative-space piece: birds cut out of a sunset, with the
+// wordmark left as empty space rather than drawn.
 func BigBirds(cols, rows int) *raster.Scene {
 	u := float64(cols)
 	v := float64(rows) * canvas.CellAspect
 	hy := 0.850 * v
-	// scale the round and tall things off the SMALLER of the two dimensions.
-	// keying them to height alone made the sun eat 84 percent of a square
-	// frame and pushed both palm crowns off the edge.
+	// scale the round and tall things off the SMALLER of the two
+	// dimensions. keying them to height alone made the sun eat 84 percent
+	// of a square frame and pushed both palm crowns off the edge.
 	s := math.Min(v, 0.70*u)
 
 	sunC := geom.Vec{X: 0.465 * u, Y: 0.800 * v}
@@ -54,13 +57,14 @@ func BigBirds(cols, rows int) *raster.Scene {
 
 	sc := &raster.Scene{W: u, H: v}
 
-	// skyline: sparse, low, right of centre only. a full width one fills the
-	// negative space with small holes.
-	// two palms, not three. a middle one tangles with the left and fills the
-	// open space the composition is built around.
-	// both palms lean OUT of frame. leaning the left one inward ran its trunk
-	// straight through the wordmark, and two dark shapes of the same value
-	// that overlap stop being two shapes.
+	// skyline: sparse, low, right of centre only. a full width one fills
+	// the negative space with small holes. two palms, not three. a middle
+	// one tangles with the left and fills the open space the composition is
+	// built around. both palms lean OUT of frame.
+	//
+	// leaning the left one inward ran its trunk straight through the
+	// wordmark, and two dark shapes of the same value that overlap stop
+	// being two shapes.
 	palms := geom.Union(append(
 		motifs.PalmAt(geom.Vec{X: 0.135 * u, Y: hy + 0.006*v}, 0.680*s, -0.046*u, false, -4),
 		motifs.PalmAt(geom.Vec{X: 0.885 * u, Y: hy + 0.004*v}, 0.510*s, -0.034*u, true, 3)...)...)
@@ -71,11 +75,12 @@ func BigBirds(cols, rows int) *raster.Scene {
 	// low on the disc, so the sun's top arc stays clear above it
 	word := typeset.FitText(ink, tc, tr, 0.465*u, hy-0.022*v, BBWordFrac*u)
 
-	// three, and large enough to be marks rather than dust.
-	// pushed into the open right, which is the negative space the asymmetry
-	// buys; three marks, sized to read rather than to speckle.
-	// five, spread up the open right so a square frame's tall sky is not a
-	// hole. they are the only thing living in the negative space.
+	// three, and large enough to be marks rather than dust. pushed into the
+	// open right, which is the negative space the asymmetry buys; three
+	// marks, sized to read rather than to speckle. five, spread up the open
+	// right so a square frame's tall sky is not a hole.
+	//
+	// they are the only thing living in the negative space.
 	birds := geom.Union(
 		motifs.BirdAt(geom.Vec{X: 0.560 * u, Y: 0.148 * v}, 0.110*u, -7),
 		motifs.BirdAt(geom.Vec{X: 0.668 * u, Y: 0.258 * v}, 0.078*u, 5),

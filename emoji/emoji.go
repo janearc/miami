@@ -2,27 +2,29 @@
 //
 // Apple Color Emoji is not an outline font. Each glyph is a PNG, stored at a
 // handful of fixed sizes in an `sbix` table, and the largest is 160 pixels
-// square. So there is nothing to rasterise: the picture wanted is already a
-// PNG sitting in a file on the disk, and the whole job is finding it.
+// square. So there is nothing to rasterise: the picture wanted is already a PNG
+// sitting in a file on the disk, and the whole job is finding it.
 //
 // That matters more than it sounds. The alternative is a Python step with a
 // font renderer in it, which is a second pipeline producing an asset that
-// nothing else in the tree can regenerate or check. Reading the table is
-// about a hundred lines and keeps the emoji work inside the same build and
-// the same gate as everything else.
+// nothing else in the tree can regenerate or check.
+//
+// Reading the table is about a hundred lines and keeps the emoji work inside
+// the same build and the same gate as everything else.
 //
 // The format, in the order this file walks it:
 //
 //	ttcf      a collection header, when several fonts share one file
-//	sfnt      a table directory: tag, checksum, offset, length, sixteen bytes each
+//	sfnt      a table directory: tag, checksum, offset, length --
+//	          sixteen bytes each
 //	maxp      how many glyphs there are, which sizes the sbix offset table
 //	sbix      version, flags, a count of strikes, then an offset per strike
 //	strike    pixels-per-em, resolution, then an offset per glyph, plus one
 //	          past the end so a glyph's length is the difference
 //	glyph     two origin offsets, a four-byte kind, then the bytes
 //
-// A strike entry whose length is zero is a glyph with no picture at that
-// size, which is most of them in most strikes; that is not an error.
+// A strike entry whose length is zero is a glyph with no picture at that size,
+// which is most of them in most strikes; that is not an error.
 package emoji
 
 import (
@@ -143,6 +145,7 @@ func tablesOf(src []byte) (map[string]int, error) {
 	return out, nil
 }
 
+// glyphCount is how many glyphs the font has, which sizes the sbix table.
 func glyphCount(src []byte, tables map[string]int) (int, error) {
 	maxp, ok := tables["maxp"]
 	if !ok || maxp+6 > len(src) {
@@ -151,5 +154,8 @@ func glyphCount(src []byte, tables map[string]int) (int, error) {
 	return int(be16(src, maxp+4)), nil
 }
 
+// be16 is a big-endian sixteen-bit number, which is how a font stores one.
 func be16(b []byte, at int) uint16 { return binary.BigEndian.Uint16(b[at : at+2]) }
+
+// be32 is a big-endian thirty-two-bit number.
 func be32(b []byte, at int) uint32 { return binary.BigEndian.Uint32(b[at : at+4]) }

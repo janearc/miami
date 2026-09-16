@@ -57,13 +57,14 @@ func BulbTest(cols int, h float64) *raster.Scene {
 		dx, dy := x-b.Centre.X, y-b.Centre.Y
 		d := math.Sqrt(dx*dx+dy*dy) / b.R
 		if role == 'r' {
-			// rays cool as they leave the glass, so they never outshine it
+			// rays cool as they leave the glass, so they never
+			// outshine it
 			c = paint.Ramp(rayRamp, (d-1.42)/0.85)
 		}
-		// light spilling past the glass: strongest right at its edge so the
-		// gap glows instead of reading as a shadow
-		// every non-glass sample is lit, including sky samples whose centre sits
-		// just inside the radius: gating on d > 1 left dark dots on the edge
+		// light spilling past the glass: strongest right at its edge so
+		// the gap glows instead of reading as a shadow every non-glass
+		// sample is lit, including sky samples whose centre sits just
+		// inside the radius: gating on d > 1 left dark dots on the edge
 		if role != 'G' && role != 'f' && role != 'h' {
 			e := math.Max(d-1, 0)
 			c = paint.Screen(c, color.RGBA{255, 190, 105, 255}, 0.62/(1+3.2*e*e))

@@ -14,6 +14,7 @@ const (
 	supp  = fonts + "Supplemental/"
 )
 
+// mustFace loads a face or dies, for scenes that cannot be drawn without one.
 func mustFace(path, name string) *typeset.Face {
 	f, err := typeset.LoadFace(path, name)
 	if err != nil {
@@ -28,8 +29,8 @@ func fitCap(l typeset.Line, width float64) float64 {
 	return 10 * width / l.Width()
 }
 
-// Specimen sets the candidate faces identically, so the choice is made from
-// a render at the real width rather than from a description.
+// Specimen sets the candidate faces identically, so the choice is made from a
+// render at the real width rather than from a description.
 func Specimen(cv canvas.Canvas) *raster.Scene {
 	faces := []*typeset.Face{
 		mustFace(supp+"Copperplate.ttc", "Copperplate Light"),

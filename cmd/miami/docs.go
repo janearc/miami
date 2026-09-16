@@ -2,16 +2,19 @@ package main
 
 // The documentation, shown rather than written: one page per idea, painted,
 // because this is a library about pictures and the honest way to explain a
-// picture is to put it on the screen. The pattern is libtheme's visualdocs,
-// and so is the rule that keeps it true -- each page can print the Go that
-// painted it, which is its own source file, embedded, so the two cannot drift.
+// picture is to put it on the screen.
+//
+// The pattern is libtheme's visualdocs, and so is the rule that keeps it true
+// -- each page can print the Go that painted it, which is its own source file,
+// embedded, so the two cannot drift.
 //
 // One thing is added for the reader this library expects. An agent cannot see
 // an escape sequence: handed one it will describe the bytes and be confident
 // and wrong, which happened repeatedly while this was being built. So every
-// page renders to a png on request, and so does any ansi file. Look at the
-// png, change one thing, look again. That loop is the whole method here and
-// nothing else substitutes for it.
+// page renders to a png on request, and so does any ansi file.
+//
+// Look at the png, change one thing, look again. That loop is the whole method
+// here and nothing else substitutes for it.
 //
 //	miami docs                every page's name and what it is for
 //	miami docs PAGE           painted, to this terminal
@@ -50,6 +53,7 @@ var docPages = []docPage{
 
 const docGround = "\x1b[0m"
 
+// docs is the pager: a page name and a mode, or the list of pages.
 func docs(args []string) {
 	var name, mode string
 	for _, a := range args {

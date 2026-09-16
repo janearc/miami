@@ -6,13 +6,16 @@ import (
 	"miami/raster"
 )
 
-// scarlet macaw, profile facing left, perched on a diagonal branch.
-// every number here is a proportion of the 100x200 canvas; tuning the bird
-// means editing one of them, not retyping rows.
+// scarlet macaw, profile facing left, perched on a diagonal branch. every
+// number here is a proportion of the 100x200 canvas; tuning the bird means
+// editing one of them, not retyping rows.
 
+// Macaw is the parrot: the piece this library started from, and the reason the
+// silhouette test exists.
 func Macaw() *raster.Scene {
-	// -- skull. sits directly on the shoulders; the crown is a low dome that
-	// must visibly overhang the bill base or the bird reads as a hornbill.
+	// -- skull. sits directly on the shoulders; the crown is a low dome
+	// that must visibly overhang the bill base or the bird reads as a
+	// hornbill.
 	head := geom.Ellipse{C: geom.Vec{X: 38, Y: 26}, Rx: 15.5, Ry: 14.5}
 	nape := geom.Taper{P: []geom.Vec{{X: 41, Y: 34}, {X: 50, Y: 50}}, R: []float64{14, 18}}
 	// throat runs unbroken from the gape to the breast; without it the head
@@ -55,10 +58,11 @@ func Macaw() *raster.Scene {
 	)}
 
 	// -- folded wing. one outlined shape cut into scarlet coverts, the gold
-	// band, a green wash and the blue flights. the cut normal is tilted off
-	// the wing axis because real covert tracts run DIAGONALLY across the
-	// folded wing; cutting square to the axis gives horizontal stripes and
-	// the bird reads as a beach towel.
+	// band, a green wash and the blue flights.
+	//
+	// the cut normal is tilted off the wing axis because real covert tracts
+	// run DIAGONALLY across the folded wing; cutting square to the axis
+	// gives horizontal stripes and the bird reads as a beach towel.
 	sh := geom.Vec{X: 50, Y: 44}
 	nrm := geom.Vec{X: 0.423, Y: 0.906}
 	const bandR = 70.0

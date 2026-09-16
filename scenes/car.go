@@ -8,9 +8,11 @@ import (
 
 // mid-eighties italian wedge, side on, facing left. the read is the profile
 // line, not the badge: blank low nose, one straight rise to the screen base,
-// short flat roof set well back, chopped tail, dark band along the flank
-// where the strakes are.
+// short flat roof set well back, chopped tail, dark band along the flank where
+// the strakes are.
 
+// Car is the sports car, from a real Testarossa's dimensions: the proportions
+// are what make it read, and guessing them made it a wedge.
 func Car() *raster.Scene {
 	// profile scaled from the real thing: 4485 long, 1130 tall, 2550
 	// wheelbase, 975 front overhang. eyeballing it produced a car sitting
@@ -48,9 +50,9 @@ func Car() *raster.Scene {
 		geom.Ellipse{C: rwCentre, Rx: 7.2, Ry: 7.2},
 	)
 
-	// the strake bank. individual slats cannot resolve at thirty columns, so
-	// the band carries the read and the slats sit inside it for the sake of
-	// the high resolution pass.
+	// the strake bank. individual slats cannot resolve at thirty columns,
+	// so the band carries the read and the slats sit inside it for the sake
+	// of the high resolution pass.
 	bank := geom.Poly{P: geom.Pts(
 		geom.Vec{X: 100, Y: 48}, geom.Vec{X: 152, Y: 44}, geom.Vec{X: 153, Y: 60}, geom.Vec{X: 102, Y: 63},
 	)}

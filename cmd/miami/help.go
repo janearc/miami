@@ -9,6 +9,7 @@ import (
 // write is os.WriteFile with the directory made first. out/ is not in the
 // repository -- it is every verb's scratch and the readme says so -- so on a
 // fresh clone it does not exist, and every verb that wrote to it panicked.
+//
 // Found by cloning into /tmp and following the readme, which is the only way
 // that kind of thing is found.
 func write(path string, b []byte) error {
@@ -21,17 +22,19 @@ func write(path string, b []byte) error {
 // What miami tells an agent about itself.
 //
 // This exists because the usage line went three sessions out of date while
-// twenty verbs were added to it, which is the ordinary fate of a usage line
-// and the reason an agent cannot trust one. So the verb table below is the
-// only place a verb is described, the bare command prints it, and a verb that
-// is not in it does not appear anywhere.
+// twenty verbs were added to it, which is the ordinary fate of a usage line and
+// the reason an agent cannot trust one.
+//
+// So the verb table below is the only place a verb is described, the bare
+// command prints it, and a verb that is not in it does not appear anywhere.
 //
 // The other half is `explain`, and it carries something a feature list does
-// not: the refusals. Every trap in it cost this library a rebuild to find --
-// a sprite that the player will not open, a field that clamps where you did
-// not expect, a sentinel that collides with a real value. An agent that reads
-// them does not have to pay for them again, and that is most of what "teach
-// agents how to use it" can mean.
+// not: the refusals. Every trap in it cost this library a rebuild to find -- a
+// sprite that the player will not open, a field that clamps where you did not
+// expect, a sentinel that collides with a real value.
+//
+// An agent that reads them does not have to pay for them again, and that is
+// most of what "teach agents how to use it" can mean.
 
 type verb struct{ name, args, what string }
 
@@ -59,6 +62,8 @@ var verbs = []verb{
 	{"<scene>", "<png|sil|roles|term> [cols]", "macaw, palm, car, cassowary: one drawing"},
 }
 
+// usage prints what miami is and every verb, and is the only place a verb is
+// described.
 func usage() {
 	fmt.Println(`miami draws for terminals: stills, motion, effects and lighting.
 

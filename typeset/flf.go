@@ -10,19 +10,22 @@ import (
 
 // FIGlet fonts, read here rather than shelled out to.
 //
-// There are two ways to use FIGlet letterforms and they are not the same
-// thing. One is as a stencil -- the letters become a shape, and the shape is
-// filled with picture, which is what the big.birds work does. The other is as
-// characters: the letters stay characters, they go into cells as themselves,
-// and a colour is applied per cell. That second one is the only thing that
-// works at a small size, because outline type rasterised to six subpixels of
-// cap height loses its own letterforms -- the N closes up into an H and the R
-// loses its leg. A FIGlet font has already solved that problem; its letters
-// were designed at exactly this size out of exactly these characters.
+// There are two ways to use FIGlet letterforms and they are not the same thing.
+// One is as a stencil -- the letters become a shape, and the shape is filled
+// with picture, which is what the big.birds work does. The other is as
+// characters:
+//
+// the letters stay characters, they go into cells as themselves, and a colour
+// is applied per cell. That second one is the only thing that works at a small
+// size, because outline type rasterised to six subpixels of cap height loses
+// its own letterforms -- the N closes up into an H and the R loses its leg.
+//
+// A FIGlet font has already solved that problem; its letters were designed at
+// exactly this size out of exactly these characters.
 //
 // The format is plain and worth reading rather than shelling out for: miami
-// gains a runtime dependency on a binary otherwise, for something that is
-// under a hundred lines.
+// gains a runtime dependency on a binary otherwise, for something that is under
+// a hundred lines.
 //
 //	flf2a$ 6 5 16 15 13 0 24463 229
 //	         |  | |  |  |  |    |
@@ -35,9 +38,9 @@ import (
 //	         baseline
 //	height
 //
-// After the comments, the characters from space to tilde in order, each of
-// them `height` lines, each line ending in an endmark character that is
-// stripped. The hardblank stands for a space that must not be kerned away.
+// After the comments, the characters from space to tilde in order, each of them
+// `height` lines, each line ending in an endmark character that is stripped.
+// The hardblank stands for a space that must not be kerned away.
 
 // FigFont is a loaded FIGlet font.
 type FigFont struct {
@@ -72,6 +75,8 @@ func LoadFig(name string) (*FigFont, error) {
 	return nil, fmt.Errorf("figlet font %q not found in %v", name, FigFontDirs)
 }
 
+// readFig reads a font file: a header, comments to skip, then the characters
+// from space to tilde in order.
 func readFig(path string) (*FigFont, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -108,7 +113,8 @@ func readFig(path string) (*FigFont, error) {
 		g := make([]string, f.Height)
 		for i := 0; i < f.Height; i++ {
 			l := lines[at+i]
-			// the endmark is whatever the line ends with, one or two of them
+			// the endmark is whatever the line ends with, one or
+			// two of them
 			if n := len(l); n > 0 {
 				end := l[n-1]
 				for len(l) > 0 && l[len(l)-1] == end {
@@ -132,12 +138,15 @@ func readFig(path string) (*FigFont, error) {
 
 // Render sets text as lines of characters.
 //
-// Kerned, not smushed. FIGlet's smushing rules merge touching letters into
-// shared characters, which is how the fonts were meant to be set; kerning
-// alone -- slide each letter left until something would collide -- is most of
-// the benefit for a few lines of code, and at a wordmark's size the difference
-// is a column here and there. Fonts whose letters are designed to interlock
-// will look looser than figlet would set them.
+// Kerned, not smushed.
+//
+// FIGlet's smushing rules merge touching letters into shared characters, which
+// is how the fonts were meant to be set; kerning alone -- slide each letter
+// left until something would collide -- is most of the benefit for a few lines
+// of code, and at a wordmark's size the difference is a column here and there.
+//
+// Fonts whose letters are designed to interlock will look looser than figlet
+// would set them.
 func (f *FigFont) Render(text string) []string {
 	out := make([]string, f.Height)
 	for _, r := range text {
@@ -181,6 +190,7 @@ func overlap(left []string, g []string) int {
 	return best
 }
 
+// trailing is how many spaces a line ends with.
 func trailing(s string) int {
 	n := 0
 	for i := len(s) - 1; i >= 0 && s[i] == ' '; i-- {
@@ -189,6 +199,7 @@ func trailing(s string) int {
 	return n
 }
 
+// leading is how many spaces a line begins with.
 func leading(s string) int {
 	n := 0
 	for i := 0; i < len(s) && s[i] == ' '; i++ {
@@ -197,8 +208,8 @@ func leading(s string) int {
 	return n
 }
 
-// merge overlays a glyph row onto the tail of what is already set, letting
-// ink win over space in either direction.
+// merge overlays a glyph row onto the tail of what is already set, letting ink
+// win over space in either direction.
 func merge(lap, g string) string {
 	n := len(lap)
 	if len(g) > n {
@@ -222,8 +233,8 @@ func merge(lap, g string) string {
 	return string(out)
 }
 
-// Trim drops blank rows and the common left margin, so a wordmark can be
-// placed by its ink rather than by its font's padding.
+// Trim drops blank rows and the common left margin, so a wordmark can be placed
+// by its ink rather than by its font's padding.
 func Trim(art []string) []string {
 	first, last := -1, -1
 	for i, l := range art {

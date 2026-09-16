@@ -6,8 +6,8 @@ import (
 	"miami/geom"
 )
 
-// a Part is a region of the picture that means something anatomically.
-// role codes are parts, never colours. colour is a later lookup.
+// a Part is a region of the picture that means something anatomically. role
+// codes are parts, never colours. colour is a later lookup.
 type Part struct {
 	Role  byte
 	Shape geom.Shape
@@ -20,25 +20,29 @@ type Scene struct {
 	Bg    func(x, y float64) color.RGBA // resolves the empty role
 
 	// MinCover lets a role win a sample at partial coverage instead of by
-	// majority. a hairline stroke rarely holds most of a subcell, so without
-	// this the delicate parts of a letter drop out. nil keeps pure majority.
+	// majority. a hairline stroke rarely holds most of a subcell, so
+	// without this the delicate parts of a letter drop out. nil keeps pure
+	// majority.
 	MinCover map[byte]float64
 
 	// Shade runs after the palette and background have given a sample its
 	// colour. it sees the role and the PHYSICAL position, so it can lay a
-	// gradient on a part or light spilling across everything. nil does nothing.
+	// gradient on a part or light spilling across everything. nil does
+	// nothing.
 	Shade func(role byte, x, y float64, c color.RGBA) color.RGBA
 
-	// Tone is the palette for renders with no colour: a lightness from 0 to 1
-	// per role, and ToneBg for the empty role in physical units. a one colour
-	// medium needs its own choices -- mapping colour lightness straight across
-	// turned a faint glow into a solid grey disc. nil falls back to lightness.
+	// Tone is the palette for renders with no colour: a lightness from 0 to
+	// 1 per role, and ToneBg for the empty role in physical units. a one
+	// colour medium needs its own choices -- mapping colour lightness
+	// straight across turned a faint glow into a solid grey disc.
+	//
+	// nil falls back to lightness.
 	Tone   map[byte]float64
 	ToneBg func(x, y float64) float64
 }
 
-// ToneField resolves every sample to a lightness for plain text renders.
-// ok is false when the scene has no tone palette of its own.
+// ToneField resolves every sample to a lightness for plain text renders. ok is
+// false when the scene has no tone palette of its own.
 func ToneField(g *Grid, sc *Scene) (f [][]float64, ok bool) {
 	if sc.Tone == nil {
 		return nil, false
@@ -73,6 +77,7 @@ type Grid struct {
 	SX, SY float64 // scale: canvas units per sample
 }
 
+// At is the role at a pixel, or Empty outside the grid.
 func (g *Grid) At(x, y int) byte {
 	if x < 0 || y < 0 || x >= g.W || y >= g.H {
 		return Empty
@@ -80,6 +85,7 @@ func (g *Grid) At(x, y int) byte {
 	return g.Rows[y][x]
 }
 
+// Set writes a role at a pixel, and ignores anything outside the grid.
 func (g *Grid) Set(x, y int, r byte) {
 	if x < 0 || y < 0 || x >= g.W || y >= g.H {
 		return
@@ -87,9 +93,9 @@ func (g *Grid) Set(x, y int, r byte) {
 	g.Rows[y][x] = r
 }
 
-// Rasterize samples the scene into a gw x gh field of role codes.
-// ss is the supersample factor per axis; the winning role is the one holding
-// the most subsamples, which keeps boundaries crisp but subpixel-accurate.
+// Rasterize samples the scene into a gw x gh field of role codes. ss is the
+// supersample factor per axis; the winning role is the one holding the most
+// subsamples, which keeps boundaries crisp but subpixel-accurate.
 func Rasterize(sc *Scene, gw, gh, ss int) *Grid {
 	g := &Grid{W: gw, H: gh, SX: sc.W / float64(gw), SY: sc.H / float64(gh)}
 	g.Rows = make([][]byte, gh)
@@ -166,8 +172,8 @@ func Contour(g *Grid, role byte, thick int) {
 	}
 }
 
-// Resolve turns role codes into RGB, consulting the scene background for
-// empty samples. ox,oy is the grid's offset within a larger composite so the
+// Resolve turns role codes into RGB, consulting the scene background for empty
+// samples. ox,oy is the grid's offset within a larger composite so the
 // background gradient stays continuous.
 func Resolve(g *Grid, sc *Scene, ox, oy int, gw, gh int) [][]color.RGBA {
 	out := make([][]color.RGBA, g.H)

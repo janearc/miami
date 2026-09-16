@@ -9,10 +9,10 @@ import (
 	"miami/raster"
 )
 
-// the composite is defined in PHYSICAL units: 96 cells wide by 68 tall, where
-// a cell is 1 wide and 2 tall. every sub-picture is rasterised at its own
-// column count and blitted in, so the cell aspect is still handled in exactly
-// one place -- canvas.CellAspect, up in raster.go.
+// the composite is defined in PHYSICAL units: 96 cells wide by 68 tall, where a
+// cell is 1 wide and 2 tall. every sub-picture is rasterised at its own column
+// count and blitted in, so the cell aspect is still handled in exactly one
+// place -- canvas.CellAspect, up in raster.go.
 
 const (
 	compCols = 96
@@ -34,8 +34,8 @@ var groundStops = []paint.Stop{
 	{At: 1.00, C: color.RGBA{38, 20, 44, 255}}}
 
 // miamiSky answers the colour of the empty role anywhere in the frame: the
-// gradient, the sun behind the subject, the cloud bars, the water and the
-// road. keeping it a function rather than parts is what lets it be smooth.
+// gradient, the sun behind the subject, the cloud bars, the water and the road.
+// keeping it a function rather than parts is what lets it be smooth.
 func miamiSky(fx, fy float64) color.RGBA {
 	px, py := fx*compCols, fy*compRows*canvas.CellAspect
 
@@ -97,8 +97,9 @@ func miamiSky(fx, fy float64) color.RGBA {
 
 // Miami is the composite frame: the bough the bird sits on, over the sky.
 func Miami() *raster.Scene {
-	// thin and near black: a backlit branch, not a telephone pole. the centre
-	// line is fixed by where the bird's toes land, so only the radius moved.
+	// thin and near black: a backlit branch, not a telephone pole. the
+	// centre line is fixed by where the bird's toes land, so only the
+	// radius moved.
 	bough := geom.Taper{
 		P: []geom.Vec{{X: 96, Y: 25.5}, {X: 70, Y: 29.6}, {X: 48, Y: 33.2}, {X: 32, Y: 36.8}, {X: 25, Y: 39.2}},
 		R: []float64{1.4, 1.25, 1.15, 0.8, 0.25},

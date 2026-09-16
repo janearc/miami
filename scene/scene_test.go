@@ -7,9 +7,9 @@ import (
 )
 
 // The document must paint what the Go scene painted. That is the only
-// definition of "expressive enough" worth having: not that the file parses,
-// not that it looks about right, but that every sample lands on the same
-// colour as the code it replaced.
+// definition of "expressive enough" worth having: not that the file parses, not
+// that it looks about right, but that every sample lands on the same colour as
+// the code it replaced.
 func TestDuskDocumentMatchesItsParameters(t *testing.T) {
 	d, err := Load("../scenes/dusk.json")
 	if err != nil {
@@ -19,8 +19,8 @@ func TestDuskDocumentMatchesItsParameters(t *testing.T) {
 		t.Fatalf("dusk.json: %g seconds, %d layers", d.Seconds, len(d.Layers))
 	}
 	sh := grade.Sextants(40, 12)
-	// the sun sinks and the sky darkens: the same pixel must not be the same
-	// colour at the start and the end, or nothing is animated at all
+	// the sun sinks and the sky darkens: the same pixel must not be the
+	// same colour at the start and the end, or nothing is animated at all
 	a, err := d.At(0)
 	if err != nil {
 		t.Fatal(err)
@@ -36,8 +36,8 @@ func TestDuskDocumentMatchesItsParameters(t *testing.T) {
 }
 
 // A misspelled field must be refused by name. A scene format that silently
-// ignores what it does not understand turns a typo into a missing layer, and
-// a missing layer looks like a design decision.
+// ignores what it does not understand turns a typo into a missing layer, and a
+// missing layer looks like a design decision.
 func TestUnknownFieldIsRefused(t *testing.T) {
 	var n Node
 	if err := n.UnmarshalJSON([]byte(`{"raidal":{}}`)); err != nil {

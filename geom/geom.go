@@ -23,6 +23,7 @@ type Ellipse struct {
 	Rot    float64 // degrees, positive tilts the local +y axis toward -x
 }
 
+// In reports whether a point is inside the ellipse, its rotation undone first.
 func (e Ellipse) In(p Vec) bool {
 	t := e.Rot * math.Pi / 180
 	dx, dy := p.X-e.C.X, p.Y-e.C.Y
@@ -33,6 +34,7 @@ func (e Ellipse) In(p Vec) bool {
 
 type Poly struct{ P []Vec }
 
+// In reports whether a point is inside the polygon, by crossing count.
 func (g Poly) In(p Vec) bool {
 	in := false
 	n := len(g.P)
@@ -55,6 +57,8 @@ type Taper struct {
 	R []float64
 }
 
+// In reports whether a point is inside the taper: within the swept radius of
+// any segment, which is a stroke of varying width.
 func (t Taper) In(p Vec) bool {
 	for i := 0; i+1 < len(t.P); i++ {
 		a, b := t.P[i], t.P[i+1]
@@ -79,6 +83,7 @@ func (t Taper) In(p Vec) bool {
 // HalfPlane keeps the side where n.(p-c) <= 0.
 type HalfPlane struct{ C, N Vec }
 
+// In reports whether a point is on the inner side of the half plane.
 func (h HalfPlane) In(p Vec) bool {
 	return h.N.X*(p.X-h.C.X)+h.N.Y*(p.Y-h.C.Y) <= 0
 }
@@ -89,6 +94,7 @@ type union struct{ s []Shape }
 type isect struct{ s []Shape }
 type diff struct{ a, b Shape }
 
+// In reports whether a point is inside any of the shapes.
 func (u union) In(p Vec) bool {
 	for _, s := range u.s {
 		if s.In(p) {
@@ -97,6 +103,8 @@ func (u union) In(p Vec) bool {
 	}
 	return false
 }
+
+// In reports whether a point is inside all of the shapes.
 func (i isect) In(p Vec) bool {
 	for _, s := range i.s {
 		if !s.In(p) {
@@ -105,11 +113,18 @@ func (i isect) In(p Vec) bool {
 	}
 	return true
 }
+
+// In reports whether a point is inside the first shape and not the second.
 func (d diff) In(p Vec) bool { return d.a.In(p) && !d.b.In(p) }
 
-func Union(s ...Shape) Shape     { return union{s} }
+// Union is every shape at once.
+func Union(s ...Shape) Shape { return union{s} }
+
+// Intersect is where all the shapes overlap.
 func Intersect(s ...Shape) Shape { return isect{s} }
-func Sub(a, b Shape) Shape       { return diff{a, b} }
+
+// Sub is the first shape with the second taken out of it.
+func Sub(a, b Shape) Shape { return diff{a, b} }
 
 // ---- helpers ----
 
@@ -123,8 +138,10 @@ func Arc(cx, cy, r, a0, a1 float64, n int) []Vec {
 	return out
 }
 
+// Pts is a slice of points, written inline.
 func Pts(v ...Vec) []Vec { return v }
 
+// Cat joins runs of points, for a contour assembled from arcs.
 func Cat(groups ...[]Vec) []Vec {
 	var out []Vec
 	for _, g := range groups {

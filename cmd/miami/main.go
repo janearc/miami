@@ -37,6 +37,7 @@ var single = map[string]func() *raster.Scene{
 	"cassowary": scenes.Cassowary,
 }
 
+// main is the verb table, dispatched.
 func main() {
 	if len(os.Args) < 2 {
 		usage()
@@ -124,12 +125,16 @@ func main() {
 		proof.Must(err)
 		lit, err := scenes.Lit("sprites/made/", "sprites/made/starling.css")
 		proof.Must(err)
-		proof.Must(scenes.WriteAll(dir, append(rs, lit...)))
+		said, err := scenes.WriteAll(dir, append(rs, lit...))
+		proof.Must(err)
+		for _, line := range said {
+			fmt.Println(line)
+		}
 		return
 	case "play":
-		// plays a frames file to stdout. synchronised output so a frame is
-		// presented whole rather than torn, the cursor hidden, and the screen
-		// put back the way it was found on the way out.
+		// plays a frames file to stdout. synchronised output so a frame
+		// is presented whole rather than torn, the cursor hidden, and
+		// the screen put back the way it was found on the way out.
 		raw, err := os.ReadFile(os.Args[2])
 		proof.Must(err)
 		loop := len(os.Args) > 3 && os.Args[3] == "loop"
@@ -176,10 +181,12 @@ func main() {
 		checkFile(os.Args[2])
 		return
 	case "card":
-		// one piece of art per repository, seventy-five by seventeen, with a
-		// figlet wordmark set as characters beside it. colour escapes only:
-		// these are cat'd inside a readme and in a release tree, so nothing
-		// here may move the cursor or clear the screen.
+		// one piece of art per repository, seventy-five by seventeen,
+		// with a figlet wordmark set as characters beside it. colour
+		// escapes only:
+		//
+		// these are cat'd inside a readme and in a release tree, so
+		// nothing here may move the cursor or clear the screen.
 		name := os.Args[2]
 		const cols, rows = 75, 17
 		var cs [][]cells.Cell
@@ -203,10 +210,12 @@ func main() {
 			px := raster.Resolve(g, sc, 0, 0, cols*2, rows*3)
 			cardPx = px
 			cs = cells.ToCells(px, 2, 3)
-			// the scene's own declared palette, not the palette of the
-			// rendered pixels: most of this card is background, so sampling
-			// the render gives a ramp made of ground and the word comes out
-			// the colour of the dark it is sitting on
+			// the scene's own declared palette, not the palette of
+			// the rendered pixels:
+			//
+			// most of this card is background, so sampling the
+			// render gives a ramp made of ground and the word comes
+			// out the colour of the dark it is sitting on
 			for r, c := range sc.Pal {
 				if r != 'i' && r != 'e' {
 					pal = append(pal, c)
@@ -214,18 +223,18 @@ func main() {
 			}
 		}
 
-		// libtheme-css carries no wordmark at all. the card's whole argument
-		// is that the library owns no form, and it sits under a heading that
-		// already says its name; a word punched into the ramps was the one
-		// thing on it pretending to be an object.
+		// libtheme-css carries no wordmark at all. the card's whole
+		// argument is that the library owns no form, and it sits under
+		// a heading that already says its name; a word punched into the
+		// ramps was the one thing on it pretending to be an object.
 		word := map[string]string{
 			"cassowary": "cassowary", "bender": "bender",
 			"libtheme-css": "libtheme-css",
 		}[name]
-		// the art moves over to make room for type that can actually be read.
-		// contessa fitted the gap at three rows and held none of its
-		// letterforms: cassowary came out as punctuation. fitting the space
-		// was the wrong thing to optimise.
+		// the art moves over to make room for type that can actually be
+		// read. contessa fitted the gap at three rows and held none of
+		// its letterforms: cassowary came out as punctuation. fitting
+		// the space was the wrong thing to optimise.
 		shift := map[string]int{"cassowary": 11, "bender": 12}[name]
 		if shift > 0 {
 			cells.ShiftLeft(cs, shift, color.RGBA{16, 14, 24, 255})
@@ -238,9 +247,9 @@ func main() {
 			proof.Must(err)
 			art = typeset.Trim(ff.Render(word))
 		}
-		// only the bright half of the palette: Hot runs from the lightest
-		// colour to the middle one, and on a card that is mostly dark ground
-		// the middle one is nearly the ground itself
+		// only the bright half of the palette: Hot runs from the
+		// lightest colour to the middle one, and on a card that is
+		// mostly dark ground the middle one is nearly the ground itself
 		ramp := scenes.Ramp(pal)
 		if len(ramp) > 3 {
 			ramp = ramp[len(ramp)/2:]
@@ -249,9 +258,10 @@ func main() {
 			return scenes.Hot(ramp, float64(y)/math.Max(1, float64(len(art)-1)))
 		}
 		if name == "libtheme-css" {
-			// coloured from the ramps it stands above, column by column, so
-			// the mark is the palette. a colour library's own wordmark ought
-			// to be made of the thing the library does.
+			// coloured from the ramps it stands above, column by
+			// column, so the mark is the palette. a colour
+			// library's own wordmark ought to be made of the thing
+			// the library does.
 			marks := scenes.LibthemeMarks
 			wide := 0
 			for _, l := range art {
@@ -259,9 +269,10 @@ func main() {
 					wide = len(l)
 				}
 			}
-			// blended rather than stepped: six hard switches across a word
-			// land in the middle of letters, so a single glyph comes out half
-			// gold and half blue and reads as a fault rather than a spectrum
+			// blended rather than stepped: six hard switches across
+			// a word land in the middle of letters, so a single
+			// glyph comes out half gold and half blue and reads as
+			// a fault rather than a spectrum
 			ink = func(x, _ int) color.RGBA {
 				t := float64(x) / math.Max(1, float64(wide-1)) * float64(len(marks)-1)
 				i := int(t)
@@ -277,11 +288,14 @@ func main() {
 
 		proof.Must(write("dist/"+name+".ansi", []byte(cells.ANSI(cs))))
 
-		// and a plain companion, because markdown needs four spaces of indent
-		// to hold art preformatted and escapes do not survive that. colour is
-		// gone, so the picture has to be carried by lightness alone: the same
-		// subpixels, fitted to sextant masks against how bright each one is.
-		// the wordmark is stamped after, as the characters it already was.
+		// and a plain companion, because markdown needs four spaces of
+		// indent to hold art preformatted and escapes do not survive
+		// that. colour is gone, so the picture has to be carried by
+		// lightness alone:
+		//
+		// the same subpixels, fitted to sextant masks against how
+		// bright each one is. the wordmark is stamped after, as the
+		// characters it already was.
 		lum := make([][]float64, len(cardPx))
 		lo, hi := math.Inf(1), math.Inf(-1)
 		for y, r2 := range cardPx {
@@ -292,10 +306,13 @@ func main() {
 				lo, hi = math.Min(lo, v), math.Max(hi, v)
 			}
 		}
-		// stretched across the range the picture actually uses. a cassowary
-		// painted in mid blues and tans occupies a third of the scale, and
-		// left unstretched every one of them fits the same shade: the bird
-		// came out as one flat patch of light grey with a word next to it.
+		// stretched across the range the picture actually uses. a
+		// cassowary painted in mid blues and tans occupies a third of
+		// the scale, and left unstretched every one of them fits the
+		// same shade:
+		//
+		// the bird came out as one flat patch of light grey with a word
+		// next to it.
 		if hi > lo {
 			for y := range lum {
 				for x := range lum[y] {
@@ -324,9 +341,9 @@ func main() {
 		fmt.Printf("dist/%s.ansi  %d cols x %d rows\n", name, cols, rows)
 		return
 	case "shadow":
-		// a ball over a floor, with a light somewhere in the scene and a
-		// shadow that is cast rather than drawn: for every point of floor,
-		// one ray toward the lamp, and whether it arrives.
+		// a ball over a floor, with a light somewhere in the scene and
+		// a shadow that is cast rather than drawn: for every point of
+		// floor, one ray toward the lamp, and whether it arrives.
 		cols, rows, secs, fps := 90, 26, 8.0, 15
 		if len(os.Args) > 4 {
 			fmt.Sscan(os.Args[2], &cols)
@@ -344,24 +361,29 @@ func main() {
 			t := float64(i) / float64(fps)
 			e := t / secs
 			sc := view.Lit{
-				// the floor sits below the eye and the eye looks along it
+				// the floor sits below the eye and the eye
+				// looks along it
 				Eye: view.Eye{At: view.Vec{Y: 0.30}, Lens: 1.0, Near: 0.05},
 				Floor: view.Floor{Y: -0.55, Tile: 0.62, Far: 9.5, A: 'V', B: 'K',
-					// a shadow is a remap, so every colour in it was already
-					// chosen by the colourway
+					// a shadow is a remap, so every colour
+					// in it was already chosen by the
+					// colourway
 					Shade: map[byte]byte{'V': 'K', 'K': 'D'}},
-				// the lamp: high, to the left, and a little in front, so the
-				// shadow falls away to the right and lengthens as the ball
-				// travels from under it
-				// behind the ball as well as above it, so the shadow is thrown
-				// toward the viewer. with the lamp in front, every shadow fell
-				// away from the camera and hid behind the thing casting it.
+				// the lamp: high, and behind the ball as
+				// well as above it, so its shadow is
+				// thrown toward the viewer.
+				//
+				// with the lamp in front, every shadow
+				// fell away from the camera and hid
+				// behind the thing casting it.
 				Light: view.Vec{X: -1.2, Y: 3.0, Z: 1.6},
 				Ball: view.Ball{
 					At: view.Vec{
 						X: 1.30 * math.Sin(2*math.Pi*e),
-						// a bounce: the height is the absolute of a sine, so
-						// it arrives at the floor rather than easing into it
+						// a bounce: the height is the
+						// absolute of a sine, so it
+						// arrives at the floor rather
+						// than easing into it
 						Y: -0.21 + 0.66*math.Abs(math.Sin(3*math.Pi*e)),
 						Z: 3.6 - 0.7*math.Cos(2*math.Pi*e),
 					},
@@ -395,9 +417,9 @@ func main() {
 		fmt.Printf("%d frames -> out/shadow.frames\n", n)
 		return
 	case "ball":
-		// a checkered ball on nothing at all: spinning, moving, and coming
-		// toward the viewer. no background, so what is being looked at is the
-		// object and not the picture around it.
+		// a checkered ball on nothing at all: spinning, moving, and
+		// coming toward the viewer. no background, so what is being
+		// looked at is the object and not the picture around it.
 		cols, rows, secs, fps := 90, 26, 12.0, 15
 		if len(os.Args) > 4 {
 			fmt.Sscan(os.Args[2], &cols)
@@ -426,8 +448,9 @@ func main() {
 				}
 			}
 			ball := view.Ball{
-				// across, and toward the viewer and away again, so the same
-				// object is seen at several sizes without anything resizing it
+				// across, and toward the viewer and away again,
+				// so the same object is seen at several sizes
+				// without anything resizing it
 				At: view.Vec{
 					X: 0.62 * math.Sin(2*math.Pi*e),
 					Y: 0.22 * math.Sin(4*math.Pi*e),
@@ -455,8 +478,9 @@ func main() {
 		}
 		proof.Must(write("out/ball.frames", []byte(out.String())))
 
-		// and the same spin baked out as a daffy document, both ways, so the
-		// trade between size and compute is a measurement rather than a claim
+		// and the same spin baked out as a daffy document, both ways,
+		// so the trade between size and compute is a measurement rather
+		// than a claim
 		var baked []sprite.Frame
 		spin := view.Ball{At: view.Vec{Z: 2.4}, Radius: 0.42,
 			Spin: view.Vec{X: 0.13, Y: 0.37, Z: 0.05}}
@@ -483,8 +507,9 @@ func main() {
 			len(baked), a.Size(), b2.Size(), 100*float64(b2.Size())/float64(a.Size()))
 		return
 	case "flock":
-		// a flock at different depths over the dusk. every bird is the same
-		// sprite; what differs is where it is, and the viewport does the rest.
+		// a flock at different depths over the dusk. every bird is the
+		// same sprite; what differs is where it is, and the viewport
+		// does the rest.
 		cols, rows, secs, fps := 110, 30, 20.0, 15
 		if len(os.Args) > 4 {
 			fmt.Sscan(os.Args[2], &cols)
@@ -500,10 +525,13 @@ func main() {
 		proof.Must(err)
 
 		eye := view.DefaultEye()
-		// nine birds, spread through the depth of the picture. the near ones
-		// are big and cross fast; the far ones are small and barely move.
-		// that is parallax and it comes out of the projection for nothing --
-		// nothing here is told to make the distant ones slower.
+		// nine birds, spread through the depth of the picture. the near
+		// ones are big and cross fast; the far ones are small and
+		// barely move.
+		//
+		// that is parallax and it comes out of the projection for
+		// nothing -- nothing here is told to make the distant ones
+		// slower.
 		type bird struct {
 			z, y, x0, speed float64
 			phase           time.Duration
@@ -535,9 +563,13 @@ func main() {
 			for _, b := range birds {
 				objs = append(objs, view.Billboard{
 					Frames: frames, Height: 0.5, Phase: b.phase,
-					// wrapped, so the sky does not empty out: a bird that
-					// leaves on the right comes back on the left, and at its
-					// own depth nobody can tell it is the same one
+					// wrapped, so the sky does not empty
+					// out:
+					//
+					// a bird that leaves on the right comes
+					// back on the left, and at its own
+					// depth nobody can tell it is the same
+					// one
 					At: view.Vec{X: math.Mod(b.x0+b.speed*t+4.5, 9) - 4.5,
 						Y: b.y + 0.05*math.Sin(t*0.9+b.z), Z: b.z},
 				})
@@ -594,8 +626,9 @@ func main() {
 			proof.Must(err)
 			px := sh.Paint(st)
 
-			// the bird crosses once, which is its own kind of not repeating,
-			// and rises as the light goes. its wingbeat keeps its own clock.
+			// the bird crosses once, which is its own kind of not
+			// repeating, and rises as the light goes. its wingbeat
+			// keeps its own clock.
 			e := t / secs
 			x := int(float64(-bw) + float64(cols*2+2*bw)*e)
 			y := int(float64(rows*3)*(0.62-0.34*e) - float64(bh)/2 +
@@ -609,8 +642,9 @@ func main() {
 			} else {
 				out.WriteString(cells.Delta(prev, cs))
 			}
-			// the encoder is checked as it runs: replay the delta onto the
-			// previous frame and it must give this one back exactly
+			// the encoder is checked as it runs: replay the delta
+			// onto the previous frame and it must give this one
+			// back exactly
 			if prev != nil {
 				echo := make([][]cells.Cell, len(prev))
 				for i := range prev {
@@ -635,9 +669,10 @@ func main() {
 		fmt.Printf("%d frames, %.0fs -> out/fly.frames\n", n, secs)
 		return
 	case "scene":
-		// renders a json scene, and if a go scene of the same name exists,
-		// compares them: the only proof a document expresses a scene is that
-		// it paints the same pixels as the code it replaced.
+		// renders a json scene, and if a go scene of the same name
+		// exists, compares them: the only proof a document expresses a
+		// scene is that it paints the same pixels as the code it
+		// replaced.
 		doc, err := scene.Load(os.Args[2])
 		proof.Must(err)
 		cols, rows := 100, 30
@@ -687,8 +722,9 @@ func main() {
 		fmt.Println("wrote six dusk samples")
 		return
 	case "emoji":
-		// the rune is given as a hex codepoint, because argv and a terminal
-		// between them will not reliably deliver an astral character
+		// the rune is given as a hex codepoint, because argv and a
+		// terminal between them will not reliably deliver an astral
+		// character
 		var cp int64
 		fmt.Sscanf(os.Args[2], "%x", &cp)
 		cols, n, word, fig := 44, 8, "", "smslant"
@@ -708,18 +744,20 @@ func main() {
 		proof.Must(err)
 		img, err := png.Decode(bytes.NewReader(bm.PNG))
 		proof.Must(err)
-		// keep the picture square: a cell is twice as tall as it is wide, so
-		// the row count is the column count scaled by the image's own aspect
-		// and then halved. that is the only place the aspect is applied.
+		// keep the picture square: a cell is twice as tall as it is
+		// wide, so the row count is the column count scaled by the
+		// image's own aspect and then halved. that is the only place
+		// the aspect is applied.
 		ib := img.Bounds()
 		rows := int(float64(cols)*float64(ib.Dy())/float64(ib.Dx())/2 + 0.5)
-		// palette first, then snap, then vote down: reducing after sampling
-		// lets the source's anti-aliased edges into the palette
+		// palette first, then snap, then vote down: reducing after
+		// sampling lets the source's anti-aliased edges into the
+		// palette
 		px := cells.SampleFlat(img, cols*2, rows*3, n, 0.055)
 
-		// the wordmark is figlet letterforms placed as characters, not type
-		// rasterised into the block-glyph fitter: at this size the fitter
-		// cannot hold a letterform and the N comes out as an H
+		// the wordmark is figlet letterforms placed as characters, not
+		// type rasterised into the block-glyph fitter: at this size the
+		// fitter cannot hold a letterform and the N comes out as an H
 		var art []string
 		if word != "" {
 			ff, err := typeset.LoadFig(fig)
@@ -742,13 +780,13 @@ func main() {
 		name := fmt.Sprintf("out/emoji-%X", cp)
 		proof.Must(write(name+".ansi", []byte(cells.ANSIAlpha(cs))))
 		// the same cells on two grounds, because "the background is
-		// transparent" is a claim about what the terminal supplies and the
-		// only way to see it is to supply two different things.
+		// transparent" is a claim about what the terminal supplies and
+		// the only way to see it is to supply two different things.
 		//
-		// drawn through the cell-image renderer rather than by expanding the
-		// block masks: a literal letter is not a sextant, so the mask path
-		// draws nothing where the wordmark is and the preview quietly lies
-		// about what the file contains.
+		// drawn through the cell-image renderer rather than by
+		// expanding the block masks: a literal letter is not a sextant,
+		// so the mask path draws nothing where the wordmark is and the
+		// preview quietly lies about what the file contains.
 		for _, g := range []struct {
 			suffix string
 			ground color.RGBA
@@ -848,6 +886,7 @@ func main() {
 	}
 }
 
+// bigBirds renders the negative-space piece at a size, with its knobs.
 func bigBirds(args []string) {
 	if len(args) < 2 {
 		usage()

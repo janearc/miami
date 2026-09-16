@@ -13,30 +13,34 @@ import (
 	"miami/raster"
 )
 
-// The cards: one piece of art per repository, seventy-five columns by
-// seventeen rows, to sit beside a readme.
+// The cards: one piece of art per repository, seventy-five columns by seventeen
+// rows, to sit beside a readme.
 //
 // Two constraints shape every one of them. They are cat'd inside a readme and
 // inside a release tree, so nothing may move the cursor or clear the screen --
-// colour escapes and newlines only. And they have to say what the thing is at
-// a glance, on a card the size of a business card, which mostly means: pick
-// the one feature nothing else has and spend the resolution on that.
+// colour escapes and newlines only. And they have to say what the thing is at a
+// glance, on a card the size of a business card, which mostly means:
+//
+// pick the one feature nothing else has and spend the resolution on that.
 
 // Libtheme is the colour library, and it has no form on purpose.
 //
 // libtheme-css is authoritative on colour for the whole suite and owns no
 // geometry at all -- it stores as css because css is a container, not because
 // anybody is in the css business. So its card is colour and nothing else: no
-// object, no silhouette, nothing to recognise. Six ramps, each mixed in oklab,
-// which is the library's own line between two colours and the reason a
-// magenta-to-orange run does not go through mud on the way.
+// object, no silhouette, nothing to recognise.
+//
+// Six ramps, each mixed in oklab, which is the library's own line between two
+// colours and the reason a magenta-to-orange run does not go through mud on the
+// way.
 //
 // Drawing a paint pot or a palette would have been easy and would have been a
-// lie about what the thing does.
-// Band is the share of the card the wordmark's ground takes, off the top.
-// Type wants a ground, not a gradient: set over the ramps the letters had to
-// be punched out in near-black and read as damage to the artwork. Giving them
-// their own rows is the ordinary typographic answer and it was porter's.
+// lie about what the thing does. Band is the share of the card the wordmark's
+// ground takes, off the top. Type wants a ground, not a gradient:
+//
+// set over the ramps the letters had to be punched out in near-black and read
+// as damage to the artwork. Giving them their own rows is the ordinary
+// typographic answer and it was porter's.
 const Band = 5.0 / 17.0
 
 // LibthemeMarks are the six ramps' top notes, in order. The wordmark is
@@ -44,6 +48,7 @@ const Band = 5.0 / 17.0
 // sits above rather than of a colour somebody liked.
 var LibthemeMarks = []string{"ff8f4a", "9df7f2", "ff8ad0", "f5c542", "8fc0f2", "c9c2cc"}
 
+// Libtheme is the colour library's card, and it has no form on purpose.
 func Libtheme(sh grade.Sheet) grade.Stack {
 	// each band is one ramp, and the bands are the whole picture
 	runs := [][]string{
@@ -80,8 +85,9 @@ func Libtheme(sh grade.Sheet) grade.Stack {
 			Name:  "band",
 			Field: field.Linear{A: field.Point{U: 0.03}, B: field.Point{U: 0.97}},
 			Ramp:  ramp(stops...),
-			// a hard band: the edge between two ramps is the only line in the
-			// picture, and a soft one would read as a seventh colour
+			// a hard band: the edge between two ramps is the only
+			// line in the picture, and a soft one would read as a
+			// seventh colour
 			Alpha: grade.Times(
 				field.Func(func(_, v float64) float64 {
 					if v < lo || v >= hi {
@@ -100,20 +106,22 @@ func Libtheme(sh grade.Sheet) grade.Stack {
 // builds itself from within.
 //
 // A robot, because of the name, but not a drawn character -- a head assembled
-// out of nine plates, each in its own colour, with the seams left showing.
-// That is the whole claim of the repository in one picture: nine separate
-// things, visibly separate, that are nevertheless one head. A smooth robot
-// would have said "robot" and nothing else.
+// out of nine plates, each in its own colour, with the seams left showing. That
+// is the whole claim of the repository in one picture: nine separate things,
+// visibly separate, that are nevertheless one head.
+//
+// A smooth robot would have said "robot" and nothing else.
 func Bender() *raster.Scene {
 	const w, h = 100.0, 45.0
 	at := func(x, y float64) geom.Vec { return geom.Vec{X: x, Y: y} }
 
 	// the nine plates, laid out as a head: a crown, a brow, two temples, a
 	// face, two cheeks, a jaw and a chin. they tile a rectangle with a gap
-	// between each, and the gap is the point.
-	// the head, chamfered. the plates are cut out of it rather than laid
-	// inside it, so the outline is a head and the seams are still seams. laid
-	// out as a grid on their own they read as a colour chart with eyes.
+	// between each, and the gap is the point. the head, chamfered.
+	//
+	// the plates are cut out of it rather than laid inside it, so the
+	// outline is a head and the seams are still seams. laid out as a grid
+	// on their own they read as a colour chart with eyes.
 	head := geom.Poly{P: geom.Pts(
 		at(23, 3), at(61, 3), at(66, 8), at(66, 30),
 		at(61, 41), at(23, 41), at(18, 30), at(18, 8),
@@ -169,8 +177,8 @@ func Bender() *raster.Scene {
 	return sc
 }
 
-// PageRamp is a ramp for the documentation to paint with: dark through
-// violet and magenta to gold, which shows a mixer doing its job because a
+// PageRamp is a ramp for the documentation to paint with: dark through violet
+// and magenta to gold, which shows a mixer doing its job because a
 // magenta-to-orange run is exactly where a bad one goes through mud.
 func PageRamp() functions.Ramp {
 	return ramp(0.0, "120631", 0.3, "5a2071", 0.55, "c63f6b", 0.8, "ff8f4a", 1.0, "ffd08a")
@@ -193,8 +201,8 @@ func Hex(s string) color.RGBA {
 }
 
 // Blend is two hex colours mixed in oklab, which is the library's own line
-// between two colours and the reason a gold-to-blue run does not go through
-// mud on the way.
+// between two colours and the reason a gold-to-blue run does not go through mud
+// on the way.
 func Blend(a, b string, t float64) color.RGBA {
 	c, _ := srgb.FromSwatch(ok.Mix.Mix(hex(a), hex(b), t))
 	q := func(v float64) uint8 {

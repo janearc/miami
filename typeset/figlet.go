@@ -9,14 +9,15 @@ import (
 )
 
 // a figlet banner used as a stencil. the file is ink and space; we render the
-// ink as geometry at subcell resolution rather than pasting its characters,
-// so the wordmark scales with the frame instead of being locked to one size.
+// ink as geometry at subcell resolution rather than pasting its characters, so
+// the wordmark scales with the frame instead of being locked to one size.
 type TextMask struct {
 	Ink    [][]bool
 	Origin geom.Vec // top left, physical units
 	CW, CH float64  // physical size of one character cell
 }
 
+// LoadInk reads a figlet text file as a mask: which cells carry ink.
 func LoadInk(path string) ([][]bool, int, int, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -81,6 +82,7 @@ func Erode(ink [][]bool, scale, iters int) [][]bool {
 	return up
 }
 
+// In reports whether a point falls on inked text, the mask fitted to the frame.
 func (t TextMask) In(p geom.Vec) bool {
 	cx := int(math.Floor((p.X - t.Origin.X) / t.CW))
 	cy := int(math.Floor((p.Y - t.Origin.Y) / t.CH))

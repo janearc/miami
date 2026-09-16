@@ -15,8 +15,8 @@ import (
 
 // check: what a document holds, and what is wrong with it.
 //
-// This is the verb to call before committing to a render, and it is why a
-// role that matches nothing is a report rather than a crash. It is also
+// This is the verb to call before committing to a render, and it is why a role
+// that matches nothing is a report rather than a crash. It is also
 // deterministic -- same file, same output -- so it can be diffed, tested, and
 // put behind an agent that will run it two hundred times without watching.
 func checkFile(path string) {
@@ -45,6 +45,8 @@ func checkFile(path string) {
 	reportFrames(path, frames)
 }
 
+// checkScene reports a scene document: its layers, and each layer's gain at
+// three moments, which is where a gain written as nought shows up.
 func checkScene(path string) {
 	d, err := scene.Load(path)
 	if err != nil {
@@ -87,6 +89,8 @@ func checkScene(path string) {
 	fmt.Println("ok -- render it with: miami scene", path)
 }
 
+// reportFrames reports a stencil or a stream: its size, which roles it carries,
+// and which of the eleven it does not.
 func reportFrames(path string, frames []sprite.Frame) {
 	if len(frames) == 0 {
 		fmt.Println("REFUSED: no frames")

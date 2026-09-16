@@ -13,19 +13,22 @@ import (
 // Node is one field, named by its single key.
 //
 // Three of these are libdaffy's own -- linear, radial, conic -- and through is
-// its matrix wrapper. The rest are either combinators, which build an alpha
-// out of other fields, or primitives that carry real maths: waves and stars.
+// its matrix wrapper. The rest are either combinators, which build an alpha out
+// of other fields, or primitives that carry real maths: waves and stars.
 //
 // Those two are the interesting admission. A scene document cannot express a
 // sum of drifting sines or a field of twinkling points, and it should not try:
 // the alternative is an expression language, and the cost of that is a
-// programming language nobody can debug. So they are named, their parameters
-// are data, and a shape none of them describes is a reason to write a new
-// primitive in Go rather than to make the file cleverer.
+// programming language nobody can debug.
+//
+// So they are named, their parameters are data, and a shape none of them
+// describes is a reason to write a new primitive in Go rather than to make the
+// file cleverer.
 type Node struct {
 	raw map[string]json.RawMessage
 }
 
+// UnmarshalJSON reads a field, which is an object with exactly one name in it.
 func (n *Node) UnmarshalJSON(b []byte) error {
 	n.raw = map[string]json.RawMessage{}
 	if err := json.Unmarshal(b, &n.raw); err != nil {
@@ -40,10 +43,12 @@ func (n *Node) UnmarshalJSON(b []byte) error {
 // Pt is a position on the sheet, either coordinate of which may move.
 type Pt [2]Value
 
+// at is the point this position resolves to at a moment in the scene.
 func (p Pt) at(c ctx) field.Point {
 	return field.Point{U: p[0].at(c), V: p[1].at(c)}
 }
 
+// field builds the field this node names, at a moment in the scene.
 func (n Node) field(c ctx) (field.Field, error) {
 	for name, body := range n.raw {
 		switch name {
@@ -151,8 +156,8 @@ func (n Node) field(c ctx) (field.Field, error) {
 			return grade.Times(fs...), nil
 
 		case "smooth":
-			// a smoothstep across a field's own t: what turns a continuous
-			// field into a band with a soft edge
+			// a smoothstep across a field's own t: what turns a
+			// continuous field into a band with a soft edge
 			var a struct {
 				Field Node
 				A, B  Value
@@ -170,8 +175,9 @@ func (n Node) field(c ctx) (field.Field, error) {
 			}), nil
 
 		case "vband":
-			// a gate on height alone: a cloud does not appear below the
-			// horizon and a star does not come out over the ground
+			// a gate on height alone: a cloud does not appear below
+			// the horizon and a star does not come out over the
+			// ground
 			var a struct{ Min, Max Value }
 			if err := json.Unmarshal(body, &a); err != nil {
 				return nil, err
@@ -204,8 +210,10 @@ func (n Node) field(c ctx) (field.Field, error) {
 // Cloud. The reason it is one primitive rather than three composable ones is
 // that the sum is the point: each term has its own period, and periods that
 // share no factor are what stop the sky arriving back at an arrangement it has
-// already been in. Compose them separately and you would have to add them,
-// which needs arithmetic, which is the thing being avoided.
+// already been in.
+//
+// Compose them separately and you would have to add them, which needs
+// arithmetic, which is the thing being avoided.
 func waves(body []byte, c ctx) (field.Field, error) {
 	var a struct {
 		Terms []struct{ U, V, Period, Amp Value }
@@ -239,10 +247,10 @@ func waves(body []byte, c ctx) (field.Field, error) {
 
 // stars is a fixed field of points that vary in brightness but never move.
 //
-// The hash is the usual sine-fract trick. It is not good noise, and it does
-// not need to be: a star field wants points that stay exactly put between
-// frames, which a hash of the cell gives for nothing, and a lattice broken up
-// by a second hash so they are not on a grid.
+// The hash is the usual sine-fract trick. It is not good noise, and it does not
+// need to be: a star field wants points that stay exactly put between frames,
+// which a hash of the cell gives for nothing, and a lattice broken up by a
+// second hash so they are not on a grid.
 func stars(body []byte, c ctx) (field.Field, error) {
 	var a struct {
 		Grid, Threshold, Size, Rate Value
@@ -274,11 +282,14 @@ func stars(body []byte, c ctx) (field.Field, error) {
 	}), nil
 }
 
+// hash2 is a repeatable number from a pair of coordinates. Not good noise; it
+// only has to give a star the same place in every frame.
 func hash2(x, y float64) float64 {
 	s := math.Sin(x*127.1+y*311.7) * 43758.5453
 	return s - math.Floor(s)
 }
 
+// smoothstep is nought below a, one above b, and eased between.
 func smoothstep(x, a, b float64) float64 {
 	if x <= a {
 		return 0

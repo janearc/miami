@@ -12,14 +12,15 @@ import (
 	"miami/geom"
 )
 
-// a Face is an outline font we did not draw. letters come from a type
-// designer; this package only sizes, spaces and places them.
+// a Face is an outline font we did not draw. letters come from a type designer;
+// this package only sizes, spaces and places them.
 type Face struct {
 	Name string
 	f    *sfnt.Font
 	buf  sfnt.Buffer
-	// everything is loaded at one large ppem and scaled in float, so outline
-	// precision never depends on the size a letter is finally drawn at.
+	// everything is loaded at one large ppem and scaled in float, so
+	// outline precision never depends on the size a letter is finally drawn
+	// at.
 	capAt float64
 }
 
@@ -27,6 +28,7 @@ const loadPPEM = 1000
 
 var ppem = fixed.I(loadPPEM)
 
+// f26 is a font's fixed-point number as an ordinary one.
 func f26(v fixed.Int26_6) float64 { return float64(v) / 64 }
 
 // Faces lists the full names inside a font file or collection.
@@ -44,6 +46,7 @@ func Faces(path string) ([]string, error) {
 	return out, nil
 }
 
+// open reads every font in a file, a collection being several in one.
 func open(path string) ([]*sfnt.Font, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -87,7 +90,8 @@ func LoadFace(path, name string) (*Face, error) {
 		}
 		cap := f26(m.CapHeight)
 		if cap <= 0 {
-			// some faces leave the OS/2 cap height empty; measure an H instead
+			// some faces leave the OS/2 cap height empty; measure
+			// an H instead
 			if p, _, err := (&Face{f: f, capAt: 1}).raw('H'); err == nil {
 				lo, hi := p.Bounds()
 				cap = hi.Y - lo.Y
@@ -152,8 +156,8 @@ func (fc *Face) raw(r rune) (geom.Path, float64, error) {
 	return geom.NewPath(contours), f26(adv), nil
 }
 
-// Glyph returns a letter scaled so its capitals are capHeight tall, placed
-// with its pen origin at pen (on the baseline), and its advance at that size.
+// Glyph returns a letter scaled so its capitals are capHeight tall, placed with
+// its pen origin at pen (on the baseline), and its advance at that size.
 func (fc *Face) Glyph(r rune, pen geom.Vec, capHeight float64) (geom.Path, float64, error) {
 	p, adv, err := fc.raw(r)
 	if err != nil {

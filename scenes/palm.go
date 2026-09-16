@@ -7,9 +7,11 @@ import (
 	"miami/raster"
 )
 
+// Palm is the palm: six fronds with a quadratic bend, because ten merged into
+// a solid T and a linear droop read as a spider on a stick.
 func Palm() *raster.Scene {
-	// leans left, so it frames the left edge of the composite and arches away
-	// from the subject rather than into it.
+	// leans left, so it frames the left edge of the composite and arches
+	// away from the subject rather than into it.
 	trunk := geom.Taper{
 		P: []geom.Vec{{X: 64, Y: 150}, {X: 60, Y: 126}, {X: 53, Y: 100}, {X: 45, Y: 76}, {X: 40, Y: 60}},
 		R: []float64{5.0, 4.2, 3.4, 2.8, 2.4},

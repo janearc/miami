@@ -25,8 +25,8 @@ func Frond(base geom.Vec, ang0, bend, length, w float64) geom.Taper {
 	return geom.Taper{P: pts, R: rad}
 }
 
-// PalmAt builds one palm in the composite's own coordinates. h is trunk
-// height; lean is how far the crown sits from the base, positive to the right.
+// PalmAt builds one palm in the composite's own coordinates. h is trunk height;
+// lean is how far the crown sits from the base, positive to the right.
 func PalmAt(base geom.Vec, h, lean float64, flip bool, skew float64) []geom.Shape {
 	crown := geom.Vec{X: base.X + lean, Y: base.Y - h}
 	var tp []geom.Vec

@@ -1,25 +1,28 @@
 // Package scene reads a painted scene from JSON.
 //
 // A grade layer is already data -- a field, a ramp, an alpha, a blend and a
-// gain -- so the stack was always a document pretending to be Go. What was
-// not obvious is that the layers are the easy half. Three things in a moving
-// scene resist being written down, and how each is handled is the whole of
-// this package:
+// gain -- so the stack was always a document pretending to be Go. What was not
+// obvious is that the layers are the easy half.
+//
+// Three things in a moving scene resist being written down, and how each is
+// handled is the whole of this package:
 //
 //	a value that changes    the sun's height, the gain of a glow going out
 //	a colour that changes   a sky whose every ramp stop travels at dusk
 //	a field with maths in   a sum of drifting waves, a field of stars
 //
 // The first two are solved by letting every number and every colour be a
-// binding rather than a constant. The third is solved by naming them: they
-// are primitives, not scene logic, and a scene that needs a shape none of the
+// binding rather than a constant. The third is solved by naming them: they are
+// primitives, not scene logic, and a scene that needs a shape none of the
 // primitives describe needs a new primitive, not an escape hatch.
 //
 // There is deliberately no expression language. The moment a scene file can
 // evaluate arithmetic it is a programming language with no debugger, no line
-// numbers and no way to test a fragment. A binding is a shape -- travel from
-// here to there, oscillate about a mid -- and a shape can be reported, drawn
-// and checked. Anything a binding cannot say belongs in Go, behind a name.
+// numbers and no way to test a fragment.
+//
+// A binding is a shape -- travel from here to there, oscillate about a mid --
+// and a shape can be reported, drawn and checked. Anything a binding cannot say
+// belongs in Go, behind a name.
 //
 // The document, in full:
 //
@@ -78,10 +81,10 @@ type Stop struct {
 	C  Colour  `json:"c"`
 }
 
-// ctx is everything a binding is allowed to know: where the scene is in its
-// own time, and the constants it declared. Not the sheet, not the pixel --
-// a binding is a function of time and nothing else, which is what keeps it
-// cheap enough to evaluate once per frame instead of once per sample.
+// ctx is everything a binding is allowed to know: where the scene is in its own
+// time, and the constants it declared. Not the sheet, not the pixel -- a
+// binding is a function of time and nothing else, which is what keeps it cheap
+// enough to evaluate once per frame instead of once per sample.
 type ctx struct {
 	t, dur, e float64
 	c         map[string]float64
@@ -136,6 +139,7 @@ func (d *Doc) At(t float64) (grade.Stack, error) {
 	return out, nil
 }
 
+// blendOf is the blend a document names, and refuses one it does not know.
 func blendOf(s string) (grade.Blend, error) {
 	switch s {
 	case "", "over":
@@ -166,6 +170,7 @@ type Value struct {
 	clamp  *Value
 }
 
+// UnmarshalJSON reads a value: a number, an @constant, or a binding.
 func (v *Value) UnmarshalJSON(b []byte) error {
 	var n float64
 	if json.Unmarshal(b, &n) == nil {
@@ -194,6 +199,7 @@ func (v *Value) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// at is what this value is at a moment in the scene.
 func (v Value) at(c ctx) float64 {
 	switch {
 	case v.fixed != nil:
@@ -237,6 +243,7 @@ func (v Value) at(c ctx) float64 {
 	return 0
 }
 
+// curve is an easing, by name.
 func curve(name string, e float64) float64 {
 	e = clamp01(e)
 	switch name {
@@ -259,6 +266,7 @@ type Colour struct {
 	ease     string
 }
 
+// UnmarshalJSON reads a colour: a hex string, or one that travels.
 func (c *Colour) UnmarshalJSON(b []byte) error {
 	var s string
 	if json.Unmarshal(b, &s) == nil {
@@ -273,16 +281,18 @@ func (c *Colour) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// at is what this colour is at a moment in the scene.
 func (c Colour) at(x ctx) swatch.Swatch {
 	if c.fixed != "" {
 		return hex(c.fixed)
 	}
 	// each stop travels on its own. a sky that changes colour is not a
-	// crossfade between two pictures -- that goes through a grey middle where
-	// the two disagree -- it is one ramp whose stops each move.
+	// crossfade between two pictures -- that goes through a grey middle
+	// where the two disagree -- it is one ramp whose stops each move.
 	return ok.Mix.Mix(hex(c.from), hex(c.to), curve(c.ease, x.e))
 }
 
+// hex is a hex string as a physical colour.
 func hex(s string) swatch.Swatch {
 	var v [3]uint8
 	for i := 0; i < len(s) && i < 6; i++ {
@@ -301,15 +311,17 @@ func hex(s string) swatch.Swatch {
 		B: float64(v[2]) / 255}.Swatch()
 }
 
+// clamp01 holds a number to nought and one.
 func clamp01(v float64) float64 { return math.Max(0, math.Min(1, v)) }
 
 // newTrimmer strips // line comments outside of strings.
 //
-// JSON has no comments and a scene file badly wants them: which layer is
-// which, why a period is 19.1 and not 19. The house argument against JSON was
-// that plain text reads in a terminal and can be hand-edited, and a document
-// nobody can annotate loses half of that. Stripping comments on the way in
-// costs twenty lines and gives it back.
+// JSON has no comments and a scene file badly wants them: which layer is which,
+// why a period is 19.1 and not 19. The house argument against JSON was that
+// plain text reads in a terminal and can be hand-edited, and a document nobody
+// can annotate loses half of that.
+//
+// Stripping comments on the way in costs twenty lines and gives it back.
 func newTrimmer(b []byte) *bytes.Reader {
 	out := make([]byte, 0, len(b))
 	inStr, esc := false, false
@@ -333,8 +345,8 @@ func newTrimmer(b []byte) *bytes.Reader {
 	return bytes.NewReader(out)
 }
 
-// built-in constants a binding may name. Scene progress and elapsed seconds
-// are the two every moving scene needs and neither belongs in the document.
+// built-in constants a binding may name. Scene progress and elapsed seconds are
+// the two every moving scene needs and neither belongs in the document.
 func (c ctx) lookup(name string) float64 {
 	switch name {
 	case "e":

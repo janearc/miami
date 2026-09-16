@@ -28,8 +28,8 @@ func Page(sc *raster.Scene, cols int, name string, text []byte, marks []cells.Ma
 
 	Must(os.WriteFile("out/"+name+".ansi", []byte(cells.ANSI(cs)), 0o644))
 	Must(os.WriteFile("out/"+name+"-roles.txt", []byte(raster.RoleText(g)), 0o644))
-	// a cell is 1:2; every preview keeps that, and draws literal glyphs with a
-	// real monospace face rather than leaving them blank
+	// a cell is 1:2; every preview keeps that, and draws literal glyphs
+	// with a real monospace face rather than leaving them blank
 	Must(SaveImage("out/"+name+"-whole.png", NewCellImage(mono, 6, 12).Draw(cs)))
 	const win = 40
 	big := NewCellImage(mono, 12, 24)
@@ -47,9 +47,10 @@ func Page(sc *raster.Scene, cols int, name string, text []byte, marks []cells.Ma
 		c := cols / div
 		r := raster.TermRows(sc, c)
 		gg := raster.Rasterize(sc, c*2, r*3, 4)
-		// no marks here: they are one cell each at any width, so at a quarter the
-		// border bulbs swelled into blobs and the fine print overwrote itself.
-		// this render judges mass, and marks are not mass.
+		// no marks here: they are one cell each at any width, so at a
+		// quarter the border bulbs swelled into blobs and the fine
+		// print overwrote itself. this render judges mass, and marks
+		// are not mass.
 		cc := cells.ToCells(raster.Resolve(gg, sc, 0, 0, c*2, r*3), 2, 3)
 		Must(SaveImage(fmt.Sprintf("out/%s-div%d.png", name, div), NewCellImage(mono, 6*div/2, 12*div/2).Draw(cc)))
 	}

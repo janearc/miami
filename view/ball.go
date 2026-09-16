@@ -13,22 +13,25 @@ import (
 // drew. Neither will do for a patterned ball: you cannot draw every facet of a
 // sphere, and picking the nearest of eight poses would make the pattern jump.
 //
-// So this one is not drawn at all. For every pixel inside the disc, the point
-// on the sphere facing the viewer is known exactly -- the z of a unit sphere
-// is what is left of one when you take off x squared and y squared -- and that
-// point, turned back through the ball's own rotation, says where on the
-// surface you are looking. The pattern is then a function of latitude and
-// longitude. Every facet is known because none of them were stored.
+// So this one is not drawn at all.
 //
-// This is also, exactly, the first half of a ray tracer. Finding which point
-// of a sphere a pixel sees IS the ray-sphere intersection; the only thing not
+// For every pixel inside the disc, the point on the sphere facing the viewer is
+// known exactly -- the z of a unit sphere is what is left of one when you take
+// off x squared and y squared -- and that point, turned back through the ball's
+// own rotation, says where on the surface you are looking.
+//
+// The pattern is then a function of latitude and longitude. Every facet is
+// known because none of them were stored.
+//
+// This is also, exactly, the first half of a ray tracer. Finding which point of
+// a sphere a pixel sees IS the ray-sphere intersection; the only thing not
 // being done here is following the ray onwards after it lands. When tracing
 // arrives, this function does not change -- it gets a second caller.
 //
-// The pattern is four quadrants of longitude, each in its own pair of roles
-// and its own check size. One check on a plain ball tells you nothing about
-// which way it is turning; four different quarters tell you at a glance,
-// which is the whole reason for them.
+// The pattern is four quadrants of longitude, each in its own pair of roles and
+// its own check size. One check on a plain ball tells you nothing about which
+// way it is turning; four different quarters tell you at a glance, which is the
+// whole reason for them.
 type Ball struct {
 	At     Vec
 	Radius float64       // world units
@@ -40,18 +43,18 @@ type Ball struct {
 // Extent is where the ball is and how tall it stands.
 func (b Ball) Extent(time.Duration) (Vec, float64) { return b.At, b.Radius * 2 }
 
-// quadrants are the four longitude quarters: the two roles each is checked
-// in, and how many checks it carries. Different colours tell you which face
-// you are looking at; different check sizes tell you even in one colourway
-// that binds two of them alike.
+// quadrants are the four longitude quarters: the two roles each is checked in,
+// and how many checks it carries. Different colours tell you which face you are
+// looking at; different check sizes tell you even in one colourway that binds
+// two of them alike.
 var quadrants = [4]struct {
 	a, b  byte
 	steps float64
 }{
-	// each pair has to contrast *within* the quadrant as well as against the
-	// other three. the first try used beak-base and beak-band, which most
-	// colourways bind to two shades of the same gold, and that quarter came
-	// out as a flat orange patch with no check in it at all.
+	// each pair has to contrast *within* the quadrant as well as against
+	// the other three. the first try used beak-base and beak-band, which
+	// most colourways bind to two shades of the same gold, and that quarter
+	// came out as a flat orange patch with no check in it at all.
 	{'K', 'W', 4}, // dark against light
 	{'D', 'V', 6}, // near-black against lilac
 	{'B', 'X', 3}, // gold against cream
@@ -64,8 +67,9 @@ func (b Ball) Render(_ Eye, t time.Duration, rows int) sprite.Frame {
 		rows = 1
 	}
 	// a sprite pixel is one column by half a row and a subcell is half a
-	// column by a third, so a circle needs four columns for every three rows.
-	// this is the only place the ball knows about the shape of a cell.
+	// column by a third, so a circle needs four columns for every three
+	// rows. this is the only place the ball knows about the shape of a
+	// cell.
 	cols := rows * 4 / 3
 	if cols < 1 {
 		cols = 1
@@ -85,7 +89,8 @@ func (b Ball) Render(_ Eye, t time.Duration, rows int) sprite.Frame {
 				row[c] = '.' // off the disc: this is the silhouette, for free
 				continue
 			}
-			// the front of the sphere at this pixel is its own normal
+			// the front of the sphere at this pixel is its own
+			// normal
 			row[c] = surfaceAt(inv, Vec{nx, -ny, math.Sqrt(1 - d)})
 		}
 		art[r] = string(row)
@@ -110,24 +115,27 @@ func (b Ball) Spin_(t time.Duration) mat {
 //
 // This is the function the doc comment above promised would not change when
 // tracing arrived, and it has not: Render calls it with the normal it derives
-// from a pixel's place in the disc, and the ray tracer calls it with the
-// normal at the point a ray actually struck. Same maths, two callers, and the
-// pattern cannot disagree between the two pictures because there is only one
-// of it.
+// from a pixel's place in the disc, and the ray tracer calls it with the normal
+// at the point a ray actually struck.
+//
+// Same maths, two callers, and the pattern cannot disagree between the two
+// pictures because there is only one of it.
 func (b Ball) Surface(n Vec, t time.Duration) byte {
 	return surfaceAt(b.Spin_(t), n)
 }
 
+// surfaceAt is the role at a point on the ball, given the normal there and the
+// rotation to undo. Render and the ray tracer both call it.
 func surfaceAt(inv mat, n Vec) byte {
 	q := inv.apply(n)
 	lat := math.Asin(clamp(q.Y, -1, 1))
 	lon := math.Atan2(q.X, q.Z)
 	quad := quadrants[int(math.Floor((lon+math.Pi)/(math.Pi/2)))&3]
 	k := quad.steps
-	// plain bands of latitude and longitude, which means the checks converge
-	// at the poles. that is not an artefact to correct: it is what the seams
-	// on a real ball do, and it is the clearest signal of which way the thing
-	// is tipped.
+	// plain bands of latitude and longitude, which means the checks
+	// converge at the poles. that is not an artefact to correct: it is what
+	// the seams on a real ball do, and it is the clearest signal of which
+	// way the thing is tipped.
 	u := math.Floor(lon / (math.Pi / k))
 	v := math.Floor(lat / (math.Pi / k))
 	if int(u+v)&1 == 0 {
@@ -139,6 +147,7 @@ func surfaceAt(inv mat, n Vec) byte {
 // mat is a rotation, three rows of three.
 type mat [3][3]float64
 
+// apply turns a vector through the matrix.
 func (m mat) apply(v Vec) Vec {
 	return Vec{
 		m[0][0]*v.X + m[0][1]*v.Y + m[0][2]*v.Z,
@@ -161,4 +170,5 @@ func rotation(x, y, z float64) mat {
 	}
 }
 
+// clamp holds a number between two bounds.
 func clamp(v, lo, hi float64) float64 { return math.Max(lo, math.Min(hi, v)) }

@@ -33,10 +33,11 @@ type Verdict struct {
 }
 
 // Legible measures each named text role against its touching background.
+//
 // a role passes when its median sits in the band, its worst pairing does not
 // fall below the floor of the band by more than the noise of an antialiased
-// edge (the 10th percentile is used for that, not the single worst sample),
-// and no pairing lacks a colour edge.
+// edge (the 10th percentile is used for that, not the single worst sample), and
+// no pairing lacks a colour edge.
 func Legible(g *raster.Grid, rgb [][]color.RGBA, text []byte) []Verdict {
 	isText := map[byte]bool{}
 	for _, r := range text {

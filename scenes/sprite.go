@@ -78,8 +78,8 @@ func DolphinSprite() *raster.Scene {
 
 // BulbSprite is the bulb from the lights sign, drawn cold.
 //
-// Deliberately cold: no rays, no lit glass, nothing warm. The still sprite is
-// a bulb that is not on, because the light is the other sprite. If the stencil
+// Deliberately cold: no rays, no lit glass, nothing warm. The still sprite is a
+// bulb that is not on, because the light is the other sprite. If the stencil
 // were already glowing there would be nothing for an alpha layer to add, and
 // the effect would be decoration rather than illumination.
 //
@@ -110,35 +110,39 @@ func BulbSprite() *raster.Scene {
 // WordSprite sets a word as a stencil, so an effect written for a drawing can
 // be run over type without knowing the difference.
 //
-// The letters take one role and one role only. A wordmark has no parts to
-// speak of -- there is the type and there is the ground -- and the whole point
-// of handing it to the same compositor is that light does not care which it is
-// looking at. Unlit sign letters are dark paint, so they are the dark role,
-// which leaves them somewhere to go.
+// The letters take one role and one role only. A wordmark has no parts to speak
+// of -- there is the type and there is the ground -- and the whole point of
+// handing it to the same compositor is that light does not care which it is
+// looking at.
+//
+// Unlit sign letters are dark paint, so they are the dark role, which leaves
+// them somewhere to go.
 func WordSprite(text string, w, pad float64) *raster.Scene {
 	return wordScene(text, w, pad, 0.22,
 		typeset.Wobble{Tilt: 1.6, Shift: 0.04, Space: 0.05, Seed: 11})
 }
 
-// wordScene is the shared setting. The wobble is a parameter because it is
-// only right in one place: a painted sign is set letter by letter and each one
-// sits a hair off true, which is what makes it look painted. A wordmark two
-// cells tall is not painted, it is a logotype, and the same wobble there just
-// reads as broken letters.
+// wordScene is the shared setting. The wobble is a parameter because it is only
+// right in one place: a painted sign is set letter by letter and each one sits
+// a hair off true, which is what makes it look painted.
+//
+// A wordmark two cells tall is not painted, it is a logotype, and the same
+// wobble there just reads as broken letters.
 func wordScene(text string, w, pad, weight float64, wob typeset.Wobble) *raster.Scene {
 	gothic := mustFace(supp+"Futura.ttc", "Futura Condensed Medium")
 	line := typeset.Line{Text: text, Face: gothic, Tracking: 0.10, Flat: true,
 		Weight: weight, Wobble: wob}
-	// fitCap is how the sign sets its own lines: ask what cap height fits the
-	// measure, rather than picking one and hoping
+	// fitCap is how the sign sets its own lines: ask what cap height fits
+	// the measure, rather than picking one and hoping
 	line.CapHeight = fitCap(line, w-2*pad)
 	h := line.CapHeight + 2*pad
 
 	sc := &raster.Scene{W: w, H: h}
 	sc.Parts = []raster.Part{{Role: RoleDark,
 		Shape: geom.Union(line.Set(w/2, h-pad)...)}}
-	// condensed capitals at this size are hairlines at their thinnest; without
-	// a cover floor the vote eats the stems and the word reads as a dotted line
+	// condensed capitals at this size are hairlines at their thinnest;
+	// without a cover floor the vote eats the stems and the word reads as a
+	// dotted line
 	sc.MinCover = map[byte]float64{RoleDark: 0.28}
 	sc.Pal = map[byte]color.RGBA{}
 	sc.Bg = func(x, y float64) color.RGBA { return color.RGBA{} }
@@ -175,12 +179,12 @@ func WriteSprite(sc *raster.Scene, name, path string, cols int) error {
 // composited beside a picture is not a stencil -- it takes its colour from the
 // picture it is standing next to.
 //
-// The height is derived, not given. Type has a size of its own once you fix
-// its measure, and the caller asking for a box of the wrong shape would either
+// The height is derived, not given. Type has a size of its own once you fix its
+// measure, and the caller asking for a box of the wrong shape would either
 // squash the letters or leave them swimming.
 func WordMask(text string, w int, aspect float64) [][]bool {
-	// set true and a shade heavier: at this size the stems are two subpixels
-	// and a hairline drops out of the vote entirely
+	// set true and a shade heavier: at this size the stems are two
+	// subpixels and a hairline drops out of the vote entirely
 	sc := wordScene(text, 100, 4, 0.5, typeset.Wobble{})
 	h := int(float64(w)*sc.H/sc.W*aspect + 0.5)
 	if h < 1 {
@@ -222,17 +226,20 @@ func Hot(ramp []color.RGBA, t float64) color.RGBA {
 	return lerpRGBA(ramp[len(ramp)-1], ramp[len(ramp)/2], t)
 }
 
+// sortByLightness orders colours dark to light, in oklab.
 func sortByLightness(p []color.RGBA) {
 	sort.Slice(p, func(i, j int) bool {
 		return lightnessOf(p[i]) < lightnessOf(p[j])
 	})
 }
 
+// lightnessOf is a colour's oklab lightness.
 func lightnessOf(c color.RGBA) float64 {
 	return ok.FromSwatch(srgb.RGB{R: float64(c.R) / 255, G: float64(c.G) / 255,
 		B: float64(c.B) / 255}.Swatch()).L
 }
 
+// lerpRGBA is two colours mixed, t of the way between them.
 func lerpRGBA(a, b color.RGBA, t float64) color.RGBA {
 	m := func(x, y uint8) uint8 { return uint8(float64(x)*(1-t) + float64(y)*t + 0.5) }
 	return color.RGBA{m(a.R, b.R), m(a.G, b.G), m(a.B, b.B), 255}

@@ -2,8 +2,8 @@ package main
 
 import "miami/cells"
 
-// traps: the only page with nothing to paint, because a refusal has no
-// picture. Every one of these cost a rebuild to find.
+// traps: the only page with nothing to paint, because a refusal has no picture.
+// Every one of these cost a rebuild to find.
 func trapsPage() ([][]cells.Cell, string) {
 	return nil, `miami: the refusals
 

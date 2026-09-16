@@ -36,8 +36,8 @@ func sextant(mask int) rune {
 	return rune(0x1FB00 + idx)
 }
 
-// quadrants: 2 by 2, also complete, for terminals whose font lacks the
-// legacy computing block.
+// quadrants: 2 by 2, also complete, for terminals whose font lacks the legacy
+// computing block.
 func quadrant(mask int) rune {
 	t := []rune{' ', '▘', '▝', '▀', '▖', '▌', '▞',
 		'▛', '▗', '▚', '▐', '▜', '▄', '▙',
@@ -50,6 +50,8 @@ type Cell struct {
 	Fg, Bg color.RGBA
 }
 
+// dist2 is the squared distance between two colours in plain rgb. squared
+// because only the ordering is wanted and a square root would not change it.
 func dist2(a, b color.RGBA) int {
 	dr := int(a.R) - int(b.R)
 	dg := int(a.G) - int(b.G)
@@ -57,6 +59,8 @@ func dist2(a, b color.RGBA) int {
 	return dr*dr + dg*dg + db*db
 }
 
+// mean averages colours. Right for a photograph, where the group stands for a
+// continuum; wrong for flat art, which is what fitFlat is for.
 func mean(cs []color.RGBA) color.RGBA {
 	if len(cs) == 0 {
 		return color.RGBA{0, 0, 0, 255}
@@ -128,6 +132,8 @@ func ToCells(rgb [][]color.RGBA, subW, subH int) [][]Cell {
 	return out
 }
 
+// ANSI is the cells as escape sequences: colour and glyphs, nothing that moves
+// the cursor, so the output can be cat'd inside a readme.
 func ANSI(cells [][]Cell) string {
 	var b strings.Builder
 	for _, row := range cells {
@@ -166,6 +172,7 @@ func CellsToPixels(cells [][]Cell, subW, subH int) [][]color.RGBA {
 	return out
 }
 
+// maskOf is the subcell mask a block glyph stands for, or -1 if it is not one.
 func maskOf(g rune, n int) int {
 	if n == 4 {
 		for m := 0; m < 16; m++ {
@@ -201,8 +208,8 @@ type Mark struct {
 	Bg    *color.RGBA // nil keeps the colour that dominates the cell already
 }
 
-// Place writes marks into a grid of cells covering a w by h physical page.
-// two marks landing in one cell: the first wins.
+// Place writes marks into a grid of cells covering a w by h physical page. two
+// marks landing in one cell: the first wins.
 func Place(cs [][]Cell, marks []Mark, w, h float64) {
 	rows, cols := len(cs), len(cs[0])
 	taken := map[[2]int]bool{}
@@ -224,6 +231,7 @@ func Place(cs [][]Cell, marks []Mark, w, h float64) {
 	}
 }
 
+// ones counts the set bits of a mask, which is how many subcells a glyph fills.
 func ones(m int) int {
 	n := 0
 	for ; m > 0; m >>= 1 {
@@ -252,9 +260,11 @@ func MaskOf(g rune, n int) int { return maskOf(g, n) }
 // Two details decide whether the edges look right. The average is of
 // premultiplied colour: an emoji is mostly transparent, and averaging plain
 // RGBA drags the zeroes behind those transparent pixels into every edge, which
-// puts a dark fringe round the whole shape. And the result is composited onto
-// the ground rather than left with an alpha, because a cell has a foreground
-// and a background and nowhere to put a third thing.
+// puts a dark fringe round the whole shape.
+//
+// And the result is composited onto the ground rather than left with an alpha,
+// because a cell has a foreground and a background and nowhere to put a third
+// thing.
 func Sample(src image.Image, w, h int, ground color.RGBA) [][]color.RGBA {
 	b := src.Bounds()
 	out := make([][]color.RGBA, h)
@@ -307,10 +317,11 @@ var Transparent = color.RGBA{}
 //
 // Point-sampling and not averaging, on purpose. An emoji is flat colour with
 // hard edges -- that is what it is drawn as -- and averaging is anti-aliasing:
-// it turns every flat region into a slight gradient and every edge into a
-// smear of intermediate colours, which the two-colour cell fitter then has to
-// choose between. Taking the middle of each region keeps the flats flat and
-// the edges hard, which is what the picture was drawn with in the first place.
+//
+// it turns every flat region into a slight gradient and every edge into a smear
+// of intermediate colours, which the two-colour cell fitter then has to choose
+// between. Taking the middle of each region keeps the flats flat and the edges
+// hard, which is what the picture was drawn with in the first place.
 func SampleNearest(src image.Image, w, h int) [][]color.RGBA {
 	b := src.Bounds()
 	out := make([][]color.RGBA, h)
@@ -324,8 +335,8 @@ func SampleNearest(src image.Image, w, h int) [][]color.RGBA {
 				out[y][x] = Transparent
 				continue
 			}
-			// un-premultiply, or a half-covered edge pixel reads as a dark
-			// version of its own colour
+			// un-premultiply, or a half-covered edge pixel reads as
+			// a dark version of its own colour
 			un := func(c uint32) uint8 { return uint8(c * 255 / a) }
 			out[y][x] = color.RGBA{un(r), un(g), un(bl), uint8(a >> 8)}
 		}
@@ -336,11 +347,15 @@ func SampleNearest(src image.Image, w, h int) [][]color.RGBA {
 // ToCellsAlpha fits cells where some subpixels have no ink at all.
 //
 // Sextants are a complete set: all sixty-four arrangements of six subcells
-// exist as characters. So a cell that is partly transparent does not need a
-// compromise -- the glyph for its exact ink mask is always available, the
-// background is left as the terminal's, and the silhouette comes out with the
-// edge the artwork actually has. A cell that is wholly opaque goes through the
-// ordinary two-colour fit, which is what keeps colour inside the shape.
+// exist as characters.
+//
+// So a cell that is partly transparent does not need a compromise -- the glyph
+// for its exact ink mask is always available, the background is left as the
+// terminal's, and the silhouette comes out with the edge the artwork actually
+// has.
+//
+// A cell that is wholly opaque goes through the ordinary two-colour fit, which
+// is what keeps colour inside the shape.
 //
 // cut is the alpha at which a subpixel counts as ink. It is a hard threshold
 // and meant to be: a soft one is the anti-aliasing this avoids.
@@ -381,9 +396,9 @@ func ToCellsAlpha(rgb [][]color.RGBA, subW, subH int, cut uint8) [][]Cell {
 	return out
 }
 
-// dominant is the commonest ink colour in a cell, which for flat artwork is
-// the colour the cell actually is. A mean would invent one that is in none of
-// its subpixels, and on a two-tone edge that invented colour is the fringe.
+// dominant is the commonest ink colour in a cell, which for flat artwork is the
+// colour the cell actually is. A mean would invent one that is in none of its
+// subpixels, and on a two-tone edge that invented colour is the fringe.
 func dominant(sub []color.RGBA, cut uint8) color.RGBA {
 	count := map[color.RGBA]int{}
 	best, bestN := color.RGBA{}, 0
@@ -401,8 +416,8 @@ func dominant(sub []color.RGBA, cut uint8) color.RGBA {
 }
 
 // ANSIAlpha is ANSI with transparent cells left to the terminal's own
-// background, which is what makes a header sit on the reader's colours
-// instead of stamping a rectangle of ours over them.
+// background, which is what makes a header sit on the reader's colours instead
+// of stamping a rectangle of ours over them.
 func ANSIAlpha(cells [][]Cell) string {
 	var b strings.Builder
 	for _, row := range cells {
@@ -424,8 +439,8 @@ func ANSIAlpha(cells [][]Cell) string {
 	return b.String()
 }
 
-// OnGround expands cells into pixels for previewing, painting transparent
-// cells with the ground the reader's terminal would supply.
+// OnGround expands cells into pixels for previewing, painting transparent cells
+// with the ground the reader's terminal would supply.
 func OnGround(cells [][]Cell, subW, subH int, ground color.RGBA) [][]color.RGBA {
 	out := CellsToPixels(cells, subW, subH)
 	for r, row := range cells {
@@ -448,18 +463,22 @@ func OnGround(cells [][]Cell, subW, subH int, ground color.RGBA) [][]color.RGBA 
 // Posterise reduces a picture to at most n colours, chosen by how much of the
 // picture they cover and merged by eye rather than by arithmetic.
 //
-// This is the other half of not anti-aliasing. An emoji is drawn with a
-// gradient across its face, and reproducing that gradient faithfully gives
-// three hundred near-identical colours, a cell fitter thrashing between them,
-// and a picture that reads as a photograph of an emoji rather than as the
-// thing itself. Banding is the honest look at this size, and it makes the
-// escape sequence a fraction of the length.
+// This is the other half of not anti-aliasing.
+//
+// An emoji is drawn with a gradient across its face, and reproducing that
+// gradient faithfully gives three hundred near-identical colours, a cell fitter
+// thrashing between them, and a picture that reads as a photograph of an emoji
+// rather than as the thing itself.
+//
+// Banding is the honest look at this size, and it makes the escape sequence a
+// fraction of the length.
 //
 // The merge is in oklab, where a fixed distance means the same amount of
-// visible difference everywhere, which is not true of rgb. Colours are taken
-// in order of how many subpixels they cover, so the palette is the picture's
-// own: the flats win and the edge colours, which are few and spread thin,
-// collapse into whichever flat they are nearest.
+// visible difference everywhere, which is not true of rgb. Colours are taken in
+// order of how many subpixels they cover, so the palette is the picture's own:
+//
+// the flats win and the edge colours, which are few and spread thin, collapse
+// into whichever flat they are nearest.
 func Posterise(px [][]color.RGBA, n int, tol float64) [][]color.RGBA {
 	pal := PaletteOf(px, n, tol)
 	if len(pal) == 0 {
@@ -546,11 +565,15 @@ func PaletteOf(px [][]color.RGBA, n int, tol float64) []color.RGBA {
 	return palRGBA
 }
 
+// labOf is a terminal colour in oklab, where a fixed distance means the same
+// amount of visible difference everywhere.
 func labOf(c color.RGBA) ok.OKLab {
 	return ok.FromSwatch(srgb.RGB{
 		R: float64(c.R) / 255, G: float64(c.G) / 255, B: float64(c.B) / 255}.Swatch())
 }
 
+// lessRGBA orders colours by value, so a tie in a count breaks the same way
+// every run and the output is repeatable.
 func lessRGBA(a, b color.RGBA) bool {
 	if a.R != b.R {
 		return a.R < b.R
@@ -564,17 +587,20 @@ func lessRGBA(a, b color.RGBA) bool {
 // Letters stamps characters into cells as themselves.
 //
 // This is the other way to use a wordmark, and at a small size it is the only
-// one that works. The block-glyph fitter approximates a shape with two
-// colours; a letter is not a shape to be approximated, it is a letter, and at
-// six subpixels of cap height an approximated N is an H. Here the character
-// goes into the cell unchanged and only its colour is chosen, so the
-// letterform is exactly what the font drew and the palette is still ours.
+// one that works. The block-glyph fitter approximates a shape with two colours;
+// a letter is not a shape to be approximated, it is a letter, and at six
+// subpixels of cap height an approximated N is an H.
+//
+// Here the character goes into the cell unchanged and only its colour is
+// chosen, so the letterform is exactly what the font drew and the palette is
+// still ours.
 //
 // The background is whatever the cell already had. Setting it transparent was
 // wrong and it took a card over a bright gradient to show it: ANSI writes a
 // zero background as a literal black, so every letter arrived in an opaque
-// black box punched through the artwork. On a dark card that is invisible; on
-// six colour ramps it reads as damage.
+// black box punched through the artwork.
+//
+// On a dark card that is invisible; on six colour ramps it reads as damage.
 //
 // Keeping the existing background means a word laid over a picture is type on
 // the picture, and a word laid over nothing is still type on nothing, because
@@ -608,16 +634,17 @@ func Widen(px [][]color.RGBA, w int) [][]color.RGBA {
 // SampleFlat reduces a picture to flat colour on a subpixel grid.
 //
 // The order of operations is the whole of it, and the first version had it
-// backwards. A colour emoji is not flat art: this one is a face in 1891
-// shades with a dark brow drawn over it, and two fifths of the brow's pixels
-// are the anti-aliased ramp at its edge. Sampling first and reducing after
-// means those ramp pixels are candidates for the palette, and the brow comes
-// out as three browns with a fuzzy edge.
+// backwards. A colour emoji is not flat art: this one is a face in 1891 shades
+// with a dark brow drawn over it, and two fifths of the brow's pixels are the
+// anti-aliased ramp at its edge.
+//
+// Sampling first and reducing after means those ramp pixels are candidates for
+// the palette, and the brow comes out as three browns with a fuzzy edge.
 //
 // So: choose the palette from the picture at full resolution, snap the whole
-// picture to it, and only then reduce -- by majority vote, the same way a
-// cell and a warped pixel are decided everywhere else here. A vote makes an
-// edge pixel pick a side, which is what sharp means.
+// picture to it, and only then reduce -- by majority vote, the same way a cell
+// and a warped pixel are decided everywhere else here. A vote makes an edge
+// pixel pick a side, which is what sharp means.
 func SampleFlat(src image.Image, w, h, n int, tol float64) [][]color.RGBA {
 	b := src.Bounds()
 	pal := paletteOfImage(src, n, tol)
@@ -675,8 +702,9 @@ func SampleFlat(src image.Image, w, h, n int, tol float64) [][]color.RGBA {
 					}
 				}
 			}
-			// the silhouette votes too: a subpixel is ink when most of what it
-			// covers is ink, so the outline is as hard as the colours inside it
+			// the silhouette votes too: a subpixel is ink when most
+			// of what it covers is ink, so the outline is as hard
+			// as the colours inside it
 			if opaque*2 <= total {
 				out[y][x] = Transparent
 			} else {
@@ -687,17 +715,20 @@ func SampleFlat(src image.Image, w, h, n int, tol float64) [][]color.RGBA {
 	return out
 }
 
-// paletteOfImage picks a palette from a picture by clustering first and
-// ranking after.
+// paletteOfImage picks a palette from a picture by clustering first and ranking
+// after.
 //
-// Ranking individual colours by how often they occur is what broke this. A
-// face in nineteen hundred shades of orange has hundreds of colours occurring
-// a hundred times each; a brow drawn in one brown occurs as five hundred
-// near-identical browns of fifty each. By raw count every orange outranks
-// every brown and the palette has no dark in it at all -- although the brow is
-// twelve hundred pixels and matters more to the picture than any single shade
-// of cheek. Clustering at the tolerance first, then ranking clusters by their
-// total coverage, puts the brow where it belongs: near the top.
+// Ranking individual colours by how often they occur is what broke this. A face
+// in nineteen hundred shades of orange has hundreds of colours occurring a
+// hundred times each; a brow drawn in one brown occurs as five hundred
+// near-identical browns of fifty each.
+//
+// By raw count every orange outranks every brown and the palette has no dark in
+// it at all -- although the brow is twelve hundred pixels and matters more to
+// the picture than any single shade of cheek.
+//
+// Clustering at the tolerance first, then ranking clusters by their total
+// coverage, puts the brow where it belongs: near the top.
 func paletteOfImage(src image.Image, n int, tol float64) []color.RGBA {
 	b := src.Bounds()
 	count := map[color.RGBA]int{}
@@ -761,10 +792,12 @@ func paletteOfImage(src image.Image, n int, tol float64) []color.RGBA {
 //
 // The difference from fit is that it never averages. Averaging is right for a
 // photograph, where the two groups stand for a continuum and their means are
-// the best summary of it. It is wrong for flat art: a cell holding three
-// palette colours gets a mean of two of them, that mean is in none of its
-// subpixels and in no other cell, and along an edge those invented in-between
-// colours are exactly the fuzz that a flat picture should not have.
+// the best summary of it. It is wrong for flat art:
+//
+// a cell holding three palette colours gets a mean of two of them, that mean is
+// in none of its subpixels and in no other cell, and along an edge those
+// invented in-between colours are exactly the fuzz that a flat picture should
+// not have.
 //
 // Exhaustive over pairs of the distinct colours present, which is at most
 // fifteen for a sextant, so it is exact rather than approximate.
@@ -812,12 +845,13 @@ func fitFlat(sub []color.RGBA, glyph func(int) rune) Cell {
 //
 // A full repaint of a hundred by twenty-eight cells is about a hundred
 // kilobytes of escape sequences, and at fifteen frames a second that is thirty
-// megabytes for twenty seconds of sky. Most of those cells did not change:
-// the ground does not move, and the bird is a tenth of the frame. Sending the
-// difference is what makes this a stream rather than a flipbook.
+// megabytes for twenty seconds of sky. Most of those cells did not change: the
+// ground does not move, and the bird is a tenth of the frame.
 //
-// The run of unchanged cells is what costs: jumping the cursor is nine bytes
-// or so, and re-sending a cell is about twenty, so a gap of one is not worth
+// Sending the difference is what makes this a stream rather than a flipbook.
+//
+// The run of unchanged cells is what costs: jumping the cursor is nine bytes or
+// so, and re-sending a cell is about twenty, so a gap of one is not worth
 // jumping over. Runs shorter than that are re-sent rather than skipped.
 func Delta(prev, cur [][]Cell) string {
 	var b strings.Builder
@@ -830,8 +864,9 @@ func Delta(prev, cur [][]Cell) string {
 				continue
 			}
 			if col != c {
-				// a jump resets nothing, but the terminal's idea of the
-				// current colour is only safe while we are writing forwards
+				// a jump resets nothing, but the terminal's
+				// idea of the current colour is only safe while
+				// we are writing forwards
 				fmt.Fprintf(&b, "\x1b[%d;%dH", r+1, c+1)
 				haveFg, haveBg = false, false
 			}
@@ -896,6 +931,7 @@ func Apply(grid [][]Cell, delta string) {
 	}
 }
 
+// decodeRune is the first rune of a string, and how many bytes it took.
 func decodeRune(s string) (rune, int) {
 	for i, r := range s {
 		_ = i

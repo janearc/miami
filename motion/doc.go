@@ -23,16 +23,19 @@ import (
 //
 // A delta is a list of [row, column, run] -- a row, where in it to start, and
 // the characters to put there. Runs rather than single cells because a change
-// in a picture is almost always a span: a ball moving two columns changes two
-// long runs per row, not forty scattered pixels, and a triple per pixel would
-// cost more than the frame it replaced.
+// in a picture is almost always a span:
+//
+// a ball moving two columns changes two long runs per row, not forty scattered
+// pixels, and a triple per pixel would cost more than the frame it replaced.
 //
 // The trade is not the one you would expect, and the ball proved it. A
 // starling's wingbeat writes at 59 per cent of full size, because most of the
-// frame is unchanged sky. A spinning checkered ball writes at 131 per cent --
-// *larger* -- because a rotating pattern changes almost every pixel, and it
-// changes them in short alternating runs, so every one of them costs a
-// [row, col, "K"] wrapper heavier than the character it saves.
+// frame is unchanged sky.
+//
+// A spinning checkered ball writes at 131 per cent -- *larger* -- because a
+// rotating pattern changes almost every pixel, and it changes them in short
+// alternating runs, so every one of them costs a [row, col, "K"] wrapper
+// heavier than the character it saves.
 //
 // So the choice is made per frame, not per file: a frame is written whichever
 // way is shorter, and a document may hold both kinds. That is what "trade
@@ -70,10 +73,12 @@ type docRun struct {
 	Run      string
 }
 
+// MarshalJSON writes a run as [row, column, characters].
 func (r docRun) MarshalJSON() ([]byte, error) {
 	return json.Marshal([]any{r.Row, r.Col, r.Run})
 }
 
+// UnmarshalJSON reads a run, and refuses anything that is not those three.
 func (r *docRun) UnmarshalJSON(b []byte) error {
 	var v []any
 	if err := json.Unmarshal(b, &v); err != nil {
@@ -92,8 +97,8 @@ func (r *docRun) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// WriteDoc writes frames as a daffy document. If delta is set every frame
-// after the first is written as its difference from the one before.
+// WriteDoc writes frames as a daffy document. If delta is set every frame after
+// the first is written as its difference from the one before.
 func WriteDoc(path, name string, frames []sprite.Frame, delta bool) error {
 	if len(frames) == 0 {
 		return fmt.Errorf("%s: no frames", path)
@@ -106,8 +111,9 @@ func WriteDoc(path, name string, frames []sprite.Frame, delta bool) error {
 		if i == 0 || !delta {
 			df.Art = append([]string(nil), f.Art...)
 		} else {
-			// whichever is shorter. a delta that is longer than the frame it
-			// replaces is not a saving, it is a second copy with punctuation.
+			// whichever is shorter. a delta that is longer than the
+			// frame it replaces is not a saving, it is a second
+			// copy with punctuation.
 			runs := runsBetween(frames[i-1], f)
 			if size(runs) < artSize(f.Art) {
 				df.Delta = runs
@@ -179,6 +185,7 @@ func runsBetween(a, b sprite.Frame) []docRun {
 	return out
 }
 
+// apply replays a delta onto the frame before it.
 func apply(prev []string, runs []docRun) []string {
 	out := make([][]byte, len(prev))
 	for i, r := range prev {
@@ -201,6 +208,7 @@ func apply(prev []string, runs []docRun) []string {
 	return res
 }
 
+// holdText is a duration as a document writes it.
 func holdText(d time.Duration) string {
 	if d <= 0 {
 		return ""
@@ -208,6 +216,7 @@ func holdText(d time.Duration) string {
 	return d.String()
 }
 
+// parseHold reads a duration back, and treats anything unreadable as unset.
 func parseHold(s string) time.Duration {
 	if s == "" {
 		return 0
@@ -219,8 +228,8 @@ func parseHold(s string) time.Duration {
 	return d
 }
 
-// size is roughly what a run list costs once written: the characters, plus
-// the brackets, commas and two numbers around each run.
+// size is roughly what a run list costs once written: the characters, plus the
+// brackets, commas and two numbers around each run.
 func size(runs []docRun) int {
 	n := 0
 	for _, r := range runs {
@@ -229,6 +238,8 @@ func size(runs []docRun) int {
 	return n
 }
 
+// artSize is roughly what a frame costs once written, for choosing between a
+// full frame and a delta.
 func artSize(art []string) int {
 	n := 0
 	for _, r := range art {

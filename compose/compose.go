@@ -1,21 +1,23 @@
 // Package compose puts a sprite over a painted background.
 //
-// This is the seam between the two halves of miami. One half paints with
-// fields and ramps and knows only colour; the other moves stencils and knows
-// only roles. Neither should learn the other's vocabulary, so the join is
-// here: a colourway turns roles into colours, and the sprite's pixels are
-// written into the background's subpixels before either becomes a cell.
+// This is the seam between the two halves of miami. One half paints with fields
+// and ramps and knows only colour; the other moves stencils and knows only
+// roles. Neither should learn the other's vocabulary, so the join is here:
+//
+// a colourway turns roles into colours, and the sprite's pixels are written
+// into the background's subpixels before either becomes a cell.
 //
 // Compositing below the cell is the whole point. Fit the background to cells
 // first and the bird would have to fight for two colours a cell it does not
 // own; write it into the subpixels and the cell fitter sees one picture and
 // gives the bird's edge the same sextant treatment it gives everything else.
 //
-// The two grids are not the same shape and that is not a mistake. A daffy
-// pixel is one column wide and half a row tall; a sextant subcell is half a
-// column wide and a third of a row tall. So one sprite pixel is two subcells
-// across and one and a half down, and the half is why the mapping is done by
-// division rather than by a scale factor.
+// The two grids are not the same shape and that is not a mistake. A daffy pixel
+// is one column wide and half a row tall; a sextant subcell is half a column
+// wide and a third of a row tall.
+//
+// So one sprite pixel is two subcells across and one and a half down, and the
+// half is why the mapping is done by division rather than by a scale factor.
 package compose
 
 import (
@@ -67,8 +69,8 @@ func Colours(path string) (map[byte]color.RGBA, error) {
 	return out, nil
 }
 
-// Over writes a sprite frame into a subpixel field at a subpixel position.
-// The transparent role is left alone, which is what makes a stencil a stencil.
+// Over writes a sprite frame into a subpixel field at a subpixel position. The
+// transparent role is left alone, which is what makes a stencil a stencil.
 func Over(px [][]color.RGBA, f sprite.Frame, col map[byte]color.RGBA, atX, atY int) {
 	if len(px) == 0 {
 		return
@@ -123,6 +125,7 @@ func At(frames []sprite.Frame, t time.Duration) sprite.Frame {
 	return frames[len(frames)-1]
 }
 
+// hold is a frame's duration, or the default when the stream did not say.
 func hold(f sprite.Frame) time.Duration {
 	if f.Hold <= 0 {
 		return 100 * time.Millisecond
@@ -135,8 +138,10 @@ func hold(f sprite.Frame) time.Duration {
 // Over is for a sprite at its natural size, where one sprite pixel covers two
 // subcells across and one and a half down. A sprite that has already been
 // scaled for a viewport has had that correction folded into its size, so
-// applying it twice would stretch it. Two functions rather than a flag,
-// because which one you want is a fact about where the frame came from.
+// applying it twice would stretch it.
+//
+// Two functions rather than a flag, because which one you want is a fact about
+// where the frame came from.
 func Blit(px [][]color.RGBA, f sprite.Frame, col map[byte]color.RGBA, atX, atY int) {
 	if len(px) == 0 {
 		return

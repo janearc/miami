@@ -7,14 +7,16 @@ import (
 	sprite "github.com/janearc/libdaffy-sprite"
 )
 
-// Rays, and the one thing they are for here: asking whether something is in
-// the way.
+// Rays, and the one thing they are for here: asking whether something is in the
+// way.
 //
-// A shadow is not a lighting model. It is the answer to "does the straight
-// line from this point to the light meet anything", and for a sphere that is
-// a quadratic with no iteration in it. That is the whole of why tracing is
-// cheap in a scene made of objects that can answer questions about
-// themselves, rather than one made of triangles that cannot.
+// A shadow is not a lighting model. It is the answer to "does the straight line
+// from this point to the light meet anything", and for a sphere that is a
+// quadratic with no iteration in it.
+//
+// That is the whole of why tracing is cheap in a scene made of objects that can
+// answer questions about themselves, rather than one made of triangles that
+// cannot.
 //
 // Three rays are cast per subpixel and no more:
 //
@@ -31,12 +33,21 @@ import (
 // length; every intersection below divides it out.
 type Ray struct{ At, Dir Vec }
 
+// dot is the dot product.
 func dot(a, b Vec) float64 { return a.X*b.X + a.Y*b.Y + a.Z*b.Z }
-func sub(a, b Vec) Vec     { return Vec{a.X - b.X, a.Y - b.Y, a.Z - b.Z} }
-func add(a, b Vec) Vec     { return Vec{a.X + b.X, a.Y + b.Y, a.Z + b.Z} }
+
+// sub is one vector less another.
+func sub(a, b Vec) Vec { return Vec{a.X - b.X, a.Y - b.Y, a.Z - b.Z} }
+
+// add is two vectors summed.
+func add(a, b Vec) Vec { return Vec{a.X + b.X, a.Y + b.Y, a.Z + b.Z} }
+
+// scale is a vector lengthened or shortened.
 func scale(a Vec, s float64) Vec {
 	return Vec{a.X * s, a.Y * s, a.Z * s}
 }
+
+// unit is a vector of length one, or the vector itself if it has no length.
 func unit(a Vec) Vec {
 	l := math.Sqrt(dot(a, a))
 	if l == 0 {
@@ -45,8 +56,8 @@ func unit(a Vec) Vec {
 	return scale(a, 1/l)
 }
 
-// HitSphere is the nearest distance along a ray at which it meets a sphere,
-// or false. The near limit exists to stop a shadow ray leaving a surface and
+// HitSphere is the nearest distance along a ray at which it meets a sphere, or
+// false. The near limit exists to stop a shadow ray leaving a surface and
 // immediately striking the surface it left, which is the oldest bug in ray
 // tracing and shows up as the object shadowing itself in a speckle.
 func HitSphere(r Ray, centre Vec, radius, near, far float64) (float64, bool) {
@@ -86,8 +97,10 @@ type Floor struct {
 	A, B byte    // the two roles it is checked in
 	// Far is where the floor stops. A plane really does go on for ever, and
 	// drawn that way its squares fall below one subpixel long before the
-	// horizon and turn into a band of moire -- the same failure the sunset's
-	// grid had, and the same answer: stop drawing what cannot be resolved.
+	// horizon and turn into a band of moire -- the same failure the
+	// sunset's grid had, and the same answer:
+	//
+	// stop drawing what cannot be resolved.
 	Far   float64
 	Shade map[byte]byte
 }
@@ -95,9 +108,9 @@ type Floor struct {
 // Shadowed is the role a floor square takes when the light cannot reach it.
 //
 // A remap and not a darkening. The alphabet has no midpoint between two roles
-// and inventing one would put the shadow outside whatever the colourway
-// chose; sending each role to a darker role keeps every colour in the picture
-// one the theme already picked.
+// and inventing one would put the shadow outside whatever the colourway chose;
+// sending each role to a darker role keeps every colour in the picture one the
+// theme already picked.
 func (f Floor) Shadowed(role byte) byte {
 	if f.Shade != nil {
 		if r, ok := f.Shade[role]; ok {
@@ -107,10 +120,10 @@ func (f Floor) Shadowed(role byte) byte {
 	return role
 }
 
-// Lit is a scene a ray tracer can answer questions about: one ball, one
-// floor, one light. Deliberately not a general scene graph -- this is the
-// smallest arrangement in which a shadow means anything, and the shape of
-// the code does not change when there are nine balls.
+// Lit is a scene a ray tracer can answer questions about: one ball, one floor,
+// one light. Deliberately not a general scene graph -- this is the smallest
+// arrangement in which a shadow means anything, and the shape of the code does
+// not change when there are nine balls.
 type Lit struct {
 	Ball  Ball
 	Floor Floor
@@ -122,9 +135,9 @@ type Lit struct {
 func (s Lit) Trace(t time.Duration, cols, rows int) sprite.Frame {
 	w, h := cols*2, rows*3
 	// the picture plane is one unit out and as wide as the sheet. a subcell
-	// is half a column by a third of a row, so on a cell twice as tall as it
-	// is wide the sheet is four rows high for every three columns across --
-	// the same correction as everywhere else, applied once, here.
+	// is half a column by a third of a row, so on a cell twice as tall as
+	// it is wide the sheet is four rows high for every three columns across
+	// -- the same correction as everywhere else, applied once, here.
 	aspect := (float64(h) * 4) / (float64(w) * 3)
 	lens := s.Eye.Lens
 	if lens == 0 {
@@ -161,8 +174,9 @@ func (s Lit) Trace(t time.Duration, cols, rows int) sprite.Frame {
 					int(math.Floor(p.Z/s.Floor.Tile)))&1 == 0 {
 					role = s.Floor.B
 				}
-				// the shadow ray. it stops at the light rather than running
-				// on for ever: something behind the lamp is not in the way.
+				// the shadow ray. it stops at the light rather
+				// than running on for ever: something behind
+				// the lamp is not in the way.
 				toLight := sub(s.Light, p)
 				if _, blocked := HitSphere(
 					Ray{At: p, Dir: toLight}, ballAt, s.Ball.Radius, 1e-3, 1); blocked {

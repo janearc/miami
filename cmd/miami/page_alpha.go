@@ -10,8 +10,8 @@ import (
 )
 
 // alpha: the bulb, the effect on its own, and the two composited. Three
-// pictures because the claim is about three things, and it is checkable --
-// the left one is the stencil, byte for byte, in every lit frame.
+// pictures because the claim is about three things, and it is checkable -- the
+// left one is the stencil, byte for byte, in every lit frame.
 func alphaPage() ([][]cells.Cell, string) {
 	base, err := motion.ReadSprite("sprites/made/bulb.sprite")
 	if err != nil {
@@ -62,6 +62,7 @@ also why the same halo runs over set type, over a photograph, over anything
 carrying the role it is told to come out of.`
 }
 
+// blank is a field of transparent subpixels, for a page to compose into.
 func blank(w, h int) [][]color.RGBA {
 	out := make([][]color.RGBA, h)
 	for y := range out {

@@ -9,13 +9,14 @@ import (
 )
 
 // a picture with many colours in it does not survive being averaged per cell:
-// the kingfisher came out as mud that way. what survives is a few colours,
-// each with a range of tone inside it, and every source colour snapped to the
-// nearest of them -- nearest measured where distance means something, which
-// is oklab, not the three lamp levels.
+// the kingfisher came out as mud that way.
+//
+// what survives is a few colours, each with a range of tone inside it, and
+// every source colour snapped to the nearest of them -- nearest measured where
+// distance means something, which is oklab, not the three lamp levels.
 
-// Entry is one colour of a palette: the name a scene uses, and the two ends
-// of the range it shades across.
+// Entry is one colour of a palette: the name a scene uses, and the two ends of
+// the range it shades across.
 type Entry struct {
 	Name        string
 	Light, Deep color.RGBA
@@ -47,8 +48,8 @@ func Lab(c color.RGBA) ok.OKLab {
 	}.Swatch())
 }
 
-// RGBA turns an oklab colour back into what a terminal is sent. out of gamut
-// it is the nearest the lamps can do, which libtheme reports honestly.
+// RGBA turns an oklab colour back into what a terminal is sent. out of gamut it
+// is the nearest the lamps can do, which libtheme reports honestly.
 func RGBA(c ok.OKLab) color.RGBA {
 	rgb, _ := srgb.FromSwatch(c.Swatch())
 	r, g, b := rgb.Bytes()
@@ -59,10 +60,10 @@ func RGBA(c ok.OKLab) color.RGBA {
 // difference most people can see.
 func Distance(a, b color.RGBA) float64 { return ok.Distance(Lab(a), Lab(b)) }
 
-// lightWeight is how much lightness counts when deciding which colour a
-// sample belongs to. plain oklab distance is mostly lightness, so a bright
-// teal matched cream; lightness is what the tone parameter carries, and what
-// decides the family is hue and chroma.
+// lightWeight is how much lightness counts when deciding which colour a sample
+// belongs to. plain oklab distance is mostly lightness, so a bright teal
+// matched cream; lightness is what the tone parameter carries, and what decides
+// the family is hue and chroma.
 const lightWeight = 0.3
 
 // Nearest is the entry a colour belongs to, and how dark it sits within that

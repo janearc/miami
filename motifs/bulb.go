@@ -35,8 +35,8 @@ func NewBulb(x, top, h float64) Bulb {
 	b.R = 30 * k
 	b.Centre = mm(0, 30)
 	globe := geom.Ellipse{C: b.Centre, Rx: b.R, Ry: b.R}
-	// the pear: the globe runs into a neck that narrows to the screw
-	// the neck starts inside the globe and wider than it is there, or the join
+	// the pear: the globe runs into a neck that narrows to the screw the
+	// neck starts inside the globe and wider than it is there, or the join
 	// shows as a notch on each side
 	neck := geom.Taper{P: []geom.Vec{mm(0, 38), mm(0, 64), mm(0, 83)}, R: []float64{27.5 * k, 17.5 * k, 13.2 * k}}
 	b.Glass = geom.Union(globe, neck)

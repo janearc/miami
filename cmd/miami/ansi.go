@@ -15,10 +15,12 @@ import (
 //
 // This is the verb that matters most to an agent and it was the last one
 // written, which is the wrong way round. An agent cannot see an escape
-// sequence: handed one it will read the bytes, form a confident opinion, and
-// be wrong -- that happened repeatedly while this library was built, and once
-// shipped a card whose wordmark was punctuation because the render was judged
-// from a description instead of a picture.
+// sequence:
+//
+// handed one it will read the bytes, form a confident opinion, and be wrong --
+// that happened repeatedly while this library was built, and once shipped a
+// card whose wordmark was punctuation because the render was judged from a
+// description instead of a picture.
 //
 // So: parse the escapes back into cells, draw the cells with a real monospace
 // face, and write a png. Then look at the png. It is the same loop a person
@@ -79,6 +81,7 @@ func parseANSI(s string) [][]cells.Cell {
 	return out
 }
 
+// applySGR reads one escape's parameters and returns the colours after it.
 func applySGR(args string, fg, bg color.RGBA) (color.RGBA, color.RGBA) {
 	parts := strings.Split(args, ";")
 	for k := 0; k < len(parts); k++ {
@@ -103,6 +106,7 @@ func applySGR(args string, fg, bg color.RGBA) (color.RGBA, color.RGBA) {
 	return fg, bg
 }
 
+// decodeRune is the first rune of a string, and how many bytes it took.
 func decodeRune(s string) (rune, int) {
 	for _, r := range s {
 		return r, len(string(r))

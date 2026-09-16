@@ -6,13 +6,14 @@ import (
 	"miami/geom"
 )
 
-// ArchPanel is a sign face with a segmental arched top: straight sides from
-// the spring line down, and a circular arc above it rising to crown. inset
-// shrinks it concentrically, so a frame and its face share one arc centre.
+// ArchPanel is a sign face with a segmental arched top: straight sides from the
+// spring line down, and a circular arc above it rising to crown. inset shrinks
+// it concentrically, so a frame and its face share one arc centre.
 type ArchPanel struct {
 	X0, X1, Crown, Spring, Bottom float64
 }
 
+// arc is the centre and radius of the panel's crown, from its span and rise.
 func (a ArchPanel) arc() (geom.Vec, float64) {
 	c := (a.X1 - a.X0) / 2
 	s := a.Spring - a.Crown
@@ -57,8 +58,8 @@ func (a ArchPanel) Border(inset, spacing float64) []geom.Vec {
 	return Along(path, spacing)
 }
 
-// Along samples a polyline at a fixed spacing. points closer than 70 percent
-// of the spacing to one already kept are dropped: without that, the end of one
+// Along samples a polyline at a fixed spacing. points closer than 70 percent of
+// the spacing to one already kept are dropped: without that, the end of one
 // segment and the start of the next put two bulbs side by side at a corner.
 func Along(path []geom.Vec, spacing float64) []geom.Vec {
 	raw := along(path, spacing)
@@ -78,6 +79,7 @@ func Along(path []geom.Vec, spacing float64) []geom.Vec {
 	return out
 }
 
+// along is points spaced evenly down a path, for lamps around a border.
 func along(path []geom.Vec, spacing float64) []geom.Vec {
 	var out []geom.Vec
 	carry := 0.0
@@ -127,6 +129,7 @@ type Arrow struct {
 	X0, X1, Y, Shaft, Head, HeadLen float64
 }
 
+// Shape is the arrow as geometry: a shaft and a head.
 func (a Arrow) Shape() geom.Shape {
 	hx := a.X1 - a.HeadLen
 	return geom.Union(

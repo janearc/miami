@@ -2,9 +2,9 @@ package geom
 
 import "math"
 
-// Path is a set of closed contours filled by the non-zero winding rule. that
-// is how outline fonts define holes: the counter of an O is a contour wound
-// the other way, not a separate shape subtracted afterwards.
+// Path is a set of closed contours filled by the non-zero winding rule. that is
+// how outline fonts define holes: the counter of an O is a contour wound the
+// other way, not a separate shape subtracted afterwards.
 type Path struct {
 	Contours [][]Vec
 	min, max Vec
@@ -29,6 +29,8 @@ func NewPath(contours [][]Vec) Path {
 // Bounds returns the top left and bottom right corners.
 func (p Path) Bounds() (Vec, Vec) { return p.min, p.max }
 
+// In reports whether a point is inside the path, by non-zero winding: the rule
+// that makes an inner contour a hole rather than another shape.
 func (p Path) In(q Vec) bool {
 	if q.X < p.min.X || q.X > p.max.X || q.Y < p.min.Y || q.Y > p.max.Y {
 		return false
@@ -67,8 +69,10 @@ func (p Path) Transform(m Affine) Path {
 // Affine is x' = A x + B y + C, y' = D x + E y + F.
 type Affine struct{ A, B, C, D, E, F float64 }
 
+// Identity is the transform that changes nothing.
 func Identity() Affine { return Affine{A: 1, E: 1} }
 
+// Apply moves a point through the transform.
 func (m Affine) Apply(p Vec) Vec {
 	return Vec{m.A*p.X + m.B*p.Y + m.C, m.D*p.X + m.E*p.Y + m.F}
 }
@@ -81,6 +85,8 @@ func (m Affine) Then(n Affine) Affine {
 	}
 }
 
+// Invert is the transform that undoes this one. A warp is written forwards and
+// applied backwards, so the inverse is what actually gets used.
 func (m Affine) Invert() Affine {
 	det := m.A*m.E - m.B*m.D
 	return Affine{
@@ -89,6 +95,7 @@ func (m Affine) Invert() Affine {
 	}
 }
 
+// Translate moves by an offset.
 func Translate(dx, dy float64) Affine { return Affine{A: 1, C: dx, E: 1, F: dy} }
 
 // RotateAbout turns by deg degrees about c; positive is clockwise on screen.
@@ -98,6 +105,7 @@ func RotateAbout(c Vec, deg float64) Affine {
 	return Translate(-c.X, -c.Y).Then(Affine{A: k, B: -s, D: s, E: k}).Then(Translate(c.X, c.Y))
 }
 
+// ScaleAbout scales about a point rather than about the origin.
 func ScaleAbout(c Vec, sx, sy float64) Affine {
 	return Translate(-c.X, -c.Y).Then(Affine{A: sx, E: sy}).Then(Translate(c.X, c.Y))
 }
@@ -107,6 +115,7 @@ type transformed struct {
 	inv Affine
 }
 
+// In reports whether a point is inside the shape, the transform undone first.
 func (t transformed) In(p Vec) bool { return t.s.In(t.inv.Apply(p)) }
 
 // Transformed wraps any shape. prefer Path.Transform for paths.
@@ -134,6 +143,9 @@ func Weight(s Shape, r float64) Shape {
 	return weighted{s, r, ring}
 }
 
+// In reports whether a point is inside the weighted shape: within r of it,
+// sampled around a ring, which dilates a stroke or erodes it when r is
+// negative.
 func (w weighted) In(p Vec) bool {
 	if w.r > 0 {
 		if w.s.In(p) {

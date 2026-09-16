@@ -25,6 +25,8 @@ type CellImage struct {
 	glyphs map[rune]geom.Path
 }
 
+// NewCellImage sets up a drawer at a cell size, working out the cap height at
+// which one glyph advance is exactly one cell wide.
 func NewCellImage(face *typeset.Face, w, h int) *CellImage {
 	_, adv, err := face.Glyph('M', geom.Vec{}, 1)
 	if err != nil || adv == 0 {
@@ -56,6 +58,8 @@ var (
 	monoErr  error
 )
 
+// Draw renders cells as an image: block glyphs as their masks, shades as the
+// flat tones ghostty actually draws, and everything else as real type.
 func (ci *CellImage) Draw(cs [][]cells.Cell) *image.RGBA {
 	rows, cols := len(cs), len(cs[0])
 	img := image.NewRGBA(image.Rect(0, 0, cols*ci.W, rows*ci.H))
@@ -69,7 +73,8 @@ func (ci *CellImage) Draw(cs [][]cells.Cell) *image.RGBA {
 				cell.Fg = ci.Ground
 			}
 			if cells.IsBlock(cell.Glyph) {
-				// quadrants are 2 by 2, everything else here is 2 by 3
+				// quadrants are 2 by 2, everything else here is
+				// 2 by 3
 				n, sh := 6, 3
 				if cells.IsQuadrant(cell.Glyph) {
 					n, sh = 4, 2
@@ -88,9 +93,10 @@ func (ci *CellImage) Draw(cs [][]cells.Cell) *image.RGBA {
 				}
 				continue
 			}
-			// ghostty draws the shade glyphs as flat tones, not dither patterns:
-			// seen in real captures on 2026-09-14. a preview that dithered them
-			// would hide the two-tone breakup those flat greys cause.
+			// ghostty draws the shade glyphs as flat tones, not
+			// dither patterns: seen in real captures on 2026-09-14.
+			// a preview that dithered them would hide the two-tone
+			// breakup those flat greys cause.
 			if t, ok := flatShade[cell.Glyph]; ok {
 				col := mix(cell.Bg, cell.Fg, t)
 				for y := 0; y < ci.H; y++ {
@@ -102,8 +108,8 @@ func (ci *CellImage) Draw(cs [][]cells.Cell) *image.RGBA {
 			}
 			p, ok := ci.glyphs[cell.Glyph]
 			if !ok {
-				// baseline a little below three quarters of the cell, as monospace
-				// terminal fonts sit
+				// baseline a little below three quarters of the
+				// cell, as monospace terminal fonts sit
 				p, _, _ = ci.Face.Glyph(cell.Glyph, geom.Vec{X: 0, Y: float64(ci.H) * 0.77}, ci.cap)
 				ci.glyphs[cell.Glyph] = p
 			}
@@ -126,6 +132,7 @@ func (ci *CellImage) Draw(cs [][]cells.Cell) *image.RGBA {
 
 var flatShade = map[rune]float64{'░': 0.25, '▒': 0.5, '▓': 0.75}
 
+// mix is two colours blended, for a glyph's edge against its background.
 func mix(a, b color.RGBA, t float64) color.RGBA {
 	f := func(x, y uint8) uint8 { return uint8(float64(x) + (float64(y)-float64(x))*t) }
 	return color.RGBA{f(a.R, b.R), f(a.G, b.G), f(a.B, b.B), 255}

@@ -20,8 +20,8 @@ type placement struct {
 	drop []byte // scenery the composite supplies for itself
 }
 
-// subH is 3 for sextants and 2 for quadrants. the canvas mapping is uniform,
-// so dropping to quadrants needs no other change: aspect is still carried by
+// subH is 3 for sextants and 2 for quadrants. the canvas mapping is uniform, so
+// dropping to quadrants needs no other change: aspect is still carried by
 // canvas.CellAspect alone.
 func BuildMiami(out string, subH int) [][]cells.Cell {
 	base := Miami()
@@ -60,7 +60,8 @@ func BuildMiami(out string, subH int) [][]cells.Cell {
 	rgb := raster.Resolve(g, merged, 0, 0, gw, gh)
 	cs := cells.ToCells(rgb, 2, subH)
 	// a subcell is (cellW/2) wide by (cellH/subH) tall, so the preview must
-	// scale y by 2*canvas.CellAspect/subH times x or it lies about the shape.
+	// scale y by 2*canvas.CellAspect/subH times x or it lies about the
+	// shape.
 	sx := 6
 	sy := int(float64(sx) * 2 * canvas.CellAspect / float64(subH))
 	proof.Must(proof.WritePNGXY("out/"+out+".png", cells.CellsToPixels(cs, 2, subH), sx, sy))
