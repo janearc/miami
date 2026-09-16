@@ -24,11 +24,30 @@ for repo in libdaffy libdaffy-sprite libtheme-css bandersnatch; do
 done
 
 # the player, if its tree came down. sprites/bin is where SPRITES.md looks.
+#
+# it needs its own workspace for two reasons. built from in here it would pick
+# up miami's go.work and decide miami is the main module; and its go.mod, like
+# libdaffy's, replaces libtheme-css with a path from the layout it was
+# committed in. a go.work beside it fixes both, and is an overlay rather than
+# an edit: these checkouts are not ours to change.
 if [ -d libs/bandersnatch ]; then
+	cat > libs/bandersnatch/go.work <<'WORK'
+go 1.26
+
+use (
+	.
+	../libdaffy
+	../libdaffy-sprite
+)
+
+replace github.com/janearc/libtheme-css => ../libtheme-css
+WORK
 	mkdir -p sprites/bin
-	(cd libs/bandersnatch && go build -o ../../sprites/bin/bandersnatch ./cmd/bandersnatch) \
-		2>/dev/null && echo "built sprites/bin/bandersnatch" ||
+	if (cd libs/bandersnatch && go build -o ../../sprites/bin/bandersnatch ./cmd/bandersnatch) 2>/dev/null; then
+		echo "built sprites/bin/bandersnatch"
+	else
 		echo "note: bandersnatch did not build; streams still render, they just do not play"
+	fi
 fi
 
 echo
