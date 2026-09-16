@@ -3,7 +3,20 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 )
+
+// write is os.WriteFile with the directory made first. out/ is not in the
+// repository -- it is every verb's scratch and the readme says so -- so on a
+// fresh clone it does not exist, and every verb that wrote to it panicked.
+// Found by cloning into /tmp and following the readme, which is the only way
+// that kind of thing is found.
+func write(path string, b []byte) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(path, b, 0o644)
+}
 
 // What miami tells an agent about itself.
 //

@@ -6,10 +6,14 @@ import (
 	"image/png"
 	"miami/raster"
 	"os"
+	"path/filepath"
 )
 
 // SaveImage writes an image as it is.
 func SaveImage(path string, img image.Image) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
 	f, err := os.Create(path)
 	if err != nil {
 		return err
@@ -27,6 +31,9 @@ func WritePNG(path string, rgb [][]color.RGBA, scale int) error {
 // WritePNGXY scales the axes independently, which is how a terminal render is
 // previewed honestly: its subpixels are not square.
 func WritePNGXY(path string, rgb [][]color.RGBA, sx, sy int) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
 	h := len(rgb)
 	w := len(rgb[0])
 	img := image.NewRGBA(image.Rect(0, 0, w*sx, h*sy))

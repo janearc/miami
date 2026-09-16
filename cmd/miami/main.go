@@ -82,7 +82,7 @@ func main() {
 		sh := grade.Sextants(cols, rows)
 		px := sh.Paint(scenes.Sunset(sh, 0.52, 0))
 		cs := cells.ToCells(px, 2, 3)
-		proof.Must(os.WriteFile("out/sunset.ansi", []byte(cells.ANSI(cs)), 0o644))
+		proof.Must(write("out/sunset.ansi", []byte(cells.ANSI(cs))))
 		proof.Must(proof.WritePNG("out/sunset-px.png", px, 4))
 		proof.Must(proof.WritePNG("out/sunset.png", cells.CellsToPixels(cs, 2, 3), 4))
 		cols2, als, names := sh.Contact(scenes.Sunset(sh, 0.52, 0))
@@ -275,7 +275,7 @@ func main() {
 			cells.Letters(cs, art, wx, wy, ink)
 		}
 
-		proof.Must(os.WriteFile("dist/"+name+".ansi", []byte(cells.ANSI(cs)), 0o644))
+		proof.Must(write("dist/"+name+".ansi", []byte(cells.ANSI(cs))))
 
 		// and a plain companion, because markdown needs four spaces of indent
 		// to hold art preformatted and escapes do not survive that. colour is
@@ -318,7 +318,7 @@ func main() {
 		for _, r2 := range tone {
 			plain.WriteString(strings.TrimRight(string(r2), " ") + "\n")
 		}
-		proof.Must(os.WriteFile("dist/"+name+"-plain.txt", []byte(plain.String()), 0o644))
+		proof.Must(write("dist/"+name+"-plain.txt", []byte(plain.String())))
 		proof.Must(proof.SaveImage("out/card-"+name+".png",
 			proof.NewCellImageOn(proof.Mono(), 9, 18, color.RGBA{16, 14, 24, 255}).Draw(cs)))
 		fmt.Printf("dist/%s.ansi  %d cols x %d rows\n", name, cols, rows)
@@ -391,7 +391,7 @@ func main() {
 					cells.CellsToPixels(cs, 2, 3), 3, 4))
 			}
 		}
-		proof.Must(os.WriteFile("out/shadow.frames", []byte(out.String()), 0o644))
+		proof.Must(write("out/shadow.frames", []byte(out.String())))
 		fmt.Printf("%d frames -> out/shadow.frames\n", n)
 		return
 	case "ball":
@@ -453,7 +453,7 @@ func main() {
 					cells.CellsToPixels(cs, 2, 3), 3, 4))
 			}
 		}
-		proof.Must(os.WriteFile("out/ball.frames", []byte(out.String()), 0o644))
+		proof.Must(write("out/ball.frames", []byte(out.String())))
 
 		// and the same spin baked out as a daffy document, both ways, so the
 		// trade between size and compute is a measurement rather than a claim
@@ -559,7 +559,7 @@ func main() {
 					cells.CellsToPixels(cs, 2, 3), 3, 4))
 			}
 		}
-		proof.Must(os.WriteFile("out/flock.frames", []byte(out.String()), 0o644))
+		proof.Must(write("out/flock.frames", []byte(out.String())))
 		fmt.Printf("%d frames -> out/flock.frames\n", n)
 		return
 	case "fly":
@@ -631,7 +631,7 @@ func main() {
 					cells.CellsToPixels(cs, 2, 3), 3, 4))
 			}
 		}
-		proof.Must(os.WriteFile("out/fly.frames", []byte(out.String()), 0o644))
+		proof.Must(write("out/fly.frames", []byte(out.String())))
 		fmt.Printf("%d frames, %.0fs -> out/fly.frames\n", n, secs)
 		return
 	case "scene":
@@ -740,7 +740,7 @@ func main() {
 			})
 		}
 		name := fmt.Sprintf("out/emoji-%X", cp)
-		proof.Must(os.WriteFile(name+".ansi", []byte(cells.ANSIAlpha(cs)), 0o644))
+		proof.Must(write(name+".ansi", []byte(cells.ANSIAlpha(cs))))
 		// the same cells on two grounds, because "the background is
 		// transparent" is a claim about what the terminal supplies and the
 		// only way to see it is to supply two different things.
