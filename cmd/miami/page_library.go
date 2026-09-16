@@ -7,6 +7,7 @@ import (
 	"github.com/janearc/miami/cells"
 	"github.com/janearc/miami/grade"
 	"github.com/janearc/miami/sky"
+	"github.com/janearc/miami/texture"
 	"github.com/janearc/miami/view"
 )
 
@@ -21,21 +22,42 @@ func libraryPage() ([][]cells.Cell, string) {
 		return nil, err.Error()
 	}
 	stage.Lit = &view.Lit{
-		Eye:   view.Eye{At: view.Vec{Y: 0.05}, Lens: 1, Near: 0.05},
-		Floor: view.Floor{Y: -0.55, Tile: 0.62, Far: 9.5, A: 'V', B: 'K', Shade: floorShade},
-		Ball: view.Ball{Radius: 0.3, At: view.Vec{X: 0.45, Y: -0.16, Z: 3.4},
-			Spin: view.Vec{X: 0.11, Y: 0.43, Z: 0.07}},
+		Eye:    view.Eye{At: view.Vec{Y: 0.05}, Lens: 1, Near: 0.05},
 		Lights: []view.Light{{At: view.Vec{X: -1.2, Y: 3.0, Z: 1.6}}},
+		Solids: []view.Solid{
+			view.Floor{Y: -0.55, Tile: 0.62, Far: 9.5, A: 'V', B: 'K', Shade: floorShade},
+			&view.Ball{Radius: 0.3, At: view.Vec{X: 0.45, Y: -0.16, Z: 3.4},
+				Spin: view.Vec{X: 0.11, Y: 0.43, Z: 0.07}},
+			// the progress bar, which is a cylinder rather than a
+			// row of blocks: it stands on the floor, the lamp
+			// finds it, and it throws a shadow like anything else
+			// in the scene
+			&view.Cylinder{
+				// resting on the floor: its centre is one
+				// radius above it, which is what "on" means
+				// and is not a number to guess at
+				At:     view.Vec{X: -0.1, Y: -0.48, Z: 3.0},
+				Radius: 0.07, Length: 1.9, Caps: true,
+				// banded around rather than flat along,
+				// because a cylinder reads as round only
+				// where its bands crowd at the silhouette.
+				// flat roles make a tube look like a plank.
+				Texture: texture.Split{
+					Done: texture.Stripes{A: 'O', B: 'R', Period: 1.0 / 7},
+					Rest: texture.Stripes{A: 'D', B: 'K', Period: 1.0 / 7},
+					Frac: func() float64 { return 0.58 },
+				},
+			},
+		},
 	}
 	stage.Sky = func(sh grade.Sheet, at time.Time) grade.Stack {
 		aspect := (float64(sh.H) * 4) / (float64(sh.W) * 3)
 		return sky.At(sh, view.SunAt(at), stage.Lit.Eye.HorizonV(aspect))
 	}
 
-	bar := &app.Bar{Row: -2, Col: -1, Ink: app.Vaporwave, Label: "building", Scrim: 0.45}
-	bar.Set(7, 12)
-	bar.Say("compose")
-	stage.Add(bar)
+	title := &app.Text{Font: "small", Row: 1, Col: -1, Ink: app.Vaporwave, Scrim: 0.25}
+	title.Set("building")
+	stage.Add(title)
 
 	// an hour rather than the wall clock, so the page looks the same in the
 	// morning as it does at night and a difference in it means a change in

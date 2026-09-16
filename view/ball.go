@@ -5,6 +5,8 @@ import (
 	"time"
 
 	sprite "github.com/janearc/libdaffy-sprite"
+
+	"github.com/janearc/miami/texture"
 )
 
 // A ball, drawn by solving for its surface rather than by drawing it.
@@ -38,6 +40,9 @@ type Ball struct {
 	Spin   Vec           // turns per second about each axis
 	Tilt   Vec           // radians at t = 0
 	Phase  time.Duration // offset into its own rotation
+
+	// Texture is what it is checked in; the four quadrants if nil.
+	Texture texture.Texture
 }
 
 // Extent is where the ball is and how tall it stands.
@@ -172,3 +177,63 @@ func rotation(x, y, z float64) mat {
 
 // clamp holds a number between two bounds.
 func clamp(v, lo, hi float64) float64 { return math.Max(lo, math.Min(hi, v)) }
+
+// Quadrants is the ball's own pattern, written in the texture vocabulary.
+//
+// The same four quarters, each its own pair of roles and its own check size.
+// It is here rather than inside the sphere because it is a pattern and not a
+// shape: a cylinder or a floor can wear it, and a sphere can wear something
+// else.
+//
+// The phases are the sphere's angular convention made explicit. Longitude runs
+// from a seam and latitude from the equator, so a check of k squares per half
+// turn lands at floor(2ku - k) across and floor(kv - k/2) up. Writing those
+// offsets down is what let the pattern leave the sphere without moving.
+func Quadrants() texture.Texture {
+	of := make([]texture.Texture, len(quadrants))
+	for i, q := range quadrants {
+		k := q.steps
+		of[i] = texture.Checker{A: q.a, B: q.b,
+			U: 2 * k, V: k, PhaseU: -k, PhaseV: -k / 2}
+	}
+	return texture.Bands{Of: of}
+}
+
+// SphereUV is where a point on a sphere is, as a texture wants it: u around
+// from the seam, v up from the south pole, both nought to one.
+//
+// Exported because it is the contract between this shape and any texture, and a
+// pattern written for a sphere has to be able to read it.
+func SphereUV(n Vec) (u, v float64) {
+	lat := math.Asin(clamp(n.Y, -1, 1))
+	lon := math.Atan2(n.X, n.Z)
+	return (lon + math.Pi) / (2 * math.Pi), lat/math.Pi + 0.5
+}
+
+// ballTexture is the pattern a ball wears unless it is given another. Built
+// once: it is the same four checkers every time and a sphere asks it per
+// subpixel.
+var ballTexture = Quadrants()
+
+// Hit is where a ray meets the ball, and the role of its surface there.
+func (b Ball) Hit(r Ray, t float64, near, far float64) (float64, byte, bool) {
+	d, ok := HitSphere(r, b.At, b.Radius, near, far)
+	if !ok {
+		return 0, 0, false
+	}
+	p := add(r.At, scale(r.Dir, d))
+	n := b.Spin_(seconds(t)).apply(unit(sub(p, b.At)))
+	tex := b.Texture
+	if tex == nil {
+		tex = ballTexture
+	}
+	u, v := SphereUV(n)
+	return d, tex.At(u, v), true
+}
+
+// Blocks says whether the ball stands in the way of a light. The pattern on it
+// does not matter to a shadow, so this asks the cheaper question.
+func (b Ball) Blocks(r Ray, near, far float64) bool {
+	_, ok := HitSphere(r, b.At, b.Radius, near, far)
+	return ok
+}

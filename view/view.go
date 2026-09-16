@@ -323,3 +323,9 @@ func hold(f sprite.Frame) time.Duration {
 	}
 	return f.Hold
 }
+
+// seconds turns the tracer's float seconds back into a duration, for the parts
+// of the library that were written against one.
+func seconds(t float64) time.Duration {
+	return time.Duration(t * float64(time.Second))
+}

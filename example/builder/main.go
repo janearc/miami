@@ -37,12 +37,15 @@ func main() {
 		aspect := (float64(sh.H) * 4) / (float64(sh.W) * 3)
 		return sky.At(sh, view.SunAt(at), stage.Lit.Eye.HorizonV(aspect))
 	}
+	ball := &view.Ball{Radius: 0.34, Spin: view.Vec{X: 0.11, Y: 0.43, Z: 0.07}}
 	stage.Lit = &view.Lit{
-		Eye: view.Eye{At: view.Vec{Y: 0.05}, Lens: 1, Near: 0.05},
-		Floor: view.Floor{Y: -0.55, Tile: 0.62, Far: 9.5, A: 'V', B: 'K',
-			Shade: map[byte]byte{'V': 'K', 'K': 'D', 'D': 'E'}},
+		Eye:    view.Eye{At: view.Vec{Y: 0.05}, Lens: 1, Near: 0.05},
 		Lights: []view.Light{{At: view.Vec{X: -1.2, Y: 3.0, Z: 1.6}}},
-		Ball:   view.Ball{Radius: 0.34, Spin: view.Vec{X: 0.11, Y: 0.43, Z: 0.07}},
+		Solids: []view.Solid{
+			view.Floor{Y: -0.55, Tile: 0.62, Far: 9.5, A: 'V', B: 'K',
+				Shade: map[byte]byte{'V': 'K', 'K': 'D', 'D': 'E'}},
+			ball,
+		},
 	}
 
 	title := &app.Text{Font: "small", Row: 2, Col: -1, Ink: app.Vaporwave,
@@ -77,7 +80,7 @@ func main() {
 			}
 			// the ball keeps going while the work does
 			sec := f.Since.Seconds()
-			stage.Lit.Ball.At = view.Vec{
+			ball.At = view.Vec{
 				X: 1.3 * math.Sin(sec/9),
 				Y: -0.21 + 0.66*math.Abs(math.Sin(sec/1.3)),
 				Z: 3.6 - 0.7*math.Cos(sec/9),

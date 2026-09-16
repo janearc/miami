@@ -5,6 +5,8 @@ import (
 	"time"
 
 	sprite "github.com/janearc/libdaffy-sprite"
+
+	"github.com/janearc/miami/texture"
 )
 
 // Rays, and the one thing they are for here: asking whether something is in the
@@ -103,6 +105,9 @@ type Floor struct {
 	// stop drawing what cannot be resolved.
 	Far   float64
 	Shade map[byte]byte
+
+	// Texture is the pattern it wears; the plain A/B check if nil.
+	Texture texture.Texture
 }
 
 // Light is a lamp, or the sun. Off is not the same as far away: a sun below the
@@ -144,13 +149,14 @@ func (f Floor) Darken(role byte, blocked int) byte {
 	return role
 }
 
-// Lit is a scene a ray tracer can answer questions about: one ball, one floor,
-// one light. Deliberately not a general scene graph -- this is the smallest
-// arrangement in which a shadow means anything, and the shape of the code does
-// not change when there are nine balls.
+// Lit is a scene a ray tracer can answer questions about: some shapes, and
+// some lights.
+//
+// It used to be one ball and one floor, named. Naming them is what stopped
+// there ever being two balls, or a cylinder, and the loop below no longer knows
+// what any of the shapes are -- it asks each of them the same two questions.
 type Lit struct {
-	Ball   Ball
-	Floor  Floor
+	Solids []Solid
 	Lights []Light
 	Eye    Eye
 }
@@ -167,9 +173,7 @@ func (s Lit) Trace(t time.Duration, cols, rows int) sprite.Frame {
 	if lens == 0 {
 		lens = 1
 	}
-
-	ballAt, _ := s.Ball.Extent(t)
-	spin := s.Ball.Spin_(t)
+	secs := t.Seconds()
 
 	art := make([]string, h)
 	for y := 0; y < h; y++ {
@@ -179,49 +183,96 @@ func (s Lit) Trace(t time.Duration, cols, rows int) sprite.Frame {
 			px := (float64(x)+0.5)/float64(w) - 0.5
 			eye := Ray{At: s.Eye.At,
 				Dir: s.Eye.Aim(Vec{px / lens, py / lens, 1})}
-
-			tb, hitBall := HitSphere(eye, ballAt, s.Ball.Radius, 1e-4, math.Inf(1))
-			tf, hitFloor := HitPlane(eye, s.Floor.Y, 1e-4, math.Inf(1))
-
-			switch {
-			case hitBall && (!hitFloor || tb < tf):
-				p := add(eye.At, scale(eye.Dir, tb))
-				row[x] = surfaceAt(spin, unit(sub(p, ballAt)))
-
-			case hitFloor:
-				p := add(eye.At, scale(eye.Dir, tf))
-				if s.Floor.Far > 0 && p.Z > s.Floor.Far {
-					row[x] = '.'
-					break
-				}
-				role := s.Floor.A
-				if (int(math.Floor(p.X/s.Floor.Tile))+
-					int(math.Floor(p.Z/s.Floor.Tile)))&1 == 0 {
-					role = s.Floor.B
-				}
-				// one shadow ray per light. each stops at its
-				// own light rather than running on for ever:
-				// something behind a lamp is not in the way of
-				// it.
-				blocked := 0
-				for _, l := range s.Lights {
-					if l.Off {
-						blocked++
-						continue
-					}
-					if _, hit := HitSphere(
-						Ray{At: p, Dir: sub(l.At, p)},
-						ballAt, s.Ball.Radius, 1e-3, 1); hit {
-						blocked++
-					}
-				}
-				row[x] = s.Floor.Darken(role, blocked)
-
-			default:
-				row[x] = '.' // the sky, which is the terminal's own background
-			}
+			row[x] = s.shade(eye, secs)
 		}
 		art[y] = string(row)
 	}
 	return sprite.Frame{Art: art}
+}
+
+// shade is what one ray sees: the nearest shape it meets, and what a light can
+// reach there.
+func (s Lit) shade(eye Ray, t float64) byte {
+	best, role, which := math.Inf(1), byte('.'), -1
+	for i, sh := range s.Solids {
+		d, r, ok := sh.Hit(eye, t, 1e-4, best)
+		if ok && d < best {
+			best, role, which = d, r, i
+		}
+	}
+	if which < 0 {
+		return '.' // the sky, which is the terminal's own background
+	}
+	shader, ok := s.Solids[which].(Shader)
+	if !ok {
+		return role
+	}
+
+	// one shadow ray per light, each stopping at its own light rather than
+	// running on for ever: something behind a lamp is not in the way of it.
+	p := add(eye.At, scale(eye.Dir, best))
+	blocked := 0
+	for _, l := range s.Lights {
+		if l.Off {
+			blocked++
+			continue
+		}
+		ray := Ray{At: p, Dir: sub(l.At, p)}
+		for i, sh := range s.Solids {
+			if i == which {
+				continue // nothing shadows itself here
+			}
+			if sh.Blocks(ray, 1e-3, 1) {
+				blocked++
+				break
+			}
+		}
+	}
+	return shader.Darken(role, blocked)
+}
+
+// Hit is where a ray meets the floor, and the role there.
+//
+// The check is the floor's texture if it has one, and its two roles in a plain
+// check if it does not -- the second being what every floor in the library was
+// before patterns were a thing they could be given.
+func (f Floor) Hit(r Ray, _ float64, near, far float64) (float64, byte, bool) {
+	t, ok := HitPlane(r, f.Y, near, far)
+	if !ok {
+		return 0, 0, false
+	}
+	p := add(r.At, scale(r.Dir, t))
+	if f.Far > 0 && p.Z > f.Far {
+		return 0, 0, false // past where a square can still be resolved
+	}
+	if f.Texture != nil {
+		// a plane has no edges, so there is no nought to one to hand a
+		// texture. the tile is the unit instead: one square of floor is
+		// one square of pattern, which is what makes a texture on a
+		// floor the same size wherever it is standing.
+		tile := f.Tile
+		if tile == 0 {
+			tile = 1
+		}
+		return t, f.Texture.At(frac(p.X/tile), frac(p.Z/tile)), true
+	}
+	role := f.A
+	if (int(math.Floor(p.X/f.Tile))+int(math.Floor(p.Z/f.Tile)))&1 == 0 {
+		role = f.B
+	}
+	return t, role, true
+}
+
+// Blocks is false: a floor never shadows anything.
+//
+// Not an oversight. The floor is the plane every shadow lands on, and a plane
+// that blocks light blocks all of it -- every point on it is below the floor
+// from the point of view of a light above, so the whole world goes dark.
+func (Floor) Blocks(Ray, float64, float64) bool { return false }
+
+// frac is the fractional part, always positive, so a pattern does not mirror
+// itself across the origin.
+func frac(v float64) float64 {
+	f := v - math.Floor(v)
+	return f
 }

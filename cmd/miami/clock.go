@@ -31,6 +31,7 @@ import (
 type clockApp struct {
 	stage *app.Stage
 	face  *app.Digits
+	ball  *view.Ball
 	fonts []string
 	size  int
 	at    time.Time // fixed, for --at; zero means the wall clock
@@ -92,11 +93,14 @@ func newClock(at time.Time) *clockApp {
 	c.face = &app.Digits{Font: "small", Row: 2, Col: -1,
 		Ink: app.Vaporwave, Scrim: 0.40, Flicker: true, At: c.now}
 	st.Add(c.face)
+	c.ball = &view.Ball{Radius: 0.34, Spin: view.Vec{X: 0.11, Y: 0.43, Z: 0.07}}
 	st.Lit = &view.Lit{
 		Eye: view.Eye{At: view.Vec{Y: 0.05}, Lens: 1, Near: 0.05},
-		Floor: view.Floor{Y: -0.55, Tile: 0.62, Far: 9.5, A: 'V', B: 'K',
-			Shade: map[byte]byte{'V': 'K', 'K': 'D', 'D': 'E'}},
-		Ball: view.Ball{Radius: 0.34, Spin: view.Vec{X: 0.11, Y: 0.43, Z: 0.07}},
+		Solids: []view.Solid{
+			view.Floor{Y: -0.55, Tile: 0.62, Far: 9.5, A: 'V', B: 'K',
+				Shade: map[byte]byte{'V': 'K', 'K': 'D', 'D': 'E'}},
+			c.ball,
+		},
 	}
 	// the sky is painted and the floor is traced, so both are told the same
 	// horizon: the one the camera's pitch puts it at
@@ -120,7 +124,7 @@ func (c *clockApp) Draw(f app.Frame, cols, rows int) [][]cells.Cell {
 	n := c.now()
 	sec := float64(n.Second()) + float64(n.Nanosecond())/1e9
 	minute := sec / 60
-	c.stage.Lit.Ball.At = view.Vec{
+	c.ball.At = view.Vec{
 		X: 1.3 * math.Sin(2*math.Pi*minute),
 		Y: -0.21 + 0.66*math.Abs(math.Sin(math.Pi*sec/4)),
 		Z: 3.6 - 0.7*math.Cos(2*math.Pi*minute),

@@ -370,11 +370,6 @@ func main() {
 				// the floor sits below the eye and the eye
 				// looks along it
 				Eye: view.Eye{At: view.Vec{Y: 0.30}, Lens: 1.0, Near: 0.05},
-				Floor: view.Floor{Y: -0.55, Tile: 0.62, Far: 9.5, A: 'V', B: 'K',
-					// a shadow is a remap, so every colour
-					// in it was already chosen by the
-					// colourway
-					Shade: map[byte]byte{'V': 'K', 'K': 'D'}},
 				// the lamp: high, and behind the ball as well
 				// as above it, so its shadow is thrown toward
 				// the viewer.
@@ -383,18 +378,24 @@ func main() {
 				// away from the camera and hid behind the thing
 				// casting it.
 				Lights: []view.Light{{At: view.Vec{X: -1.2, Y: 3.0, Z: 1.6}}},
-				Ball: view.Ball{
-					At: view.Vec{
-						X: 1.30 * math.Sin(2*math.Pi*e),
-						// a bounce: the height is the
-						// absolute of a sine, so it
-						// arrives at the floor rather
-						// than easing into it
-						Y: -0.21 + 0.66*math.Abs(math.Sin(3*math.Pi*e)),
-						Z: 3.6 - 0.7*math.Cos(2*math.Pi*e),
+				Solids: []view.Solid{
+					view.Floor{Y: -0.55, Tile: 0.62, Far: 9.5, A: 'V', B: 'K',
+						// a shadow is a remap, so every
+						// colour in it was already
+						// chosen by the colourway
+						Shade: map[byte]byte{'V': 'K', 'K': 'D'}},
+					// a bounce: the height is a sine's
+					// absolute, so it arrives at the
+					// floor rather than easing into it
+					&view.Ball{
+						At: view.Vec{
+							X: 1.30 * math.Sin(2*math.Pi*e),
+							Y: -0.21 + 0.66*math.Abs(math.Sin(3*math.Pi*e)),
+							Z: 3.6 - 0.7*math.Cos(2*math.Pi*e),
+						},
+						Radius: 0.34,
+						Spin:   view.Vec{X: 0.11, Y: 0.43, Z: 0.07},
 					},
-					Radius: 0.34,
-					Spin:   view.Vec{X: 0.11, Y: 0.43, Z: 0.07},
 				},
 			}
 			f := sc.Trace(time.Duration(t*float64(time.Second)), cols, rows)
