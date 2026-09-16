@@ -86,5 +86,10 @@ way to tell whether a picture works.`)
 	for _, v := range verbs {
 		fmt.Printf("  %-12s %-38s %s\n", v.name, v.args, v.what)
 	}
+	fmt.Println(`
+This command is one caller of the library and not the only one it is for.
+Package app draws from another program's event loop -- a build tool wanting a
+themed progress bar over a sunset while it compiles -- and "miami docs library"
+paints what that gets. example/builder is a working one in forty lines.`)
 	os.Exit(2)
 }

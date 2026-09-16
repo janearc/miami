@@ -53,4 +53,4 @@ fi
 echo
 echo "now: game check   (gofmt, vet, tests)"
 echo "     game build   (bin/miami)"
-echo "     ./miami      (what it is, and every verb)"
+echo "     bin/miami    (what it is, and every verb)"

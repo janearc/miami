@@ -5,21 +5,25 @@
 set -eu
 cd "$(dirname "$0")"
 
-gofmt -l cmd canvas cells compose effect emoji geom grade scene view motifs motion paint proof raster scenes typeset | sed 's/^/gofmt: /' | grep . && exit 1 || true
+# every tracked go file, rather than a list of packages. the list was one and
+# went stale the moment a package was added to the tree and not to it -- three
+# of them, unchecked, before anyone noticed. git knows what is in the
+# repository and libs/ is not, so this cannot drift.
+git ls-files '*.go' | xargs gofmt -l | sed 's/^/gofmt: /' | grep . && exit 1 || true
 go vet ./...
-go build -o miami ./cmd/miami
+go build -o bin/miami ./cmd/miami
 go test ./...
 
 rm -rf regress && mkdir -p regress out
-./miami macaw term 34 > regress/macaw.ansi 2>/dev/null
-./miami palm term 22 > regress/palm.ansi 2>/dev/null
-./miami car term 30 > regress/car.ansi 2>/dev/null
-./miami miami term > regress/miami.ansi 2>/dev/null
+bin/miami macaw term 34 > regress/macaw.ansi 2>/dev/null
+bin/miami palm term 22 > regress/palm.ansi 2>/dev/null
+bin/miami car term 30 > regress/car.ansi 2>/dev/null
+bin/miami miami term > regress/miami.ansi 2>/dev/null
 cp out/miami-roles.txt regress/
-./miami miami-quad > regress/miami-quad.ansi 2>/dev/null
+bin/miami miami-quad > regress/miami-quad.ansi 2>/dev/null
 cp out/miami-quad-roles.txt regress/
 for s in 144x44 80x40 80x25 72x22 36x11; do
-	./miami bb "${s%x*}" "${s#*x}" 2>/dev/null
+	bin/miami bb "${s%x*}" "${s#*x}" 2>/dev/null
 	cp "out/bb-$s.ansi" "out/bb-$s-roles.txt" regress/
 done
 
@@ -28,7 +32,7 @@ done
 # they are regenerated into a scratch directory and compared where they live,
 # rather than copied into baseline, because sprites/made is where the player
 # reads them from and a second copy would be the thing that drifts.
-./miami anim regress/anim/ > /dev/null
+bin/miami anim regress/anim/ > /dev/null
 for f in regress/anim/*.stream; do
 	b=$(basename "$f")
 	if ! cmp -s "$f" "sprites/made/$b"; then echo "DIFFERS  sprites/made/$b"; fi

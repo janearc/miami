@@ -48,6 +48,7 @@ var docPages = []docPage{
 	{"fields", "the named shapes, painted side by side", "page_fields.go", fieldsPage},
 	{"alpha", "how an effect is a second sprite", "page_alpha.go", alphaPage},
 	{"viewport", "one sprite asked from three distances", "page_viewport.go", viewportPage},
+	{"library", "drawing from another program's event loop", "page_library.go", libraryPage},
 	{"traps", "the refusals, and what each cost to find", "page_traps.go", trapsPage},
 }
 

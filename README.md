@@ -7,19 +7,19 @@ composites the two by alpha.
     sh bootstrap.sh     clone the libraries it builds against
     game check          gofmt, vet, the tests
     game build          bin/miami
-    ./miami             what it is, and every verb
+    bin/miami           what it is, and every verb
+
+It is also a library: a program with its own event loop calls package `app`
+and never touches the drawing (`example/builder`).
 
 The documentation is a program, as libtheme's is: painted, one idea per page,
 and `--go` prints the source that painted each, so the two cannot drift.
 
-    ./miami docs             roles, fields, alpha, viewport, traps
-    ./miami docs traps       the refusals, and what each one cost to find
-    ./miami check FILE       what a document holds, and what is wrong with it
+    bin/miami docs            roles, fields, alpha, viewport, library, traps
+    bin/miami check FILE      what a document holds, and what is wrong with it
 
 If you are an agent: render it and look. Reading the bytes of an escape
-sequence will make you confident and wrong.
-
-    ./miami png FILE.ansi    any ansi file, to out/
-    ./miami docs PAGE --png  any page
+sequence will make you confident and wrong. `bin/miami docs PAGE --png`
+renders any page and `bin/miami png FILE.ansi` any file, to `out/`.
 
 `check.sh` regenerates 29 artefacts and compares them where they live.
