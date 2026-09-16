@@ -52,6 +52,11 @@
         "rest": { "kind": "stripes", "a": "D", "b": "K", "period": 0.143 }
       } },
 
+    // a palm tree, because this is a vaporwave scene and the system
+    // already holds a drawing of one
+    { "kind": "emoji", "name": "palm", "rune": "1F334",
+      "cols": 12, "colours": 10, "row": -8, "col": 4 },
+
     { "kind": "clock", "name": "face",
       "row": 2, "col": -1, "font": "small", "flicker": true, "scrim": 0.40,
       "ink": [ "ff2a9d", "c44fb0", "8a5ad8", "3f7ad6", "2de2e6" ] }

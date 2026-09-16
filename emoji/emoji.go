@@ -32,7 +32,10 @@ import (
 	"fmt"
 	"os"
 
+	"bytes"
+	"github.com/janearc/miami/cells"
 	"golang.org/x/image/font/sfnt"
+	"image/png"
 )
 
 // Path is the system's colour emoji font.
@@ -159,3 +162,39 @@ func be16(b []byte, at int) uint16 { return binary.BigEndian.Uint16(b[at : at+2]
 
 // be32 is a big-endian thirty-two-bit number.
 func be32(b []byte, at int) uint32 { return binary.BigEndian.Uint32(b[at : at+4]) }
+
+// Cells is an emoji as cells, at a width in columns.
+//
+// The height is worked out rather than asked for: a cell is twice as tall as
+// it is wide, so the row count is the column count scaled by the image's own
+// aspect and halved. Asking for both is how a square emoji becomes an oval.
+//
+// The palette is chosen before the image is sampled, not after. Reducing after
+// sampling lets the source's anti-aliased edges in, and an emoji quantised that
+// way comes out with a fuzzy grey rind that no amount of cleaning up removes.
+//
+// Transparent where the emoji is transparent, so it can sit on a scene rather
+// than in a box.
+func Cells(r rune, cols, colours int) ([][]cells.Cell, error) {
+	if cols < 1 {
+		cols = 20
+	}
+	if colours < 2 {
+		colours = 12
+	}
+	bm, err := PNG(r)
+	if err != nil {
+		return nil, err
+	}
+	img, err := png.Decode(bytes.NewReader(bm.PNG))
+	if err != nil {
+		return nil, err
+	}
+	b := img.Bounds()
+	rows := int(float64(cols)*float64(b.Dy())/float64(b.Dx())/2 + 0.5)
+	if rows < 1 {
+		rows = 1
+	}
+	px := cells.SampleFlat(img, cols*2, rows*3, colours, 0.055)
+	return cells.ToCellsAlpha(px, 2, 3, 128), nil
+}

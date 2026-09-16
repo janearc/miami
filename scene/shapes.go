@@ -29,6 +29,7 @@ import (
 //	clock     the time, with separators that blink
 //	text      a line of type
 //	bar       a flat progress bar, for a scene with no room for a cylinder
+//	emoji     a picture from the system font
 //
 // What this package deliberately does not do is know how any of it is drawn.
 // There are no view or app types here, only numbers and names: this package
@@ -123,6 +124,15 @@ type Shape struct {
 	Label   string   `json:"label"`
 	Width   int      `json:"width"`
 
+	// Rune is an emoji's codepoint, as hex: "1F32B" and not the glyph.
+	//
+	// A document is read and edited in a terminal, and an emoji pasted into
+	// one is a character nobody can tell from its neighbours -- there are
+	// four different clouds and they look alike at this size.
+	Rune    string `json:"rune"`
+	Colours int    `json:"colours"`
+	Cols    int    `json:"cols"`
+
 	// Value drives a bar from the document instead of from the program: a
 	// binding evaluated every frame, nought to one. A bar without it is the
 	// program's to Set, which is the usual case.
@@ -133,6 +143,7 @@ type Shape struct {
 var kinds = map[string]bool{
 	"sky": true, "floor": true, "sphere": true, "cylinder": true,
 	"light": true, "clock": true, "text": true, "bar": true,
+	"emoji": true,
 }
 
 // UnmarshalJSON reads a shape and refuses one whose kind is not a kind.
@@ -164,7 +175,7 @@ func (s *Shape) UnmarshalJSON(b []byte) error {
 
 // kindList is the kinds, in a fixed order, for an error a person has to read.
 func kindList() string {
-	return "sky, floor, sphere, cylinder, light, clock, text, bar"
+	return "sky, floor, sphere, cylinder, light, clock, text, bar, emoji"
 }
 
 // Texture is a pattern, as a document says it.

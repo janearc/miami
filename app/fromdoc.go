@@ -2,6 +2,8 @@ package app
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/janearc/miami/grade"
@@ -151,6 +153,15 @@ func (s *Stage) addShape(sh scene.Shape) error {
 		t.Set(sh.Text)
 		s.Add(t)
 		s.remember(sh.Name, t)
+		return nil
+
+	case "emoji":
+		e, err := emojiFrom(sh)
+		if err != nil {
+			return err
+		}
+		s.Add(e)
+		s.remember(sh.Name, e)
 		return nil
 
 	case "bar":
@@ -343,3 +354,18 @@ func (s *Stage) Digits(name string) *Digits {
 // Eye is the camera, to be steered. A pointer because steering it is the point:
 // a caller nudging yaw wants the scene to turn, not a copy of it.
 func (s *Stage) Eye() *view.Eye { return &s.eye }
+
+// emojiFrom builds an emoji shape. The codepoint is hex in the document and a
+// rune here, and a document that does not say which emoji is an error rather
+// than a default: there is no sensible emoji to fall back to.
+func emojiFrom(sh scene.Shape) (*Emoji, error) {
+	if sh.Rune == "" {
+		return nil, fmt.Errorf(`no rune; want a hex codepoint like "1F32B"`)
+	}
+	n, err := strconv.ParseInt(strings.TrimPrefix(sh.Rune, "U+"), 16, 32)
+	if err != nil {
+		return nil, fmt.Errorf("rune %q is not hex: %w", sh.Rune, err)
+	}
+	return &Emoji{Rune: rune(n), Cols: sh.Cols, Colours: sh.Colours,
+		Row: sh.Row, Col: sh.Col}, nil
+}

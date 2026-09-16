@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/janearc/miami/cells"
+	"github.com/janearc/miami/emoji"
 	"github.com/janearc/miami/paint"
 	"github.com/janearc/miami/typeset"
 )
@@ -344,4 +345,62 @@ func itoa(n int) string {
 		n /= 10
 	}
 	return string(b)
+}
+
+// Emoji is a picture from the system's emoji font, placed on the scene.
+//
+// A shape because it is the most convenient picture there is: a whole drawing
+// per codepoint, already anti-aliased by somebody who could draw, in a file
+// every machine already has. Nothing else in this library gives that much
+// picture for one field of a document.
+//
+// It is drawn once and kept. An emoji is a fixed image and re-quantising it
+// sixty times a second would be the most expensive thing in the frame, for a
+// picture that never changes.
+type Emoji struct {
+	Rune    rune
+	Cols    int // cells wide; twenty if unset
+	Colours int // how many colours to reduce it to; twelve if unset
+	Row     int // negative counts from the bottom
+	Col     int // -1 centres it
+
+	once sync.Once
+	art  [][]cells.Cell
+}
+
+// Over draws it, leaving the scene showing through wherever the emoji is
+// transparent -- which is most of the square, for most emoji.
+func (e *Emoji) Over(cs [][]cells.Cell, _ Frame) {
+	e.once.Do(func() {
+		art, err := emoji.Cells(e.Rune, e.Cols, e.Colours)
+		if err != nil {
+			return // no emoji font, or no such glyph: draw the rest
+		}
+		e.art = art
+	})
+	if len(e.art) == 0 || len(cs) == 0 {
+		return
+	}
+	row, col := e.Row, e.Col
+	if row < 0 {
+		row += len(cs) - len(e.art)
+	}
+	if col < 0 {
+		col = (len(cs[0]) - len(e.art[0])) / 2
+	}
+	for y, line := range e.art {
+		for x, c := range line {
+			ty, tx := row+y, col+x
+			if ty < 0 || ty >= len(cs) || tx < 0 || tx >= len(cs[ty]) {
+				continue
+			}
+			if c.Bg == cells.Transparent && c.Glyph == ' ' {
+				continue // nothing here: leave the scene alone
+			}
+			if c.Bg == cells.Transparent {
+				c.Bg = cs[ty][tx].Bg
+			}
+			cs[ty][tx] = c
+		}
+	}
 }
