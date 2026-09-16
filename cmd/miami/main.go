@@ -340,6 +340,9 @@ func main() {
 			proof.NewCellImageOn(proof.Mono(), 9, 18, color.RGBA{16, 14, 24, 255}).Draw(cs)))
 		fmt.Printf("dist/%s.ansi  %d cols x %d rows\n", name, cols, rows)
 		return
+	case "clock":
+		clock(os.Args[2:])
+		return
 	case "shadow":
 		// a ball over a floor, with a light somewhere in the scene and
 		// a shadow that is cast rather than drawn: for every point of
