@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -555,5 +556,61 @@ func TestAScoreThatCannotStartLeavesThePlayingPieceAbleToRest(t *testing.T) {
 	s.mu.Unlock()
 	if !resting {
 		t.Error("a failed Score stopped the playing piece from resting")
+	}
+}
+
+// TestTheLaterScoreWinsARace holds the first Score inside its player until a
+// second has attached, which is the one ordering that inverted: the older
+// piece attaching last, winding the generation back over the newer.
+func TestTheLaterScoreWinsARace(t *testing.T) {
+	was := play
+	defer func() { play = was }()
+
+	entered, release := make(chan struct{}), make(chan struct{})
+	var mu sync.Mutex
+	stoppedA := false
+	play = func(path string, _ time.Duration, _ func(error)) (
+		time.Time, func() error, error) {
+		if path != "a" {
+			return time.Now(), func() error { return nil }, nil
+		}
+		close(entered) // a has reserved its generation by now
+		<-release
+		return time.Now(), func() error {
+			mu.Lock()
+			stoppedA = true
+			mu.Unlock()
+			return nil
+		}, nil
+	}
+
+	s, err := stageFrom(t, bounceDoc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	errA := make(chan error, 1)
+	go func() {
+		_, err := s.Score("a", fakeHead{}, 0)
+		errA <- err
+	}()
+	<-entered
+	if _, err := s.Score("b", otherHead{}, 0); err != nil {
+		t.Fatal(err)
+	}
+	close(release)
+
+	if err := <-errA; !errors.Is(err, ErrSuperseded) {
+		t.Errorf("the earlier Score returned %v, want ErrSuperseded", err)
+	}
+	s.mu.Lock()
+	_, later := s.Music.(otherHead)
+	s.mu.Unlock()
+	if !later {
+		t.Error("the earlier piece was attached over the later one")
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if !stoppedA {
+		t.Error("the superseded piece was left playing")
 	}
 }

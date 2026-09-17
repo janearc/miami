@@ -402,6 +402,17 @@ func (s *Stage) Score(path string, p Playhead, period time.Duration) (
 		return nil, err
 	}
 	s.mu.Lock()
+	if gen < s.musicGen {
+		// a Score called after this one has attached already, and the
+		// later call wins: attaching this one over it would put the
+		// older piece back and leave the newer unable to rest.
+		//
+		// this sound stops rather than playing under a scene following
+		// something else -- outside the lock, which a failing pass takes.
+		s.mu.Unlock()
+		stop()
+		return nil, ErrSuperseded
+	}
 	s.musicGen = gen
 	s.Music, s.Started, s.heldBeats = p, started, 0
 	if failed {
@@ -410,6 +421,10 @@ func (s *Stage) Score(path string, p Playhead, period time.Duration) (
 	s.mu.Unlock()
 	return stop, nil
 }
+
+// ErrSuperseded is what Score returns when another Score, called after it,
+// attached its piece first. The superseded piece has been stopped.
+var ErrSuperseded = errors.New("superseded: a later Score attached first")
 
 // play is playing, as Score reaches it: a variable so a test can put a failure
 // exactly where the timing of a real one never would.
