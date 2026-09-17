@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/janearc/miami/cells"
@@ -12,9 +14,33 @@ import (
 	"github.com/janearc/miami/view"
 )
 
+// painter is anything that draws into a frame of light.
+type painter interface {
+	Draw(b *light.Buffer, eye view.Eye, t float64)
+}
+
+// pieces is the scenery show can draw, by name: what to draw, back to front.
+var pieces = map[string]func() []painter{
+	"ember":  func() []painter { return []painter{scenery.Ember()} },
+	"azure":  func() []painter { return []painter{scenery.Azure()} },
+	"quasar": func() []painter { return []painter{scenery.Quasar()} },
+	"terran": world(scenery.Terran),
+	"arid":   world(scenery.Arid),
+	"frozen": world(scenery.Frozen),
+	"molten": world(scenery.Molten),
+}
+
+// world is a planet against the night.
+func world(mk func() *scenery.Planet) func() []painter {
+	return func() []painter {
+		sky := &scenery.Backdrop{Space: scenery.Night()}
+		return []painter{sky, mk()}
+	}
+}
+
 // show draws a piece of scenery once, to pngs, and says what it cost.
 //
-//	miami show ember|azure|quasar [COLS ROWS] [--t SECONDS]
+//	miami show NAME [COLS ROWS] [--t SECONDS]
 func show(args []string) {
 	if len(args) < 1 {
 		usage()
@@ -33,27 +59,34 @@ func show(args []string) {
 		fmt.Sscan(rest[0], &cols)
 		fmt.Sscan(rest[1], &rows)
 	}
-	looks := map[string]func() *scenery.BlackHole{
-		"ember": scenery.Ember, "azure": scenery.Azure,
-		"quasar": scenery.Quasar,
-	}
-	mk, ok := looks[args[0]]
+	mk, ok := pieces[args[0]]
 	if !ok {
-		fmt.Fprintln(os.Stderr, "no scenery called", args[0])
+		var names []string
+		for n := range pieces {
+			names = append(names, n)
+		}
+		sort.Strings(names)
+		fmt.Fprintf(os.Stderr, "no scenery called %s; there is %s\n",
+			args[0], strings.Join(names, " "))
 		os.Exit(2)
 	}
-	hole := mk()
+	ps := mk()
 	eye := view.Eye{Lens: 1, Near: 0.05}
 	w, h := cols*2, rows*3
+	draw := func(t float64) *light.Buffer {
+		b := light.New(w, h)
+		for _, p := range ps {
+			p.Draw(b, eye, t)
+		}
+		return b
+	}
 
 	start := time.Now()
-	b := light.New(w, h)
-	hole.Draw(b, eye, at)
+	draw(at)
 	first := time.Since(start)
 
 	start = time.Now()
-	b = light.New(w, h)
-	hole.Draw(b, eye, at+1.0/24)
+	b := draw(at + 1.0/24)
 	b.Bloom(0.6, light.Glow{Radius: 1.5, Strength: 0.6},
 		light.Glow{Radius: 8, Strength: 0.45},
 		light.Glow{Radius: 24, Strength: 0.3})
