@@ -24,3 +24,10 @@
 /dolphin/*.ansi
 /dolphin/*.txt
 /dolphin/__pycache__/
+
+# mine, not miami's: the game config this agent runs with, and the caches
+# go and staticcheck leave when they are run with this directory as HOME.
+# a clone of miami by anybody else should not carry either.
+/.config/
+/go/
+/Library/
