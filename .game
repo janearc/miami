@@ -29,3 +29,11 @@ lint paragraph 4
 # name, not emphasis.
 lint allow scenes/lights.go shout
 lint allow paint/detect.go shout
+
+# the workspace is ours and belongs on the road, not in a release. it
+# names libs/ directories that bootstrap clones here and that a clone
+# from github does not have, so shipping it turns a working module into
+# one that cannot build: "cannot load module libs/libdaffy listed in
+# go.work". go.mod is what everybody else gets.
+omit go.work
+omit go.work.sum
