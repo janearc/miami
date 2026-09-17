@@ -77,12 +77,18 @@ func (l *Log) Over(cs [][]cells.Cell, _ Frame) {
 		return
 	}
 
+	// nought is "as much as there is": a box pinned to a column count is
+	// the same box in a window twice the size, which is the half of a
+	// scene that does not scale.
 	w, h := l.Cols, l.Rows
 	if w <= 0 {
-		w = len(cs[0]) - 8
+		// a share of the window, and not all of it. build output is
+		// long -- a go import path is most of eighty columns -- but a
+		// box the width of a wide terminal is a wall.
+		w = min(len(cs[0])-8, 96)
 	}
 	if h <= 0 {
-		h = 3
+		h = max(3, len(cs)/6)
 	}
 	row, col := l.Row, l.Col
 	if row < 0 {
@@ -104,8 +110,15 @@ func (l *Log) Over(cs [][]cells.Cell, _ Frame) {
 		lines = lines[len(lines)-h:] // the tail: the newest fills the box
 	}
 
+	// darkened over what is written rather than over the box it may one
+	// day fill. an empty box with a scrim on it is a black panel laid on
+	// the scene, and for the first second of a build that is all it is.
 	if l.Scrim > 0 {
-		Scrim(cs, col-1, row-1, w+2, h+2, l.Scrim, 2)
+		wide := 0
+		for _, line := range lines {
+			wide = max(wide, len(line))
+		}
+		Scrim(cs, col-1, row-1, wide+2, len(lines)+2, l.Scrim, 2)
 	}
 	ink := l.Ink
 	if len(ink) == 0 {

@@ -46,6 +46,46 @@ func (r Ramp) At(t float64) color.RGBA {
 	return paint.Blend(r[i], r[i+1], t-float64(i))
 }
 
+// Faces are the figlet faces this library picks between when a face is not
+// named, smallest first, with how wide each sets a clock.
+//
+// Chosen by reading them, which is the third time that lesson has been paid
+// for here. Chunky is the widest face in the set and is not in it: its digits
+// are bars with gaps between, and they come apart at the size they are drawn.
+//
+// Big is the large one, six rows rather than four. It is large by being
+// taller, which is what large means.
+//
+// A figlet glyph is made of characters and a character is one cell, so type
+// does not scale with the window the way the scene does: the same face in a
+// terminal twice as wide is half the size relative to everything around it.
+// Choosing a bigger face is the only scaling type has.
+var Faces = []struct {
+	Name  string
+	Clock int // columns "00:00:00" takes in it
+}{
+	{"mini", 20}, {"small", 38}, {"smslant", 42},
+	{"standard", 48}, {"big", 48},
+}
+
+// faceFor is the largest face whose clock fits in half the width.
+//
+// Half rather than a third, which was the first try and put mini on an
+// ordinary eighty-column terminal.
+//
+// Mini's digits are slashes and underscores, and it is the face this library
+// has been caught using once already. A rule that picks it on a normal window
+// is worse than one that sets type a little large.
+func faceFor(cols int) string {
+	name := Faces[0].Name
+	for _, f := range Faces {
+		if f.Clock <= cols/2 {
+			name = f.Name
+		}
+	}
+	return name
+}
+
 // Text is a line of figlet type at a place on the screen.
 type Text struct {
 	Font   string // a figlet font name; "small" if empty
@@ -56,6 +96,7 @@ type Text struct {
 	mu     sync.Mutex
 	text   string
 	cached string
+	wide   int // the width it was last set for; a resize resets it
 	art    []string
 }
 
@@ -71,10 +112,10 @@ func (t *Text) Over(cs [][]cells.Cell, f Frame) {
 	t.mu.Lock()
 	s := t.text
 	t.mu.Unlock()
-	if s == "" {
+	if s == "" || len(cs) == 0 {
 		return
 	}
-	art := t.render(s)
+	art := t.render(s, len(cs[0]))
 	drawArt(cs, art, t.Row, t.Col, t.Ink, t.Scrim)
 }
 
@@ -82,15 +123,16 @@ func (t *Text) Over(cs [][]cells.Cell, f Frame) {
 // not changed. Loading a font and setting a line is not expensive, but it is
 // the same answer every frame for as long as the text stands still, and a
 // clock's text stands still for a second at a time.
-func (t *Text) render(s string) []string {
+func (t *Text) render(s string, cols int) []string {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	if s == t.cached && t.art != nil {
+	if s == t.cached && t.art != nil && cols == t.wide {
 		return t.art
 	}
+	t.wide = cols
 	name := t.Font
-	if name == "" {
-		name = "small"
+	if name == "" || name == "auto" {
+		name = faceFor(cols)
 	}
 	f, err := typeset.LoadFig(name)
 	if err != nil {
@@ -129,8 +171,8 @@ func (d *Digits) Over(cs [][]cells.Cell, f Frame) {
 		layout = "15:04:05"
 	}
 	name := d.Font
-	if name == "" {
-		name = "small"
+	if name == "" || name == "auto" {
+		name = faceFor(len(cs[0]))
 	}
 	fig, err := typeset.LoadFig(name)
 	if err != nil {

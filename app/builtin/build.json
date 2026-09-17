@@ -68,7 +68,9 @@
       "cols": 12, "colours": 10, "row": -8, "col": 4 },
 
     { "kind": "clock", "name": "face",
-      "row": 1, "col": -1, "font": "small", "flicker": true, "scrim": 0.25,
+      // auto: the largest face whose clock fits a third of the width,
+      // because type is characters and does not scale with the window
+      "row": 1, "col": -1, "font": "auto", "flicker": true, "scrim": 0.25,
       "ink": [ "ff2a9d", "c44fb0", "8a5ad8", "3f7ad6", "2de2e6" ] },
 
     // what the build is saying, in plain glyphs and wrapped. above the
@@ -79,7 +81,9 @@
     // is a different height -- and the bar is placed in space, whose
     // screen row moves with the frame's shape.
     { "kind": "log", "name": "out",
-      "row": 7, "col": 3, "cols": 74, "rows": 4, "scrim": 0.42,
+      // no width and no height: it takes what the window has, so a
+      // wide terminal gets a wide box rather than the same small one
+      "row": 7, "col": 3, "scrim": 0.42,
       "ink": [ "8a5ad8", "3f7ad6", "2de2e6", "ff2a9d" ] }
   ]
 }
