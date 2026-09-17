@@ -113,13 +113,22 @@ type hit struct {
 // ring far thinner than a subpixel.
 const maxHits = 3
 
-// Draw puts the hole, its disk and the bent sky into the frame, replacing
-// whatever was there.
+// Draw puts the hole, its disk and the bent sky into the frame.
+//
+// It replaces what is there, because everything it draws is either the hole or
+// the sky behind it -- except where something nearer than the hole has already
+// been drawn, which it leaves alone.
+//
+// Without that, a planet drawn first was erased by a hole forty units behind
+// it, and only the order of the calls saved it.
 func (h *BlackHole) Draw(b *light.Buffer, eye view.Eye, t float64) {
 	bk := h.bakeFor(b.W, b.H, eye)
 	split.Rows(b.H, func(lo, hi int) {
 		for y := lo; y < hi; y++ {
 			for x := 0; x < b.W; x++ {
+				if b.Depth(x, y) < bk.depth {
+					continue
+				}
 				c, caught := h.shade(bk, y*b.W+x, t)
 				b.Set(x, y, c)
 				if caught {

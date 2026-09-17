@@ -93,6 +93,8 @@ func (s *Stage) drawScenery(sh grade.Sheet, f Frame) [][]color.RGBA {
 		p.update(f.Scene)
 		p.draw(b, s.eye, t)
 	}
+	s.traced(b, f)
+	s.sprites(b, f)
 	g := glowOf(s.Doc)
 	var spread []light.Glow
 	for _, sc := range g.Spread {
@@ -101,6 +103,68 @@ func (s *Stage) drawScenery(sh grade.Sheet, f Frame) [][]color.RGBA {
 	}
 	b.Bloom(g.Threshold, spread...)
 	return b.RGBA(g.Exposure)
+}
+
+// traced puts the ray-traced solids into the frame as light.
+//
+// They carry no depth: the tracer answers with a role and nothing else, so
+// they are drawn over whatever scenery is behind them, which is what they did
+// before. A ball that should go behind a planet needs the tracer to report
+// how far away it hit, and it does not yet.
+func (s *Stage) traced(b *light.Buffer, f Frame) {
+	if s.Lit == nil {
+		return
+	}
+	fr := s.Lit.Trace(f.Since, b.W/2, b.H/3)
+	for y, row := range fr.Art {
+		for x := 0; x < len(row); x++ {
+			if c, ok := s.ink(row[x]); ok {
+				b.Set(x, y, c)
+			}
+		}
+	}
+}
+
+// sprites puts the objects standing in space into the frame as light, nearest
+// last, each hidden where something nearer has already been drawn.
+//
+// This is what lets a bird fly behind a disk. Drawn into the buffer rather
+// than over the picture afterwards, a sprite is also subject to the frame's
+// exposure and spreads its own glow, like everything else in the scene.
+func (s *Stage) sprites(b *light.Buffer, f Frame) {
+	for _, p := range view.Resolve(s.Objects, s.eye, f.Since, b.W, b.H) {
+		for y, row := range p.Frame.Art {
+			py := p.Y + y
+			if py < 0 || py >= b.H {
+				continue
+			}
+			for x := 0; x < len(row); x++ {
+				px := p.X + x
+				if px < 0 || px >= b.W {
+					continue
+				}
+				c, ok := s.ink(row[x])
+				if !ok || p.Depth > b.Depth(px, py) {
+					continue
+				}
+				b.Set(px, py, c)
+				b.SetDepth(px, py, p.Depth)
+			}
+		}
+	}
+}
+
+// ink is a role's colour as light, and false for the role that is nothing or
+// one the colourway did not dress.
+func (s *Stage) ink(role byte) (light.RGB, bool) {
+	if role == '.' {
+		return light.RGB{}, false
+	}
+	c, ok := s.Colours[role]
+	if !ok {
+		return light.RGB{}, false
+	}
+	return light.FromRGBA(c), true
 }
 
 // glowOf is a document's glow, or the one the looks were made under.

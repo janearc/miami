@@ -270,18 +270,33 @@ type Placed struct {
 // Objects behind the viewer, or off the sheet entirely, are dropped here rather
 // than drawn and clipped: a flock is mostly off-screen most of the time and
 // resampling a sprite nobody will see is the expensive part.
+//
+// Where a sprite lands and how big it is both come from Project, which is the
+// tracer's own projection. They used to come from arithmetic written here that
+// read the eye's position but not its yaw or pitch, and divided by Lens where
+// the tracer multiplies.
+//
+// So a turned camera swung the traced ball and left the bird where it was, and
+// at any lens the two disagreed vertically, because this had no aspect term at
+// all. A sprite cannot fly in front of a black hole drawn by a camera it does
+// not share.
 func Resolve(objs []Object, e Eye, t time.Duration, subW, subH int) []Placed {
 	var out []Placed
 	for _, o := range objs {
 		at, height := o.Extent(t)
-		d := at.Z - e.At.Z
-		if d < e.Near {
+		x0, y0, d, ok := e.Project(at, subW, subH)
+		if !ok {
 			continue // behind the viewer, or in their eye
 		}
-		// the picture plane is one unit out, so apparent size is size
-		// over distance and nothing more
-		scale := 1 / (d * e.Lens)
-		h := int(height * scale * float64(subH))
+		// how tall it is on the sheet is where its top projects against
+		// where its middle does, so the same lens, aspect and pitch
+		// that place it also size it
+		top := Vec{at.X, at.Y + height/2, at.Z}
+		_, y1, _, ok := e.Project(top, subW, subH)
+		if !ok {
+			continue
+		}
+		h := int(2 * math.Abs(y0-y1))
 		if h < 1 {
 			continue // further away than the sheet can resolve
 		}
@@ -290,11 +305,9 @@ func Resolve(objs []Object, e Eye, t time.Duration, subW, subH int) []Placed {
 		if w < 1 || f.Height() == 0 {
 			continue
 		}
-		sx := (at.X - e.At.X) * scale
-		sy := (at.Y - e.At.Y) * scale
-		x := int((0.5+sx)*float64(subW)) - w/2
-		y := int((0.5-sy)*float64(subH)) - h/2
-		if x+w < 0 || x >= subW || y+h < 0 || y >= subH {
+		x := int(math.Round(x0)) - w/2
+		y := int(math.Round(y0)) - f.Height()/2
+		if x+w < 0 || x >= subW || y+f.Height() < 0 || y >= subH {
 			continue
 		}
 		out = append(out, Placed{

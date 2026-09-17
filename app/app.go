@@ -275,7 +275,9 @@ func (s *Stage) now() scene.Ctx { return s.at }
 
 // NewStage loads a scene document and a colourway.
 func NewStage(doc, colourway string) (*Stage, error) {
-	st := &Stage{}
+	// a stage whose document names no eye still has one, and it is the
+	// camera the sprites used to build for themselves
+	st := &Stage{eye: view.DefaultEye()}
 	if doc != "" {
 		d, err := loadScene(doc)
 		if err != nil {
@@ -352,15 +354,21 @@ func (s *Stage) Draw(f Frame, cols, rows int) [][]cells.Cell {
 		}
 	}
 
-	if s.Lit != nil {
-		compose.Blit(
-			px, s.Lit.Trace(f.Since, cols, rows), s.Colours, 0, 0,
-		)
-	}
-	for _, p := range view.Resolve(
-		s.Objects, view.DefaultEye(), f.Since, sh.W, sh.H,
-	) {
-		compose.Blit(px, p.Frame, s.Colours, p.X, p.Y)
+	// with scenery, the solids and the sprites were drawn into the light
+	// the frame is made of, before the glow and the exposure. Without it
+	// they go over the picture, as they always have.
+	if len(s.scenery) == 0 {
+		if s.Lit != nil {
+			compose.Blit(
+				px, s.Lit.Trace(f.Since, cols, rows), s.Colours,
+				0, 0,
+			)
+		}
+		for _, p := range view.Resolve(
+			s.Objects, s.eye, f.Since, sh.W, sh.H,
+		) {
+			compose.Blit(px, p.Frame, s.Colours, p.X, p.Y)
+		}
 	}
 
 	cs := cells.ToCells(px, 2, 3)

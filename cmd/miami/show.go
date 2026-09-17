@@ -7,24 +7,61 @@ import (
 	"strings"
 	"time"
 
+	sprite "github.com/janearc/libdaffy-sprite"
+
 	"github.com/janearc/miami/app"
 	"github.com/janearc/miami/cells"
+	"github.com/janearc/miami/motion"
 	"github.com/janearc/miami/proof"
+	"github.com/janearc/miami/view"
 )
+
+// flyer is a sprite crossing the scene in a straight line, over and over: a
+// bird flying from behind whatever the scene holds to in front of it.
+//
+// It is here rather than in the library because it is a demonstration. What it
+// demonstrates is that a sprite and the scenery share one camera and one depth
+// buffer, so the bird goes behind a disk and comes out the other side.
+type flyer struct {
+	frames []sprite.Frame
+	from   view.Vec
+	to     view.Vec
+	secs   float64
+	height float64
+}
+
+// Extent is where the bird is at t, and how tall it is.
+func (f *flyer) Extent(t time.Duration) (view.Vec, float64) {
+	e := t.Seconds() / f.secs
+	e -= float64(int(e))
+	at := view.Vec{
+		X: f.from.X + (f.to.X-f.from.X)*e,
+		Y: f.from.Y + (f.to.Y-f.from.Y)*e,
+		Z: f.from.Z + (f.to.Z-f.from.Z)*e,
+	}
+	return at, f.height
+}
+
+// Render is the wingbeat at its own pace, scaled to the size asked for.
+func (f *flyer) Render(e view.Eye, t time.Duration, rows int) sprite.Frame {
+	b := view.Billboard{Frames: f.frames, Height: f.height}
+	return b.Render(e, t, rows)
+}
 
 // show runs a scene: scenery at full screen, until q. With --png it draws one
 // frame to out/ instead, and says what it cost, which is how an agent looks at
 // scenery without a terminal to watch it in.
 //
-//	miami show scene [cols rows] [--t seconds] [--png]
+//	miami show scene [cols rows] [--t seconds] [--png] [--bird]
 //
 // The scene is a built-in -- blackhole, quasar, hexworld, with or without the
-// @ -- or a document on disk.
+// @ -- or a document on disk. --bird sends a starling across it, from behind
+// whatever the scene holds to in front of it.
 func show(args []string) {
 	if len(args) < 1 {
 		usage()
 	}
-	cols, rows, at, png := 0, 0, 0.0, false
+	cols, rows, at, png, bird := 0, 0, 0.0, false, false
 	var rest []string
 	for i := 1; i < len(args); i++ {
 		switch {
@@ -33,6 +70,8 @@ func show(args []string) {
 			i++
 		case args[i] == "--png":
 			png = true
+		case args[i] == "--bird":
+			bird = true
 		default:
 			rest = append(rest, args[i])
 		}
@@ -49,6 +88,14 @@ func show(args []string) {
 	start := time.Now()
 	st, err := app.NewStage(name, "@starling")
 	proof.Must(err)
+	if bird {
+		frames, err := motion.ReadStream(starlingStream)
+		proof.Must(err)
+		st.Objects = append(st.Objects, &flyer{frames: frames,
+			from: view.Vec{X: -12.3, Y: 0.7, Z: 86},
+			to:   view.Vec{X: 12.7, Y: -4.3, Z: 14}, secs: 24,
+			height: 2.4})
+	}
 	built := time.Since(start)
 
 	if !png {
