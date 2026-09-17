@@ -1,7 +1,31 @@
-# game: this repository
+# game: this repository.
 #
-# name is the project: it is the block in the builder's own config that says
+# name is the project: the block of that name in the builder's own config says
 # where this tree's remotes are. nothing here holds a remote, and a builder
 # who has no block for it builds locally, which is the right default for a
 # repository somebody is only trying out.
 name miami
+
+# the lint, stated here rather than left to whoever is building.
+#
+# a lint line in this file replaces the builder's whole set rather than adding
+# to it, so the set has to be written out in full -- which is the right way
+# round for something published: the standard travels with the repository and
+# does not depend on whose machine it is checked out on.
+lint width 80
+lint rows 25
+lint comments
+lint print
+lint exclaim
+lint shout
+lint words hyperscaler enterprise-grade blazing-fast load-bearing
+lint paragraph 4
+
+# two files shout on purpose.
+#
+# the sign in the lights scene is a sign: BULBS WELCOME is what it says, and
+# the pair beside it is the note about what the cell fitter did to those
+# letters at one subrow. COLORFGBG is an environment variable and that is its
+# name, not emphasis.
+lint allow scenes/lights.go shout
+lint allow paint/detect.go shout
