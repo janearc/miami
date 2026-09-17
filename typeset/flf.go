@@ -1,3 +1,10 @@
+// This file is licensed under the MIT license, in `licenses/LICENSE.mit.txt`.
+// The rest of miami is under the 404 license, in `LICENSE.txt`.
+//
+// It is a reader of FIGlet's font format, written here. It carries none of
+// FIGlet's code and no fonts; those are read at run time from wherever figlet
+// is installed, and come with their own terms.
+
 package typeset
 
 import (
