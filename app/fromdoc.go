@@ -132,9 +132,12 @@ func (s *Stage) addShape(sh scene.Shape) error {
 		if err != nil {
 			return err
 		}
+		// a cylinder's spin is one number: turns per second about its
+		// own axis. x is along, which is the axis a bar lies on.
 		c := &view.Cylinder{Radius: sh.Radius, Length: sh.Length,
 			Caps: sh.Caps, Texture: s.ownFill(sh.Name, tex),
-			Axis: vecAt(sh.Axis, scene.Ctx{})}
+			Axis: vecAt(sh.Axis, scene.Ctx{}),
+			Spin: sh.Spin.X.At(scene.Ctx{})}
 		s.solids = append(s.solids, c)
 		s.moving = append(s.moving, mover{at: sh.At, set: func(v view.Vec) {
 			c.At = v
@@ -229,7 +232,7 @@ func textureFrom(t *scene.Texture, s *Stage) (texture.Texture, error) {
 			return nil, err
 		}
 		return texture.Stripes{A: a, B: b, Period: t.Period,
-			Duty: t.Duty, Phase: t.Phase}, nil
+			Duty: t.Duty, Phase: t.Phase, Lean: t.Lean}, nil
 
 	case "noise":
 		rs := make([]byte, 0, len(t.Roles))

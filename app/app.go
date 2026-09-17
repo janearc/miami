@@ -81,11 +81,14 @@ type Drawer interface {
 // The caller's function is asked after each frame rather than before, so a
 // program that finishes instantly still shows one.
 func (s Screen) Run(d Drawer, more func(Frame) bool) error {
-	if s.Cols == 0 {
-		s.Cols = 90
-	}
-	if s.Rows == 0 {
-		s.Rows = 24
+	if s.Cols == 0 || s.Rows == 0 {
+		cols, rows := Size()
+		if s.Cols == 0 {
+			s.Cols = cols
+		}
+		if s.Rows == 0 {
+			s.Rows = rows
+		}
 	}
 	if s.FPS == 0 {
 		s.FPS = 12
@@ -349,4 +352,29 @@ func Scrim(cs [][]cells.Cell, x0, y0, w, h int, k, feather float64) {
 func dim(c color.RGBA, k float64) color.RGBA {
 	return color.RGBA{uint8(float64(c.R) * k), uint8(float64(c.G) * k),
 		uint8(float64(c.B) * k), c.A}
+}
+
+// Size is the terminal's, in cells, or a sensible pair when there is no
+// terminal to ask.
+//
+// Through stty, for the same reason raw mode is: it is on every machine this
+// runs on, and the size of a window is not worth a dependency.
+//
+// A row is kept back. A picture drawn to the full height scrolls the moment
+// anything is written after it -- the shell's next prompt will do -- and a
+// scrolled frame tears every frame after it, because a delta is addressed to
+// where the last one was.
+func Size() (cols, rows int) {
+	cols, rows = 90, 24
+	out, err := exec.Command("stty", "size").Output()
+	if err != nil {
+		// not a terminal, or stty could not see one through the pipe
+		// it was given. the caller still gets a size it can draw to.
+		return cols, rows
+	}
+	var r, c int
+	if n, _ := fmt.Sscan(string(out), &r, &c); n != 2 || r < 4 || c < 20 {
+		return cols, rows
+	}
+	return c, r - 1
 }

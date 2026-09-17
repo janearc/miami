@@ -201,6 +201,7 @@ type Texture struct {
 	Period float64 `json:"period"` // stripes
 	Duty   float64 `json:"duty"`
 	Phase  float64 `json:"phase"`
+	Lean   float64 `json:"lean"` // stripes: a helix rather than rings
 
 	Of []Texture `json:"of"` // bands
 

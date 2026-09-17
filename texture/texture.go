@@ -111,18 +111,29 @@ func (n Noise) At(u, v float64) byte {
 	return n.Roles[i]
 }
 
-// Stripes is bands across v only, for a surface that wants a direction.
+// Stripes is bands, for a surface that wants a direction.
 //
 // Duty is how much of each period is the first role, so a hairline is a duty
 // near nought and an even pair is a half.
+//
+// Lean is what makes a barber's pole. With no lean the bands run straight
+// around a cylinder, which at the height of a progress bar is three stripes
+// and reads as a painted rectangle; leaning them makes a helix, and a helix on
+// a turning pole appears to travel along it.
+//
+// That last part is an illusion and it is the useful one: nothing is moving
+// lengthways, but a person watching sees the bar going somewhere, which is how
+// a bar says it is working while nothing has finished.
 type Stripes struct {
 	A, B         byte
 	Period, Duty float64
 	Phase        float64
+	Lean         float64
 }
 
 // At is the role at a point.
-func (s Stripes) At(_, v float64) byte {
+func (s Stripes) At(u, v float64) byte {
+	v += s.Lean * u
 	p := s.Period
 	if p <= 0 {
 		p = 0.25

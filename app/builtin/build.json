@@ -16,7 +16,11 @@
 
     // the lamp is always there; the sun is off at night, and an off light
     // costs the floor a shade everywhere, which is what night is
-    { "kind": "light", "at": { "x": -1.2, "y": 3.0, "z": 1.6 } },
+    // high, and behind what it lights rather than in front of it. with
+    // the lamp nearer the camera than the thing casting, every shadow
+    // falls away from the viewer and hides behind its own object, which
+    // is how a bar on a floor ends up looking painted on.
+    { "kind": "light", "at": { "x": -1.4, "y": 3.2, "z": 5.2 } },
     { "kind": "light", "sun": true },
 
     { "kind": "floor",
@@ -28,7 +32,7 @@
     // the height is an absolute sine, so it arrives at the floor rather
     // than easing into it -- a bounce lands, it does not settle.
     { "kind": "sphere", "name": "ball",
-      "radius": 0.34,
+      "radius": 0.28,
       "spin": { "x": 0.11, "y": 0.43, "z": 0.07 },
       "texture": { "kind": "quadrants" },
       "at": {
@@ -41,12 +45,21 @@
     // frac, which is what makes it the program's: game sets it from
     // wherever the build has got to.
     { "kind": "cylinder", "name": "build",
-      "at": { "x": 0, "y": -0.514, "z": 3.1 },
-      "radius": 0.036, "length": 1.8, "caps": true,
+      // off the floor rather than resting on it, so the lamp
+      // overhead throws a shadow you can see. a bar sitting flat
+      // has its shadow underneath itself and reads as a painted
+      // stripe.
+      "at": { "x": 0, "y": -0.36, "z": 2.35 },
+      "radius": 0.08, "length": 1.7, "caps": true,
+      // it turns, which is what makes stripes a barber's pole and
+      // what says it is working when nothing has finished yet
+      "spin": { "x": 0.35 },
       "texture": {
         "kind": "split",
-        "done": { "kind": "stripes", "a": "O", "b": "R", "period": 0.143 },
-        "rest": { "kind": "stripes", "a": "D", "b": "K", "period": 0.143 }
+        "done": { "kind": "stripes", "a": "O", "b": "R",
+                  "period": 0.11, "duty": 0.5, "lean": 5 },
+        "rest": { "kind": "stripes", "a": "D", "b": "K",
+                  "period": 0.11, "duty": 0.5, "lean": 5 }
       } },
 
     // a palm tree, because this is a vaporwave scene and the system
@@ -61,8 +74,12 @@
     // what the build is saying, in plain glyphs and wrapped. above the
     // bar rather than over it: output in front of a progress bar hides
     // the one thing the bar is for.
+    // under the clock rather than above the bar. both are anchored to
+    // the top, so they cannot walk into each other when the terminal
+    // is a different height -- and the bar is placed in space, whose
+    // screen row moves with the frame's shape.
     { "kind": "log", "name": "out",
-      "row": -6, "col": 4, "cols": 78, "rows": 4, "scrim": 0.42,
+      "row": 7, "col": 3, "cols": 74, "rows": 4, "scrim": 0.42,
       "ink": [ "8a5ad8", "3f7ad6", "2de2e6", "ff2a9d" ] }
   ]
 }

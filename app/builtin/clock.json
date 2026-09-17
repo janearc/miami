@@ -18,7 +18,11 @@
 
     // the lamp is always there; the sun is off at night, and an off light
     // costs the floor a shade everywhere, which is what night is
-    { "kind": "light", "at": { "x": -1.2, "y": 3.0, "z": 1.6 } },
+    // high, and behind what it lights rather than in front of it. with
+    // the lamp nearer the camera than the thing casting, every shadow
+    // falls away from the viewer and hides behind its own object, which
+    // is how a bar on a floor ends up looking painted on.
+    { "kind": "light", "at": { "x": -1.4, "y": 3.2, "z": 5.2 } },
     { "kind": "light", "sun": true },
 
     { "kind": "floor",

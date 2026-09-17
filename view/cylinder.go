@@ -23,6 +23,15 @@ type Cylinder struct {
 	Length  float64 // world units, end to end
 	Texture texture.Texture
 	Caps    bool // draw the flat ends; an open tube if false
+
+	// Spin is turns per second about its own axis, which is what makes a
+	// striped one a barber's pole.
+	//
+	// It is here rather than in the texture because it is a fact about the
+	// object: the pole turns, and whatever it is painted with turns with
+	// it. A texture that scrolled itself would be a picture sliding over a
+	// tube that was not moving.
+	Spin float64
 }
 
 // axis is the cylinder's direction, unit length, defaulting to lying across the
@@ -41,8 +50,9 @@ func (c Cylinder) axis() Vec {
 // the axial part out of the ray and what is left is a circle problem in the
 // plane. The caps are two discs. Both are checked and the nearer wins, which is
 // what stops a ray that enters through an end from painting the far wall.
-func (c Cylinder) Hit(r Ray, _ float64, near, far float64) (float64, byte, bool) {
+func (c Cylinder) Hit(r Ray, t float64, near, far float64) (float64, byte, bool) {
 	a := c.axis()
+	roll := c.Spin * t
 	half := c.Length / 2
 	o := sub(r.At, c.At)
 
@@ -72,7 +82,8 @@ func (c Cylinder) Hit(r Ray, _ float64, near, far float64) (float64, byte, bool)
 				p := add(o, scale(r.Dir, t))
 				radial := sub(p, scale(a, h))
 				best, hit, role = t, true,
-					c.roleAt(h/c.Length+0.5, aroundOf(radial, a))
+					c.roleAt(h/c.Length+0.5,
+						aroundOf(radial, a)+roll)
 			}
 		}
 	}
@@ -89,7 +100,8 @@ func (c Cylinder) Hit(r Ray, _ float64, near, far float64) (float64, byte, bool)
 				continue
 			}
 			best, hit, role = t, true,
-				c.roleAt(end/c.Length+0.5, aroundOf(radial, a))
+				c.roleAt(end/c.Length+0.5,
+					aroundOf(radial, a)+roll)
 		}
 	}
 	return best, role, hit
@@ -105,6 +117,9 @@ func (c Cylinder) roleAt(u, v float64) byte {
 }
 
 // Blocks says whether the cylinder stands in the way of a light.
+//
+// The time is nought because a shadow does not care what a surface is painted
+// with: a turning pole throws the same shadow as a still one.
 func (c Cylinder) Blocks(r Ray, near, far float64) bool {
 	_, _, ok := c.Hit(r, 0, near, far)
 	return ok
