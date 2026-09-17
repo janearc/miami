@@ -407,8 +407,8 @@ func (s *Stage) Score(path string, p Playhead, period time.Duration) (
 		// later call wins: attaching this one over it would put the
 		// older piece back and leave the newer unable to rest.
 		//
-		// this sound stops rather than playing under a scene following
-		// something else -- outside the lock, which a failing pass takes.
+		// this sound stops rather than play under a scene following
+		// something else: outside the lock, which a failing pass takes.
 		s.mu.Unlock()
 		stop()
 		return nil, ErrSuperseded
