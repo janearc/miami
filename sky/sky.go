@@ -1,8 +1,8 @@
 // Package sky paints the sky for a time of day.
 //
 // It is its own package because of who needs it. The pictures in scenes are
-// this project's own -- a macaw, a car, a card for porter -- and a program
-// building against miami has no business importing a gallery to get a backdrop.
+// this project's own -- a macaw, a car, a repository card -- and a program
+// building against miami has no business importing a gallery for a backdrop.
 //
 // A sky driven by a sun is not one of miami's pictures. It is the thing
 // anyone's picture stands in front of.

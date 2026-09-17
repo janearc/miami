@@ -129,8 +129,8 @@ func BigBirds(cols, rows int) *raster.Scene {
 	return sc
 }
 
-// the big birds banner, copied in from frontier-art so a rename over there
-// cannot break a render here. it moved once already, on 2026-09-13.
+// the big birds banner, copied in from the artwork repository so a rename
+// over there cannot break a render here. it moved once already, on 2026-09-13.
 //
 //go:embed assets/bb.txt
 var bbFigs []byte

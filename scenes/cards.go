@@ -38,7 +38,7 @@ import (
 //
 // set over the ramps the letters had to be punched out in near-black and read
 // as damage to the artwork. Giving them their own rows is the ordinary
-// typographic answer and it was porter's.
+// typographic answer, and it was a colleague's suggestion.
 const Band = 5.0 / 17.0
 
 // LibthemeMarks are the six ramps' top notes, in order. The wordmark is
