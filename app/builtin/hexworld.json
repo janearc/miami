@@ -1,0 +1,24 @@
+{
+  // A world of hexes, turning, with a molten moon going round it.
+  //
+  // The moon passes behind the world and out the other side: nothing here
+  // says so, it is only nearer or further than the world at each subpixel,
+  // and the nearer one is drawn.
+  "name": "hexworld",
+  "seconds": 40,
+
+  "eye": { "lens": 1, "near": 0.05 },
+
+  "shapes": [
+    { "kind": "space", "space": { "look": "night" } },
+
+    { "kind": "planet", "at": { "x": 0, "y": 0, "z": 4.2 }, "radius": 1,
+      "world": { "look": "terran" } },
+
+    { "kind": "planet", "radius": 0.2,
+      "at": { "x": { "mid": 0, "amp": 1.9, "period": 40 },
+              "y": { "mid": 0.25, "amp": 0.15, "period": 40 },
+              "z": { "mid": 4.2, "amp": 1.9, "period": 40, "phase": 0.25 } },
+      "world": { "look": "molten", "tiles": 5, "day": 20 } }
+  ]
+}

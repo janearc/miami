@@ -3,106 +3,100 @@ package main
 import (
 	"fmt"
 	"os"
-	"sort"
+	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/janearc/miami/app"
 	"github.com/janearc/miami/cells"
-	"github.com/janearc/miami/light"
 	"github.com/janearc/miami/proof"
-	"github.com/janearc/miami/scenery"
-	"github.com/janearc/miami/view"
 )
 
-// painter is anything that draws into a frame of light.
-type painter interface {
-	Draw(b *light.Buffer, eye view.Eye, t float64)
-}
-
-// pieces is the scenery show can draw, by name: what to draw, back to front.
-var pieces = map[string]func() []painter{
-	"ember":  func() []painter { return []painter{scenery.Ember()} },
-	"azure":  func() []painter { return []painter{scenery.Azure()} },
-	"quasar": func() []painter { return []painter{scenery.Quasar()} },
-	"terran": world(scenery.Terran),
-	"arid":   world(scenery.Arid),
-	"frozen": world(scenery.Frozen),
-	"molten": world(scenery.Molten),
-}
-
-// world is a planet against the night.
-func world(mk func() *scenery.Planet) func() []painter {
-	return func() []painter {
-		sky := &scenery.Backdrop{Space: scenery.Night()}
-		return []painter{sky, mk()}
-	}
-}
-
-// show draws a piece of scenery once, to pngs, and says what it cost.
+// show runs a scene: scenery at full screen, until q. With --png it draws one
+// frame to out/ instead, and says what it cost, which is how an agent looks at
+// scenery without a terminal to watch it in.
 //
-//	miami show NAME [COLS ROWS] [--t SECONDS]
+//	miami show scene [cols rows] [--t seconds] [--png]
+//
+// The scene is a built-in -- blackhole, quasar, hexworld, with or without the
+// @ -- or a document on disk.
 func show(args []string) {
 	if len(args) < 1 {
 		usage()
 	}
-	cols, rows, at := 160, 48, 0.0
+	cols, rows, at, png := 0, 0, 0.0, false
 	var rest []string
 	for i := 1; i < len(args); i++ {
-		if args[i] == "--t" && i+1 < len(args) {
+		switch {
+		case args[i] == "--t" && i+1 < len(args):
 			fmt.Sscan(args[i+1], &at)
 			i++
-			continue
+		case args[i] == "--png":
+			png = true
+		default:
+			rest = append(rest, args[i])
 		}
-		rest = append(rest, args[i])
 	}
 	if len(rest) > 1 {
 		fmt.Sscan(rest[0], &cols)
 		fmt.Sscan(rest[1], &rows)
 	}
-	mk, ok := pieces[args[0]]
-	if !ok {
-		var names []string
-		for n := range pieces {
-			names = append(names, n)
-		}
-		sort.Strings(names)
-		fmt.Fprintf(os.Stderr, "no scenery called %s; there is %s\n",
-			args[0], strings.Join(names, " "))
-		os.Exit(2)
-	}
-	ps := mk()
-	eye := view.Eye{Lens: 1, Near: 0.05}
-	w, h := cols*2, rows*3
-	draw := func(t float64) *light.Buffer {
-		b := light.New(w, h)
-		for _, p := range ps {
-			p.Draw(b, eye, t)
-		}
-		return b
+	name := args[0]
+	if !strings.HasPrefix(name, "@") && !strings.Contains(name, ".") {
+		name = "@" + name
 	}
 
 	start := time.Now()
-	draw(at)
-	first := time.Since(start)
+	st, err := app.NewStage(name, "@starling")
+	proof.Must(err)
+	built := time.Since(start)
 
+	if !png {
+		sc := app.Screen{Cols: cols, Rows: rows, FPS: 24, Raw: true}
+		proof.Must(sc.Run(st, func(f app.Frame) bool {
+			for _, k := range f.Keys {
+				if k.Rune == 'q' || k.Rune == 3 {
+					return false
+				}
+			}
+			return true
+		}))
+		return
+	}
+
+	if cols == 0 || rows == 0 {
+		cols, rows = 160, 48
+	}
+	base := time.Now()
+	frame := func(t float64) [][]cells.Cell {
+		d := time.Duration(t * float64(time.Second))
+		return st.Draw(app.Frame{At: base.Add(d), Since: d}, cols, rows)
+	}
 	start = time.Now()
-	b := draw(at + 1.0/24)
-	b.Bloom(0.6, light.Glow{Radius: 1.5, Strength: 0.6},
-		light.Glow{Radius: 8, Strength: 0.45},
-		light.Glow{Radius: 24, Strength: 0.3})
-	px := b.RGBA(1)
-	frame := time.Since(start)
-	cs := cells.ToCells(px, 2, 3)
+	frame(at)
+	first := time.Since(start)
+	start = time.Now()
+	cs := frame(at + 1.0/24)
+	next := time.Since(start)
 
-	name := "out/show-" + args[0]
+	// what the terminal has to take: a second of frames at 24 a second,
+	// as the differences the loop would send
+	wire, prev := 0, cs
+	for i := 2; i < 26; i++ {
+		c := frame(at + float64(i)/24)
+		wire += len(cells.Delta(prev, c))
+		prev = c
+	}
+
+	stem := strings.TrimSuffix(filepath.Base(strings.TrimPrefix(name, "@")),
+		".json")
+	out := "out/show-" + stem + ".png"
 	proof.Must(os.MkdirAll("out", 0o755))
-	proof.Must(proof.WritePNGXY(name+"-px.png", px, 3, 4))
-	proof.Must(proof.WritePNGXY(name+".png", cells.CellsToPixels(cs, 2, 3),
-		3, 4))
+	proof.Must(proof.WritePNGXY(out, cells.CellsToPixels(cs, 2, 3), 3, 4))
 	ms := func(d time.Duration) time.Duration {
 		return d.Round(time.Millisecond)
 	}
-	fmt.Printf("%s at %dx%d: first frame %v (bake included), "+
-		"next %v -> %s.png\n", args[0], cols, rows, ms(first),
-		ms(frame), name)
+	fmt.Printf("%s at %dx%d: loaded in %v, first frame %v, then %v a "+
+		"frame, %s a second at 24 -> %s\n", name, cols, rows, ms(built),
+		ms(first), ms(next), kb(wire), out)
 }

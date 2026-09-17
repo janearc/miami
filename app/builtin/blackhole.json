@@ -1,0 +1,46 @@
+{
+  // A black hole to put a game in front of.
+  //
+  // The hole is traced, not drawn: the disk's far side lifted over the
+  // shadow, its underside wrapped below, the thin ring inside the rim, and
+  // the stars smeared round it are what bent light does. See scenery.
+  //
+  // In front of it, dust the camera drifts through, sparks falling into the
+  // disk, and a small cold world lit from the side by the disk's own light.
+  "name": "blackhole",
+  "seconds": 60,
+
+  "eye": { "lens": 1, "near": 0.05 },
+
+  "shapes": [
+    { "kind": "blackhole", "at": { "x": 7, "y": 2, "z": 44 },
+      "hole": { "look": "ember" } },
+
+    // sparks on their way in, on orbits that tighten and quicken. the
+    // speed is the disk's orbital speed where they start: the inner edge
+    // goes round in five seconds, and orbits slow as the square root of
+    // how far out they are
+    { "kind": "emitter", "at": { "x": 7, "y": 2, "z": 44 },
+      "emit": { "kind": "spiral", "seed": 3,
+        "axis": { "x": -0.09, "y": 1, "z": -0.12 },
+        "rate": 40, "life": 7, "radius": 26, "inner": 7, "speed": 3.6,
+        "spread": 0.02, "size": 0.05, "light": 2.2, "streak": 0.25,
+        "ramp": [ { "at": 0, "c": "ffd8a8" }, { "at": 0.7, "c": "ffb060" },
+                  { "at": 1, "c": "fff4e0" } ] } },
+
+    // a world, small and near, lit from the right by the disk
+    { "kind": "planet", "at": { "x": -3.2, "y": -1.1, "z": 11 },
+      "radius": 0.7,
+      "world": { "look": "frozen", "tiles": 9, "clouds": 0,
+        "airdepth": 0.35, "air": "ffb27a",
+        "sun": { "x": 10, "y": 3, "z": 33 }, "day": 120 } },
+
+    // dust between the camera and all of it, drifting left and away
+    { "kind": "emitter", "at": { "x": 0, "y": 0, "z": 6 },
+      "emit": { "kind": "drift", "seed": 9,
+        "axis": { "x": -1, "y": -0.15, "z": 0.4 },
+        "rate": 25, "life": 6, "speed": 0.5, "radius": 5,
+        "size": 0.006, "light": 0.8, "streak": 0.3,
+        "ramp": [ { "at": 0, "c": "ffe6c8" }, { "at": 1, "c": "c8a890" } ] } }
+  ]
+}
