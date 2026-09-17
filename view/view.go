@@ -61,6 +61,62 @@ func (e Eye) Aim(d Vec) Vec {
 	return Vec{d.X*cy + d.Z*sy, d.Y, -d.X*sy + d.Z*cy}
 }
 
+// unaim is Aim undone: a world direction turned into the camera's own frame,
+// where it looks down positive Z.
+func (e Eye) unaim(d Vec) Vec {
+	cy, sy := math.Cos(e.Yaw), math.Sin(e.Yaw)
+	d = Vec{d.X*cy - d.Z*sy, d.Y, d.X*sy + d.Z*cy}
+	cp, sp := math.Cos(e.Pitch), math.Sin(e.Pitch)
+	return Vec{d.X, d.Y*cp + d.Z*sp, -d.Y*sp + d.Z*cp}
+}
+
+// Ray is the direction through the middle of subpixel x, y of a sheet w by h
+// subpixels. It is not unit length: in the camera's frame its Z is one, so a
+// distance along it is a depth.
+//
+// This is the tracer's own projection, stated once. Everything drawn into
+// space -- a traced ball, a black hole, a spark -- goes through this and
+// Project, so they agree about where a point lands.
+func (e Eye) Ray(x, y, w, h int) Vec {
+	lens := e.Lens
+	if lens == 0 {
+		lens = 1
+	}
+	// a subcell is half a column by a third of a row, so on a cell twice
+	// as tall as it is wide the sheet is four rows high for every three
+	// columns across
+	aspect := (float64(h) * 4) / (float64(w) * 3)
+	px := (float64(x)+0.5)/float64(w) - 0.5
+	py := (0.5 - (float64(y)+0.5)/float64(h)) * aspect
+	return e.Aim(Vec{px / lens, py / lens, 1})
+}
+
+// Project is where a point in the world lands on a sheet w by h subpixels, in
+// subpixels, and how deep it is. ok is false for a point behind the near
+// plane, which has nowhere to land.
+//
+// Fractional, so a spark between two subpixels can share its light between
+// them. The middle of subpixel x is at x, not x+0.5.
+func (e Eye) Project(p Vec, w, h int) (x, y, depth float64, ok bool) {
+	c := e.unaim(Vec{p.X - e.At.X, p.Y - e.At.Y, p.Z - e.At.Z})
+	near := e.Near
+	if near <= 0 {
+		near = 1e-3
+	}
+	if c.Z < near {
+		return 0, 0, 0, false
+	}
+	lens := e.Lens
+	if lens == 0 {
+		lens = 1
+	}
+	aspect := (float64(h) * 4) / (float64(w) * 3)
+	px, py := lens*c.X/c.Z, lens*c.Y/c.Z
+	x = (px+0.5)*float64(w) - 0.5
+	y = (0.5-py/aspect)*float64(h) - 0.5
+	return x, y, c.Z, true
+}
+
 // HorizonV is where the horizon falls on the sheet, nought at the top and one
 // at the bottom, for a sheet of the given aspect.
 //
