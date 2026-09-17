@@ -226,6 +226,11 @@ type Stage struct {
 	//
 	// Latency comes off the offset: how long the player takes to make a
 	// sound once started. Score sets all three; see playhead.go.
+	//
+	// Set these directly only before Run. While Run is drawing, attach
+	// music with Score, which takes the lock. A stage drawn once already --
+	// for a png, say -- should be given a Started of its own, or the first
+	// frame it ever drew becomes the start of the piece.
 	Music   Playhead
 	Started time.Time
 	Latency time.Duration
@@ -299,11 +304,15 @@ func (s *Stage) Draw(f Frame, cols, rows int) [][]cells.Cell {
 	// being drawn rather than the one before.
 	if s.Doc != nil {
 		run := runtimeConsts(f.At)
+		// under the lock: Score attaches music from whatever goroutine
+		// a game starts it on, while this one is drawing
+		s.mu.Lock()
 		if s.Music != nil {
 			for k, v := range s.musicConsts(f) {
 				run[k] = v
 			}
 		}
+		s.mu.Unlock()
 		f.Scene = s.Doc.Ctx(f.Since.Seconds(), run)
 	}
 	s.at = f.Scene

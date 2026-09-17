@@ -216,3 +216,124 @@ func TestPlayStartsAndStops(t *testing.T) {
 		t.Error("a missing file started")
 	}
 }
+
+// TestScoringWhileRunIsDrawing is a game starting its music on a key press.
+//
+// Run blocks, so the attach comes from another goroutine while frames are being
+// drawn, and the scene reads @beat from the first frame -- which Run refuses
+// unless something is attached, so Silence is attached first. Run it under
+// -race: that is the half of this test that fails on a stage without a lock.
+func TestScoringWhileRunIsDrawing(t *testing.T) {
+	was := player
+	defer func() { player = was }()
+	player = "sh"
+	script := filepath.Join(t.TempDir(), "piece")
+	if err := os.WriteFile(script, []byte("sleep 5\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	s, err := stageFrom(t, bounceDoc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Music = Silence // music is coming; the scene reads @beat already
+	out, err := os.Create(filepath.Join(t.TempDir(), "terminal"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer out.Close()
+
+	done := make(chan error, 1)
+	go func() {
+		n := 0
+		done <- Screen{Cols: 12, Rows: 4, FPS: 200, Out: out}.Run(s,
+			func(Frame) bool { n++; return n < 80 })
+	}()
+	// attached several times over, not once. the race detector only
+	// reports an interleaving that happened, and Draw takes the lock for its
+	// overlays a moment after it reads the music, which can order a single
+	// attach and hide the race -- once in three runs, measured. five
+	// attaches make that a one in two hundred and forty-three.
+	for i := 0; i < 5; i++ {
+		time.Sleep(12 * time.Millisecond)
+		stop, err := s.Score(script, fakeHead{}, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer stop()
+	}
+	if err := <-done; err != nil {
+		t.Fatalf("Run refused a scene with Silence attached: %v", err)
+	}
+	// the frames after the key press moved to the piece
+	if got := s.at.Const["beats"]; got <= 0 {
+		t.Errorf("beats after scoring mid-run: %v, want above nought", got)
+	}
+}
+
+// TestALoopingPiecePlaysAgain checks the sound comes back round, rather than
+// playing once under a playhead that counts on into silence.
+func TestALoopingPiecePlaysAgain(t *testing.T) {
+	was := player
+	defer func() { player = was }()
+	player = "sh"
+	dir := t.TempDir()
+	count := filepath.Join(dir, "starts")
+	script := filepath.Join(dir, "piece")
+	body := "echo x >> " + count + "\nsleep 5\n"
+	if err := os.WriteFile(script, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	starts := func() int {
+		b, _ := os.ReadFile(count)
+		return strings.Count(string(b), "x")
+	}
+
+	_, stop, err := playing(script, 80*time.Millisecond)
+	if err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(300 * time.Millisecond)
+	stop()
+	n := starts()
+	if n < 3 {
+		t.Fatalf("a piece looping every 80ms started %d times in 300ms", n)
+	}
+	time.Sleep(200 * time.Millisecond)
+	if again := starts(); again != n {
+		t.Errorf("started %d more times after stop", again-n)
+	}
+}
+
+// TestRestartsDoNotDrift pins the schedule: restarts sit on whole periods after
+// the first start however late the wake-ups are, and a wake-up that misses one
+// entirely skips it rather than playing twice to catch up.
+func TestRestartsDoNotDrift(t *testing.T) {
+	period := 2 * time.Second
+	for _, c := range []struct{ now, want time.Duration }{
+		{0, 2 * time.Second},
+		{1500 * time.Millisecond, 2 * time.Second},
+		{2 * time.Second, 4 * time.Second},         // exactly on one: the next
+		{2001 * time.Millisecond, 4 * time.Second}, // a late wake-up
+		{7 * time.Second, 8 * time.Second},         // missed two: skip to the third
+	} {
+		got := nextStart(t0, period, t0.Add(c.now))
+		if want := t0.Add(c.want); !got.Equal(want) {
+			t.Errorf("at %v: next %v, want %v",
+				c.now, got.Sub(t0), c.want)
+		}
+	}
+}
+
+// TestAConstMayNotShadowTheRuntime checks a document cannot declare a name the
+// runtime supplies and then lose it quietly when the runtime arrives.
+func TestAConstMayNotShadowTheRuntime(t *testing.T) {
+	for _, name := range []string{"beat", "daylight", "t"} {
+		doc := `{"name": "x", "const": {"` + name + `": 1},
+		  "shapes": [{"kind": "text", "name": "t", "text": "hi"}]}`
+		_, err := stageFrom(t, doc)
+		if err == nil || !strings.Contains(err.Error(), name) {
+			t.Errorf("const %q: got %v, want a refusal naming it",
+				name, err)
+		}
+	}
+}

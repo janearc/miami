@@ -67,6 +67,9 @@ func supplied() [][]string {
 // nought is resting on the floor, and silence is silence -- but beats holds
 // where it got to. Beats is for things that roll, and a helix that snapped back
 // to its start the moment the music ended would look like a fault.
+//
+// Called with s.mu held: it reads what Score writes, and it writes Started and
+// heldBeats itself.
 func (s *Stage) musicConsts(f Frame) map[string]float64 {
 	if s.Started.IsZero() {
 		s.Started = f.At // the first frame is when it began
@@ -95,6 +98,22 @@ func (s *Stage) checkRefs(d *scene.Doc) error {
 		for _, n := range list {
 			known[n] = true
 		}
+	}
+	// a const that takes a name the runtime supplies is refused rather
+	// than allowed to lose quietly. the runtime wins a collision, so a
+	// document declaring "beat" or "daylight" would have its own number
+	// replaced the moment music or the clock arrived, and say nothing.
+	var shadows []string
+	for n := range d.Const {
+		if known[n] {
+			shadows = append(shadows, n)
+		}
+	}
+	if len(shadows) > 0 {
+		sort.Strings(shadows)
+		return fmt.Errorf("declares const %s, which the runtime "+
+			"supplies and would replace; name it something else",
+			strings.Join(shadows, ", "))
 	}
 	for n := range d.Const {
 		known[n] = true
@@ -134,6 +153,8 @@ func sources() string {
 // refusal arrives as an error with a name in it rather than as a ball that
 // never bounces.
 func (s *Stage) Validate() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if s.Music != nil {
 		return nil
 	}
@@ -161,13 +182,47 @@ var player = "afplay"
 // machine that is not a Mac.
 var ErrNoPlayer = errors.New("no afplay on this machine: sound is macOS only")
 
-// Play starts a sound file and says when it started, and hands back what stops
-// it. Stopping twice is fine; stopping one that already finished is fine.
+// Silence is a playhead that is never playing.
+//
+// It is what a stage carries before its music starts. A game that starts its
+// music on a key press still has a scene that reads @beat from the first
+// frame, and with nothing attached Run refuses it before the key is pressed.
+//
+// Attaching Silence says music is coming: the scene validates, and its
+// bindings read the rest values -- a ball on the floor -- until Score puts the
+// real piece in its place.
+var Silence Playhead = silence{}
+
+type silence struct{}
+
+// At is never playing.
+func (silence) At(time.Duration) (beat, bar, beats, level float64, ok bool) {
+	return 0, 0, 0, 0, false
+}
+
+// Play starts a sound file once and says when it started, and hands back what
+// stops it. Stopping twice is fine; stopping one that already finished is
+// fine.
 //
 // The start time is taken the moment the process has started, which is before
-// it has made a sound: the gap between the two is the latency Stage.Latency
+// it has made a sound. The gap between the two is the latency Stage.Latency
 // exists to subtract, and nobody has measured it yet.
 func Play(path string) (started time.Time, stop func(), err error) {
+	return playing(path, 0)
+}
+
+// playing is Play, and with a period greater than nought it plays again at
+// every multiple of the period after the first start.
+//
+// afplay has no loop, and a looping piece whose playhead keeps counting after
+// its sound has ended moves a scene to music nobody can hear. So the restarts
+// are scheduled against the first start, not chained off each other: a late
+// wake-up moves one restart, and the next is still where it should be.
+//
+// Each restart carries afplay's own startup latency again, on top of the
+// first. If that latency varies, the picture wobbles against the sound by
+// that much once a loop; it does not drift.
+func playing(path string, period time.Duration) (time.Time, func(), error) {
 	if _, err := os.Stat(path); err != nil {
 		// afplay given a missing file starts, fails a moment later, and
 		// says so to a stderr nobody is reading. refuse here instead.
@@ -177,28 +232,112 @@ func Play(path string) (started time.Time, stop func(), err error) {
 	if err != nil {
 		return time.Time{}, nil, ErrNoPlayer
 	}
-	cmd := exec.Command(bin, path)
-	if err := cmd.Start(); err != nil {
+	snd := &sound{bin: bin, path: path, stopped: make(chan struct{})}
+	if err := snd.start(); err != nil {
 		return time.Time{}, nil, err
 	}
-	started = time.Now()
-	var once sync.Once
-	stop = func() {
-		once.Do(func() {
-			cmd.Process.Kill()
-			cmd.Wait()
-		})
+	started := time.Now()
+	if period > 0 {
+		go snd.loop(started, period)
 	}
-	return started, stop, nil
+	return started, snd.stop, nil
 }
 
-// Score attaches a playhead and starts its sound, in one call: the thing a game
+// sound is one piece being played, perhaps more than once.
+type sound struct {
+	bin, path string
+	stopped   chan struct{}
+	once      sync.Once
+
+	mu     sync.Mutex
+	cmd    *exec.Cmd
+	exited chan struct{} // closed when cmd has been waited for
+}
+
+// start begins the piece, ending the previous pass if it is still going.
+//
+// Every process is waited for as soon as it exits, by its own goroutine. Only
+// waiting in stop left a finished piece as a zombie until somebody called
+// stop, which is one process for a piece played once and one per loop for a
+// piece that repeats.
+func (s *sound) start() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	select {
+	case <-s.stopped:
+		return nil // stopped while a restart was due: start nothing
+	default:
+	}
+	if s.cmd != nil {
+		s.cmd.Process.Kill()
+		<-s.exited
+	}
+	cmd := exec.Command(s.bin, s.path)
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	exited := make(chan struct{})
+	go func() { cmd.Wait(); close(exited) }()
+	s.cmd, s.exited = cmd, exited
+	return nil
+}
+
+// loop restarts the piece at each multiple of the period after started, until
+// it is stopped.
+func (s *sound) loop(started time.Time, period time.Duration) {
+	for {
+		next := nextStart(started, period, time.Now())
+		select {
+		case <-s.stopped:
+			return
+		case <-time.After(time.Until(next)):
+		}
+		if s.start() != nil {
+			return
+		}
+	}
+}
+
+// nextStart is the first restart after now: the first start plus a whole
+// number of periods. A wake-up that missed a restart entirely skips it rather
+// than playing twice in a row to catch up.
+func nextStart(started time.Time, period time.Duration,
+	now time.Time) time.Time {
+	k := now.Sub(started)/period + 1
+	return started.Add(k * period)
+}
+
+// stop ends the piece and every restart it had coming.
+func (s *sound) stop() {
+	s.once.Do(func() {
+		close(s.stopped)
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		if s.cmd != nil {
+			s.cmd.Process.Kill()
+			<-s.exited
+		}
+	})
+}
+
+// Score starts a piece and attaches its playhead, in one call: the thing a game
 // actually wants. The stop it returns ends the sound.
-func (s *Stage) Score(path string, p Playhead) (stop func(), err error) {
-	started, stop, err := Play(path)
+//
+// period is how long one pass of the piece lasts, for a piece that loops. With
+// nought it plays once, and a playhead that keeps counting past the end will
+// move the scene to silence -- so a looping piece needs its period, and the
+// music side is what knows it.
+//
+// Safe to call while Run is drawing, from any goroutine: a game starting its
+// music on a key press does exactly that.
+func (s *Stage) Score(path string, p Playhead, period time.Duration) (
+	stop func(), err error) {
+	started, stop, err := playing(path, period)
 	if err != nil {
 		return nil, err
 	}
-	s.Music, s.Started = p, started
+	s.mu.Lock()
+	s.Music, s.Started, s.heldBeats = p, started, 0
+	s.mu.Unlock()
 	return stop, nil
 }

@@ -36,6 +36,10 @@ var literal = map[string]bool{
 }
 
 // Refs is every name a document reads with "@", once each, in order.
+//
+// It covers a document that came through Read. One built in Go has no text to
+// read, so it has no names here -- and a stage built from one gets no ref
+// check at all.
 func (d *Doc) Refs() []string {
 	var top any
 	if json.Unmarshal(d.src, &top) != nil {
