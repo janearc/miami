@@ -41,8 +41,8 @@
     // frac, which is what makes it the program's: game sets it from
     // wherever the build has got to.
     { "kind": "cylinder", "name": "build",
-      "at": { "x": -0.1, "y": -0.495, "z": 2.9 },
-      "radius": 0.055, "length": 2.0, "caps": true,
+      "at": { "x": 0, "y": -0.514, "z": 3.1 },
+      "radius": 0.036, "length": 1.8, "caps": true,
       "texture": {
         "kind": "split",
         "done": { "kind": "stripes", "a": "O", "b": "R", "period": 0.143 },
@@ -58,9 +58,11 @@
       "row": 1, "col": -1, "font": "small", "flicker": true, "scrim": 0.25,
       "ink": [ "ff2a9d", "c44fb0", "8a5ad8", "3f7ad6", "2de2e6" ] },
 
-    // what it is doing, which the program sets
-    { "kind": "text", "name": "what", "text": "building",
-      "row": -3, "col": 3, "font": "small", "scrim": 0.30,
-      "ink": [ "ff2a9d", "c44fb0", "8a5ad8", "3f7ad6", "2de2e6" ] }
+    // what the build is saying, in plain glyphs and wrapped. above the
+    // bar rather than over it: output in front of a progress bar hides
+    // the one thing the bar is for.
+    { "kind": "log", "name": "out",
+      "row": -6, "col": 4, "cols": 78, "rows": 4, "scrim": 0.42,
+      "ink": [ "8a5ad8", "3f7ad6", "2de2e6", "ff2a9d" ] }
   ]
 }

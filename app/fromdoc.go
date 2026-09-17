@@ -158,6 +158,13 @@ func (s *Stage) addShape(sh scene.Shape) error {
 		s.remember(sh.Name, t)
 		return nil
 
+	case "log":
+		l := &Log{Row: sh.Row, Col: sh.Col, Cols: sh.Cols, Rows: sh.Rows,
+			Ink: Ramp(sh.Ink), Scrim: sh.Scrim}
+		s.Add(l)
+		s.remember(sh.Name, l)
+		return nil
+
 	case "emoji":
 		e, err := emojiFrom(sh)
 		if err != nil {
@@ -432,3 +439,6 @@ func (s *Stage) ownFill(name string, tex texture.Texture) texture.Texture {
 	sp.Frac = f.Frac
 	return sp
 }
+
+// Log is the box of that name, or nil.
+func (s *Stage) Log(name string) *Log { l, _ := s.find(name).(*Log); return l }

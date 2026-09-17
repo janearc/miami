@@ -30,6 +30,7 @@ import (
 //	text      a line of type
 //	bar       a flat progress bar, for a scene with no room for a cylinder
 //	emoji     a picture from the system font
+//	log       a box a program talks into, in plain glyphs
 //
 // What this package deliberately does not do is know how any of it is drawn.
 // There are no view or app types here, only numbers and names: this package
@@ -133,6 +134,10 @@ type Shape struct {
 	Colours int    `json:"colours"`
 	Cols    int    `json:"cols"`
 
+	// Rows is a log's height in lines. It shows the last that many, so a
+	// taller box is more history rather than the same view padded.
+	Rows int `json:"rows"`
+
 	// Value drives a bar from the document instead of from the program: a
 	// binding evaluated every frame, nought to one. A bar without it is the
 	// program's to Set, which is the usual case.
@@ -143,7 +148,7 @@ type Shape struct {
 var kinds = map[string]bool{
 	"sky": true, "floor": true, "sphere": true, "cylinder": true,
 	"light": true, "clock": true, "text": true, "bar": true,
-	"emoji": true,
+	"emoji": true, "log": true,
 }
 
 // UnmarshalJSON reads a shape and refuses one whose kind is not a kind.
@@ -175,7 +180,7 @@ func (s *Shape) UnmarshalJSON(b []byte) error {
 
 // kindList is the kinds, in a fixed order, for an error a person has to read.
 func kindList() string {
-	return "sky, floor, sphere, cylinder, light, clock, text, bar, emoji"
+	return "sky, floor, sphere, cylinder, light, clock, text, bar, emoji, log"
 }
 
 // Texture is a pattern, as a document says it.
