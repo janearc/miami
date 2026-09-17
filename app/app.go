@@ -247,6 +247,7 @@ type Stage struct {
 
 	refs      []string // every @name the document reads
 	heldBeats float64  // where @beats got to, kept once the music stops
+	musicGen  int      // which Score the music came from
 
 	mu sync.Mutex
 }

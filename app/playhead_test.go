@@ -288,7 +288,7 @@ func TestALoopingPiecePlaysAgain(t *testing.T) {
 		return strings.Count(string(b), "x")
 	}
 
-	_, stop, err := playing(script, 80*time.Millisecond)
+	_, stop, err := playing(script, 80*time.Millisecond, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -335,5 +335,93 @@ func TestAConstMayNotShadowTheRuntime(t *testing.T) {
 			t.Errorf("const %q: got %v, want a refusal naming it",
 				name, err)
 		}
+	}
+}
+
+// otherHead is a second playhead, told apart from fakeHead by its type.
+type otherHead struct{ fakeHead }
+
+// brokenPlayer is a player that works once and then cannot start again: it is
+// deleted the moment the first pass is under way.
+func brokenPlayer(t *testing.T) (piece string, breakIt func()) {
+	t.Helper()
+	dir := t.TempDir()
+	bin := filepath.Join(dir, "player")
+	if err := os.WriteFile(bin, []byte("#!/bin/sh\nsleep 5\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	piece = filepath.Join(dir, "piece")
+	if err := os.WriteFile(piece, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	player = bin
+	return piece, func() { os.Remove(bin) }
+}
+
+// TestAFailedRestartRestsTheScene is the loop's error path. The music stopping
+// silently while its playhead counts on is the fault looping was added to
+// prevent, and it must not come back through the door marked "error".
+func TestAFailedRestartRestsTheScene(t *testing.T) {
+	was := player
+	defer func() { player = was }()
+	piece, breakIt := brokenPlayer(t)
+
+	s, err := stageFrom(t, bounceDoc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stop, err := s.Score(piece, fakeHead{}, 60*time.Millisecond)
+	if err != nil {
+		t.Fatal(err)
+	}
+	breakIt()
+	time.Sleep(250 * time.Millisecond)
+
+	s.mu.Lock()
+	_, resting := s.Music.(silence)
+	s.mu.Unlock()
+	if !resting {
+		t.Error("a failed restart left the scene moving to stopped music")
+	}
+	if err := stop(); err == nil {
+		t.Error("stop did not say a restart had failed")
+	}
+}
+
+// TestAFailedRestartLeavesALaterPieceAlone checks the rest only replaces the
+// piece that failed. A game that has already scored something else keeps it.
+func TestAFailedRestartLeavesALaterPieceAlone(t *testing.T) {
+	was := player
+	defer func() { player = was }()
+	piece, breakIt := brokenPlayer(t)
+
+	s, err := stageFrom(t, bounceDoc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stopA, err := s.Score(piece, fakeHead{}, 60*time.Millisecond)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer stopA()
+
+	player = "sh"
+	script := filepath.Join(t.TempDir(), "next")
+	if err := os.WriteFile(script, []byte("sleep 5\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	stopB, err := s.Score(script, otherHead{}, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer stopB()
+
+	breakIt()
+	time.Sleep(250 * time.Millisecond)
+	s.mu.Lock()
+	_, still := s.Music.(otherHead)
+	s.mu.Unlock()
+	if !still {
+		t.Error("the first piece's failure replaced the piece scored after it")
 	}
 }

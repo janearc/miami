@@ -207,8 +207,8 @@ func (silence) At(time.Duration) (beat, bar, beats, level float64, ok bool) {
 // The start time is taken the moment the process has started, which is before
 // it has made a sound. The gap between the two is the latency Stage.Latency
 // exists to subtract, and nobody has measured it yet.
-func Play(path string) (started time.Time, stop func(), err error) {
-	return playing(path, 0)
+func Play(path string) (started time.Time, stop func() error, err error) {
+	return playing(path, 0, nil)
 }
 
 // playing is Play, and with a period greater than nought it plays again at
@@ -222,7 +222,13 @@ func Play(path string) (started time.Time, stop func(), err error) {
 // Each restart carries afplay's own startup latency again, on top of the
 // first. If that latency varies, the picture wobbles against the sound by
 // that much once a loop; it does not drift.
-func playing(path string, period time.Duration) (time.Time, func(), error) {
+//
+// A restart that fails is told to onFail, once, and stop returns the error.
+// Ending the loop quietly was the first version, and it is the fault this
+// exists to prevent, moved to an error path: the sound stops, the playhead
+// counts on, and the scene moves to music that is not there.
+func playing(path string, period time.Duration, onFail func(error)) (
+	time.Time, func() error, error) {
 	if _, err := os.Stat(path); err != nil {
 		// afplay given a missing file starts, fails a moment later, and
 		// says so to a stderr nobody is reading. refuse here instead.
@@ -232,7 +238,8 @@ func playing(path string, period time.Duration) (time.Time, func(), error) {
 	if err != nil {
 		return time.Time{}, nil, ErrNoPlayer
 	}
-	snd := &sound{bin: bin, path: path, stopped: make(chan struct{})}
+	snd := &sound{bin: bin, path: path, stopped: make(chan struct{}),
+		onFail: onFail}
 	if err := snd.start(); err != nil {
 		return time.Time{}, nil, err
 	}
@@ -248,10 +255,12 @@ type sound struct {
 	bin, path string
 	stopped   chan struct{}
 	once      sync.Once
+	onFail    func(error)
 
 	mu     sync.Mutex
 	cmd    *exec.Cmd
 	exited chan struct{} // closed when cmd has been waited for
+	err    error         // why a restart failed, for stop to return
 }
 
 // start begins the piece, ending the previous pass if it is still going.
@@ -292,7 +301,13 @@ func (s *sound) loop(started time.Time, period time.Duration) {
 			return
 		case <-time.After(time.Until(next)):
 		}
-		if s.start() != nil {
+		if err := s.start(); err != nil {
+			s.mu.Lock()
+			s.err = err
+			s.mu.Unlock()
+			if s.onFail != nil {
+				s.onFail(err)
+			}
 			return
 		}
 	}
@@ -307,8 +322,9 @@ func nextStart(started time.Time, period time.Duration,
 	return started.Add(k * period)
 }
 
-// stop ends the piece and every restart it had coming.
-func (s *sound) stop() {
+// stop ends the piece and every restart it had coming, and says why a restart
+// failed if one did.
+func (s *sound) stop() error {
 	s.once.Do(func() {
 		close(s.stopped)
 		s.mu.Lock()
@@ -318,6 +334,9 @@ func (s *sound) stop() {
 			<-s.exited
 		}
 	})
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.err
 }
 
 // Score starts a piece and attaches its playhead, in one call: the thing a game
@@ -330,13 +349,30 @@ func (s *sound) stop() {
 //
 // Safe to call while Run is drawing, from any goroutine: a game starting its
 // music on a key press does exactly that.
+//
+// If a restart fails, the scene is put to rest: Silence goes in where the piece
+// was, so nothing moves to a beat that has stopped, and the stop returns why.
+//
+// Only this piece is replaced; a game that has since scored another keeps it.
+// That is what the generation is for: comparing playheads with == panics on
+// one that holds a slice.
 func (s *Stage) Score(path string, p Playhead, period time.Duration) (
-	stop func(), err error) {
-	started, stop, err := playing(path, period)
+	stop func() error, err error) {
+	var gen int
+	rest := func(error) {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		if s.musicGen == gen {
+			s.Music = Silence
+		}
+	}
+	started, stop, err := playing(path, period, rest)
 	if err != nil {
 		return nil, err
 	}
 	s.mu.Lock()
+	s.musicGen++
+	gen = s.musicGen
 	s.Music, s.Started, s.heldBeats = p, started, 0
 	s.mu.Unlock()
 	return stop, nil
