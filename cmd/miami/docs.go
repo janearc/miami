@@ -44,12 +44,30 @@ type docPage struct {
 }
 
 var docPages = []docPage{
-	{"roles", "the eleven characters a sprite may contain", "page_roles.go", rolesPage},
-	{"fields", "the named shapes, painted side by side", "page_fields.go", fieldsPage},
-	{"alpha", "how an effect is a second sprite", "page_alpha.go", alphaPage},
-	{"viewport", "one sprite asked from three distances", "page_viewport.go", viewportPage},
-	{"library", "drawing from another program's event loop", "page_library.go", libraryPage},
-	{"traps", "the refusals, and what each cost to find", "page_traps.go", trapsPage},
+	{
+		"roles", "the eleven characters a sprite may contain",
+		"page_roles.go", rolesPage,
+	},
+	{
+		"fields", "the named shapes, painted side by side",
+		"page_fields.go", fieldsPage,
+	},
+	{
+		"alpha", "how an effect is a second sprite", "page_alpha.go",
+		alphaPage,
+	},
+	{
+		"viewport", "one sprite asked from three distances",
+		"page_viewport.go", viewportPage,
+	},
+	{
+		"library", "drawing from another program's event loop",
+		"page_library.go", libraryPage,
+	},
+	{
+		"traps", "the refusals, and what each cost to find",
+		"page_traps.go", trapsPage,
+	},
 }
 
 const docGround = "\x1b[0m"
@@ -69,7 +87,9 @@ func docs(args []string) {
 		for _, p := range docPages {
 			fmt.Printf("  %-10s %s\n", p.name, p.what)
 		}
-		fmt.Println("\n--png writes out/docs-PAGE.png. Use it: you cannot read an escape\nsequence by looking at the bytes, and guessing at one wastes a rebuild.")
+		fmt.Println("\n--png writes out/docs-PAGE.png. Use it: you " +
+			"cannot read an escape\nsequence by looking at the " +
+			"bytes, and guessing at one wastes a rebuild.")
 		return
 	}
 	for _, p := range docPages {
@@ -86,7 +106,9 @@ func docs(args []string) {
 		if cs != nil && mode == "--png" {
 			out := "out/docs-" + p.name + ".png"
 			proof.Must(proof.SaveImage(out, proof.NewCellImageOn(
-				proof.Mono(), 9, 18, color.RGBA{16, 14, 24, 255}).Draw(cs)))
+				proof.Mono(), 9, 18, color.RGBA{
+					16, 14, 24, 255,
+				}).Draw(cs)))
 			fmt.Println("wrote", out)
 		} else if cs != nil {
 			fmt.Print(cells.ANSI(cs))
@@ -100,7 +122,9 @@ func docs(args []string) {
 }
 
 // swatchRow paints a row of labelled blocks, which most pages want.
-func swatchRow(cols, rows int, n int, at func(i int) color.RGBA) [][]cells.Cell {
+func swatchRow(
+	cols, rows int, n int, at func(i int) color.RGBA,
+) [][]cells.Cell {
 	px := make([][]color.RGBA, rows*3)
 	for y := range px {
 		px[y] = make([]color.RGBA, cols*2)

@@ -37,17 +37,24 @@ func TestDocRoundTripsBothWays(t *testing.T) {
 			t.Fatal(err)
 		}
 		if len(got) != len(want) {
-			t.Fatalf("delta=%v: %d frames back, wanted %d", delta, len(got), len(want))
+			t.Fatalf(
+				"delta=%v: %d frames back, wanted %d", delta,
+				len(got), len(want),
+			)
 		}
 		for i := range want {
 			if got[i].Hold != want[i].Hold {
-				t.Errorf("delta=%v frame %d: hold %v, wanted %v",
-					delta, i, got[i].Hold, want[i].Hold)
+				t.Errorf(
+					"delta=%v frame %d: hold %v, wanted %v",
+					delta, i, got[i].Hold, want[i].Hold,
+				)
 			}
 			for y := range want[i].Art {
-				if got[i].Art[y] != want[i].Art[y] {
-					t.Fatalf("delta=%v frame %d row %d differs", delta, i, y)
+				if got[i].Art[y] == want[i].Art[y] {
+					continue
 				}
+				t.Fatalf("delta=%v frame %d row %d differs",
+					delta, i, y)
 			}
 		}
 	}
@@ -77,8 +84,10 @@ func TestDeltaIsSmaller(t *testing.T) {
 // A delta with nothing before it is refused rather than guessed at.
 func TestOrphanDeltaIsRefused(t *testing.T) {
 	p := filepath.Join(t.TempDir(), "bad.json")
-	os.WriteFile(p, []byte(`{"daffy":1,"name":"x","sprite":{"name":"x","w":1,"h":1,
-		"frames":[{"delta":[[0,0,"K"]]}]}}`), 0o644)
+	doc := `{"daffy":1,"name":"x","sprite":{
+		"name":"x","w":1,"h":1,
+		"frames":[{"delta":[[0,0,"K"]]}]}}`
+	os.WriteFile(p, []byte(doc), 0o644)
 	if _, err := ReadDoc(p); err == nil {
 		t.Errorf("a leading delta was accepted")
 	}

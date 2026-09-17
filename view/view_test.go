@@ -33,18 +33,24 @@ func TestFurtherIsSmallerAndBehind(t *testing.T) {
 	}
 	// far first: painting order is the whole of occlusion
 	if got[0].Depth <= got[1].Depth {
-		t.Errorf("not sorted far to near: %v then %v", got[0].Depth, got[1].Depth)
+		t.Errorf(
+			"not sorted far to near: %v then %v", got[0].Depth,
+			got[1].Depth,
+		)
 	}
 	if got[0].H >= got[1].H {
-		t.Errorf("the far one is not smaller: %d vs %d", got[0].H, got[1].H)
+		t.Errorf(
+			"the far one is not smaller: %d vs %d", got[0].H,
+			got[1].H,
+		)
 	}
 }
 
 // Behind the viewer is not drawn at all, rather than drawn inside out.
 func TestBehindIsDropped(t *testing.T) {
 	f := []sprite.Frame{box(8, 8)}
-	got := Resolve([]Object{Billboard{Frames: f, At: Vec{Z: -2}, Height: 0.5}},
-		DefaultEye(), 0, 200, 90)
+	b := Billboard{Frames: f, At: Vec{Z: -2}, Height: 0.5}
+	got := Resolve([]Object{b}, DefaultEye(), 0, 200, 90)
 	if len(got) != 0 {
 		t.Errorf("an object behind the eye was resolved")
 	}

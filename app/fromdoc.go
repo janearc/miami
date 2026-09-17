@@ -57,14 +57,18 @@ func runtimeConsts(at time.Time) map[string]float64 {
 	if day > 1 {
 		day = 1
 	}
-	return map[string]float64{"daylight": day, "sun": s.Elevation, "hour": h}
+	return map[string]float64{
+		"daylight": day, "sun": s.Elevation, "hour": h,
+	}
 }
 
 // fromDoc builds everything a document describes.
 func (s *Stage) fromDoc(d *scene.Doc) error {
 	if d.Eye != nil {
-		s.eye = view.Eye{At: vecAt(d.Eye.At, scene.Ctx{}), Lens: d.Eye.Lens,
-			Near: d.Eye.Near, Yaw: d.Eye.Yaw, Pitch: d.Eye.Pitch}
+		s.eye = view.Eye{
+			At: vecAt(d.Eye.At, scene.Ctx{}), Lens: d.Eye.Lens,
+			Near: d.Eye.Near, Yaw: d.Eye.Yaw, Pitch: d.Eye.Pitch,
+		}
 	}
 	for i, sh := range d.Shapes {
 		if err := s.addShape(sh); err != nil {
@@ -72,7 +76,9 @@ func (s *Stage) fromDoc(d *scene.Doc) error {
 		}
 	}
 	if len(s.solids) > 0 || len(s.lights) > 0 {
-		s.Lit = &view.Lit{Eye: s.eye, Solids: s.solids, Lights: s.lights}
+		s.Lit = &view.Lit{
+			Eye: s.eye, Solids: s.solids, Lights: s.lights,
+		}
 	}
 	return nil
 }
@@ -84,8 +90,10 @@ func (s *Stage) addShape(sh scene.Shape) error {
 	case "sky":
 		if sh.Sun {
 			s.Sky = func(g grade.Sheet, at time.Time) grade.Stack {
-				aspect := (float64(g.H) * 4) / (float64(g.W) * 3)
-				return sky.At(g, view.SunAt(at), s.eye.HorizonV(aspect))
+				w, h := float64(g.W), float64(g.H)
+				aspect := (h * 4) / (w * 3)
+				sun := view.SunAt(at)
+				return sky.At(g, sun, s.eye.HorizonV(aspect))
 			}
 		}
 		return nil
@@ -121,9 +129,10 @@ func (s *Stage) addShape(sh scene.Shape) error {
 		b := &view.Ball{Radius: sh.Radius, Texture: tex,
 			Spin: vecAt(sh.Spin, scene.Ctx{})}
 		s.solids = append(s.solids, b)
-		s.moving = append(s.moving, mover{at: sh.At, set: func(v view.Vec) {
-			b.At = v
-		}})
+		s.moving = append(s.moving, mover{
+			at:  sh.At,
+			set: func(v view.Vec) { b.At = v },
+		})
 		s.remember(sh.Name, b)
 		return nil
 
@@ -139,9 +148,10 @@ func (s *Stage) addShape(sh scene.Shape) error {
 			Axis: vecAt(sh.Axis, scene.Ctx{}),
 			Spin: sh.Spin.X.At(scene.Ctx{})}
 		s.solids = append(s.solids, c)
-		s.moving = append(s.moving, mover{at: sh.At, set: func(v view.Vec) {
-			c.At = v
-		}})
+		s.moving = append(s.moving, mover{
+			at:  sh.At,
+			set: func(v view.Vec) { c.At = v },
+		})
 		s.remember(sh.Name, c)
 		return nil
 
@@ -162,8 +172,10 @@ func (s *Stage) addShape(sh scene.Shape) error {
 		return nil
 
 	case "log":
-		l := &Log{Row: sh.Row, Col: sh.Col, Cols: sh.Cols, Rows: sh.Rows,
-			Ink: Ramp(sh.Ink), Scrim: sh.Scrim}
+		l := &Log{
+			Row: sh.Row, Col: sh.Col, Cols: sh.Cols,
+			Rows: sh.Rows, Ink: Ramp(sh.Ink), Scrim: sh.Scrim,
+		}
 		s.Add(l)
 		s.remember(sh.Name, l)
 		return nil
@@ -318,7 +330,10 @@ func (s *Stage) remember(name string, v any) {
 func (s *Stage) Bar(name string) *Bar { b, _ := s.find(name).(*Bar); return b }
 
 // Text is the line of type of that name, or nil.
-func (s *Stage) Text(name string) *Text { t, _ := s.find(name).(*Text); return t }
+func (s *Stage) Text(name string) *Text {
+	t, _ := s.find(name).(*Text)
+	return t
+}
 
 // Sphere is the ball of that name, or nil.
 func (s *Stage) Sphere(name string) *view.Ball {
@@ -373,7 +388,8 @@ func (s *Stage) Eye() *view.Eye { return &s.eye }
 // than a default: there is no sensible emoji to fall back to.
 func emojiFrom(sh scene.Shape) (*Emoji, error) {
 	if sh.Rune == "" {
-		return nil, fmt.Errorf(`no rune; want a hex codepoint like "1F32B"`)
+		return nil, fmt.Errorf(
+			`no rune; want a hex codepoint like "1F32B"`)
 	}
 	n, err := strconv.ParseInt(strings.TrimPrefix(sh.Rune, "U+"), 16, 32)
 	if err != nil {

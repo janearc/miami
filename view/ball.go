@@ -91,7 +91,8 @@ func (b Ball) Render(_ Eye, t time.Duration, rows int) sprite.Frame {
 			nx := (float64(c)+0.5)/float64(cols)*2 - 1
 			d := nx*nx + ny*ny
 			if d > 1 {
-				row[c] = '.' // off the disc: this is the silhouette, for free
+				// off the disc: the silhouette, for free
+				row[c] = '.'
 				continue
 			}
 			// the front of the sphere at this pixel is its own

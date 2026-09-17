@@ -98,10 +98,12 @@ func checkScene(path string) {
 			}
 		}
 		if !on {
-			fmt.Printf("  WARN layer %q has gain 0 at every sample and will never appear\n", l.Name)
+			fmt.Printf("  WARN layer %q has gain 0 at every"+
+				" sample and will never appear\n", l.Name)
 		}
 		if len(l.Ramp) == 0 {
-			fmt.Printf("  WARN layer %q has no ramp stops and will paint black\n", l.Name)
+			fmt.Printf("  WARN layer %q has no ramp stops"+
+				" and will paint black\n", l.Name)
 		}
 	}
 	fmt.Println("ok -- render it with: miami scene", path)
@@ -143,7 +145,8 @@ func reportFrames(path string, frames []sprite.Frame) {
 	fmt.Println("  roles:", strings.Join(have, " "))
 	if len(missing) > 0 {
 		fmt.Println("  unused:", strings.Join(missing, ""),
-			"-- an effect naming one of these matches nothing and says so")
+			"-- an effect naming one of these matches nothing"+
+				" and says so")
 	}
 	if len(used) > 0 {
 		var bad []string
@@ -151,18 +154,24 @@ func reportFrames(path string, frames []sprite.Frame) {
 			bad = append(bad, fmt.Sprintf("%q", string(c)))
 		}
 		sort.Strings(bad)
-		fmt.Println("  REFUSED: outside the alphabet:", strings.Join(bad, " "))
+		fmt.Println(
+			"  REFUSED: outside the alphabet:",
+			strings.Join(bad, " "),
+		)
 		os.Exit(1)
 	}
+	w, h := frames[0].Width(), frames[0].Height()
 	for i, f := range frames {
-		if f.Width() != frames[0].Width() || f.Height() != frames[0].Height() {
-			fmt.Printf("  REFUSED: frame %d is %dx%d, frame 0 is %dx%d\n",
-				i, f.Width(), f.Height(), frames[0].Width(), frames[0].Height())
-			os.Exit(1)
+		if f.Width() == w && f.Height() == h {
+			continue
 		}
+		fmt.Printf("  REFUSED: frame %d is %dx%d, frame 0 is %dx%d\n",
+			i, f.Width(), f.Height(), w, h)
+		os.Exit(1)
 	}
 	if _, err := effect.Lightness("sprites/made/starling.css"); err == nil {
-		fmt.Println("  play:", "bin/bandersnatch play --colourway made/starling.css",
+		fmt.Println("  play:",
+			"bin/bandersnatch play --colourway made/starling.css",
 			strings.TrimPrefix(path, "sprites/"))
 	}
 	fmt.Println("  look: render it to a png before you judge it")

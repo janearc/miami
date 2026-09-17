@@ -29,7 +29,9 @@ type Bulb struct {
 // h, centred on x.
 func NewBulb(x, top, h float64) Bulb {
 	k := h / 110 // millimetres to physical units
-	mm := func(dx, dy float64) geom.Vec { return geom.Vec{X: x + dx*k, Y: top + dy*k} }
+	mm := func(dx, dy float64) geom.Vec {
+		return geom.Vec{X: x + dx*k, Y: top + dy*k}
+	}
 
 	var b Bulb
 	b.R = 30 * k
@@ -38,21 +40,30 @@ func NewBulb(x, top, h float64) Bulb {
 	// the pear: the globe runs into a neck that narrows to the screw the
 	// neck starts inside the globe and wider than it is there, or the join
 	// shows as a notch on each side
-	neck := geom.Taper{P: []geom.Vec{mm(0, 38), mm(0, 64), mm(0, 83)}, R: []float64{27.5 * k, 17.5 * k, 13.2 * k}}
+	neck := geom.Taper{
+		P: []geom.Vec{mm(0, 38), mm(0, 64), mm(0, 83)},
+		R: []float64{27.5 * k, 17.5 * k, 13.2 * k},
+	}
 	b.Glass = geom.Union(globe, neck)
 
 	// three ridges that stand proud of the base: the silhouette cue that
 	// separates a bulb from a balloon or a cone
-	screwBody := geom.Poly{P: geom.Pts(mm(-13, 82), mm(13, 82), mm(12.2, 103), mm(-12.2, 103))}
+	screwBody := geom.Poly{P: geom.Pts(
+		mm(-13, 82), mm(13, 82), mm(12.2, 103), mm(-12.2, 103))}
 	var ridges []geom.Shape
 	var grooves []geom.Shape
 	for _, y := range []float64{86.5, 92.5, 98.5} {
-		ridges = append(ridges, geom.Taper{P: []geom.Vec{mm(-13.6, y), mm(13.6, y)}, R: []float64{2.1 * k, 2.1 * k}})
-		grooves = append(grooves, geom.Taper{P: []geom.Vec{mm(-12.4, y+3), mm(12.4, y+3)}, R: []float64{0.7 * k, 0.7 * k}})
+		ridges = append(ridges, geom.Taper{
+			P: []geom.Vec{mm(-13.6, y), mm(13.6, y)},
+			R: []float64{2.1 * k, 2.1 * k}})
+		grooves = append(grooves, geom.Taper{
+			P: []geom.Vec{mm(-12.4, y+3), mm(12.4, y+3)},
+			R: []float64{0.7 * k, 0.7 * k}})
 	}
 	b.Screw = geom.Union(append(ridges, screwBody)...)
 	b.Grooves = geom.Intersect(geom.Union(grooves...), screwBody)
-	b.Insulator = geom.Poly{P: geom.Pts(mm(-9.5, 102.5), mm(9.5, 102.5), mm(7.5, 107), mm(-7.5, 107))}
+	b.Insulator = geom.Poly{P: geom.Pts(
+		mm(-9.5, 102.5), mm(9.5, 102.5), mm(7.5, 107), mm(-7.5, 107))}
 	b.Tip = geom.Ellipse{C: mm(0, 107), Rx: 4.2 * k, Ry: 3 * k}
 	b.Bottom = top + 110*k
 
@@ -74,9 +85,18 @@ func NewBulb(x, top, h float64) Bulb {
 	}
 	b.Filament = geom.Taper{P: fp, R: fr}
 	b.Wires = geom.Union(
-		geom.Taper{P: []geom.Vec{mm(-4, 76), mm(-11, 30)}, R: []float64{0.8 * k, 0.8 * k}},
-		geom.Taper{P: []geom.Vec{mm(4, 76), mm(11, 30)}, R: []float64{0.8 * k, 0.8 * k}},
-		geom.Taper{P: []geom.Vec{mm(-4, 76), mm(4, 76), mm(0, 83)}, R: []float64{1.2 * k, 1.2 * k, 1.2 * k}},
+		geom.Taper{
+			P: []geom.Vec{mm(-4, 76), mm(-11, 30)},
+			R: []float64{0.8 * k, 0.8 * k},
+		},
+		geom.Taper{
+			P: []geom.Vec{mm(4, 76), mm(11, 30)},
+			R: []float64{0.8 * k, 0.8 * k},
+		},
+		geom.Taper{
+			P: []geom.Vec{mm(-4, 76), mm(4, 76), mm(0, 83)},
+			R: []float64{1.2 * k, 1.2 * k, 1.2 * k},
+		},
 	)
 
 	// highlight: an arc hugging the upper left inside of the globe
@@ -84,7 +104,8 @@ func NewBulb(x, top, h float64) Bulb {
 	var hr []float64
 	for i := 0; i <= 8; i++ {
 		a := (200 + 55*float64(i)/8) * math.Pi / 180
-		hp = append(hp, geom.Vec{X: b.Centre.X + 0.74*b.R*math.Cos(a), Y: b.Centre.Y + 0.74*b.R*math.Sin(a)})
+		hp = append(hp, geom.Vec{X: b.Centre.X + 0.74*b.R*math.Cos(a),
+			Y: b.Centre.Y + 0.74*b.R*math.Sin(a)})
 		t := float64(i) / 8
 		hr = append(hr, (0.6+2.2*math.Sin(t*math.Pi))*k)
 	}
@@ -97,14 +118,21 @@ func NewBulb(x, top, h float64) Bulb {
 // Sunburst is n thin rays at three repeating lengths around a centre, between
 // two angles in screen degrees (0 is right, 90 is down). the period form is
 // thin, even and straight; fat alternating wedges read as a cartoon explosion.
-func Sunburst(c geom.Vec, inner float64, lengths []float64, n int, from, to, width float64) geom.Shape {
+func Sunburst(
+	c geom.Vec, inner float64, lengths []float64, n int, from, to,
+	width float64,
+) geom.Shape {
 	var rays []geom.Shape
 	for i := 0; i < n; i++ {
-		a := (from + (to-from)*(float64(i)+0.5)/float64(n)) * math.Pi / 180
+		t := (float64(i) + 0.5) / float64(n)
+		a := (from + (to-from)*t) * math.Pi / 180
 		outer := lengths[i%len(lengths)]
 		d := geom.Vec{X: math.Cos(a), Y: math.Sin(a)}
 		rays = append(rays, geom.Taper{
-			P: []geom.Vec{{X: c.X + d.X*inner, Y: c.Y + d.Y*inner}, {X: c.X + d.X*outer, Y: c.Y + d.Y*outer}},
+			P: []geom.Vec{
+				{X: c.X + d.X*inner, Y: c.Y + d.Y*inner},
+				{X: c.X + d.X*outer, Y: c.Y + d.Y*outer},
+			},
 			R: []float64{width, width * 0.35},
 		})
 	}

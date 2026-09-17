@@ -92,14 +92,18 @@ func LoadFace(path, name string) (*Face, error) {
 		if cap <= 0 {
 			// some faces leave the OS/2 cap height empty; measure
 			// an H instead
-			if p, _, err := (&Face{f: f, capAt: 1}).raw('H'); err == nil {
+			probe := &Face{f: f, capAt: 1}
+			if p, _, err := probe.raw('H'); err == nil {
 				lo, hi := p.Bounds()
 				cap = hi.Y - lo.Y
 			}
 		}
 		return &Face{Name: n, f: f, capAt: cap}, nil
 	}
-	return nil, fmt.Errorf("face %q not in %s; have %s", name, path, strings.Join(seen, ", "))
+	return nil, fmt.Errorf(
+		"face %q not in %s; have %s", name, path,
+		strings.Join(seen, ", "),
+	)
 }
 
 // raw returns a glyph outline at load size, origin on the baseline, y down.
@@ -118,7 +122,9 @@ func (fc *Face) raw(r rune) (geom.Path, float64, error) {
 	}
 	var contours [][]geom.Vec
 	var cur []geom.Vec
-	pt := func(p fixed.Point26_6) geom.Vec { return geom.Vec{X: f26(p.X), Y: f26(p.Y)} }
+	pt := func(p fixed.Point26_6) geom.Vec {
+		return geom.Vec{X: f26(p.X), Y: f26(p.Y)}
+	}
 	last := geom.Vec{}
 	const steps = 10
 	for _, s := range segs {
@@ -137,7 +143,9 @@ func (fc *Face) raw(r rune) (geom.Path, float64, error) {
 			for i := 1; i <= steps; i++ {
 				t := float64(i) / steps
 				u := 1 - t
-				cur = append(cur, geom.Vec{X: u*u*last.X + 2*u*t*c.X + t*t*e.X, Y: u*u*last.Y + 2*u*t*c.Y + t*t*e.Y})
+				px := u*u*last.X + 2*u*t*c.X + t*t*e.X
+				py := u*u*last.Y + 2*u*t*c.Y + t*t*e.Y
+				cur = append(cur, geom.Vec{X: px, Y: py})
 			}
 			last = e
 		case sfnt.SegmentOpCubeTo:
@@ -145,7 +153,13 @@ func (fc *Face) raw(r rune) (geom.Path, float64, error) {
 			for i := 1; i <= steps; i++ {
 				t := float64(i) / steps
 				u := 1 - t
-				cur = append(cur, geom.Vec{X: u*u*u*last.X + 3*u*u*t*c1.X + 3*u*t*t*c2.X + t*t*t*e.X, Y: u*u*u*last.Y + 3*u*u*t*c1.Y + 3*u*t*t*c2.Y + t*t*t*e.Y})
+				// the cubic's four weights, named so each
+				// sum fits on one line
+				b0, b1 := u*u*u, 3*u*u*t
+				b2, b3 := 3*u*t*t, t*t*t
+				px := b0*last.X + b1*c1.X + b2*c2.X + b3*e.X
+				py := b0*last.Y + b1*c1.Y + b2*c2.Y + b3*e.Y
+				cur = append(cur, geom.Vec{X: px, Y: py})
 			}
 			last = e
 		}
@@ -158,7 +172,9 @@ func (fc *Face) raw(r rune) (geom.Path, float64, error) {
 
 // Glyph returns a letter scaled so its capitals are capHeight tall, placed with
 // its pen origin at pen (on the baseline), and its advance at that size.
-func (fc *Face) Glyph(r rune, pen geom.Vec, capHeight float64) (geom.Path, float64, error) {
+func (fc *Face) Glyph(r rune, pen geom.Vec, capHeight float64) (
+	geom.Path, float64, error,
+) {
 	p, adv, err := fc.raw(r)
 	if err != nil {
 		return p, 0, err

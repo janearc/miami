@@ -45,7 +45,9 @@ func NewPalette(entries ...Entry) *Palette {
 // Lab is a colour in oklab, through libtheme.
 func Lab(c color.RGBA) ok.OKLab {
 	return ok.FromSwatch(srgb.RGB{
-		R: float64(c.R) / 255, G: float64(c.G) / 255, B: float64(c.B) / 255,
+		R: float64(c.R) / 255,
+		G: float64(c.G) / 255,
+		B: float64(c.B) / 255,
 	}.Swatch())
 }
 

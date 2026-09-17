@@ -48,7 +48,8 @@ func At(sh grade.Sheet, sun view.Sun, horizon float64) grade.Stack {
 	stops := make([]functions.Stop, len(skyNight))
 	for i := range skyNight {
 		at := float64(i) / float64(len(skyNight)-1)
-		c := ok.Mix.Mix(grade.Swatch(skyNight[i]), grade.Swatch(skyDay[i]), up)
+		c := ok.Mix.Mix(grade.Swatch(skyNight[i]),
+			grade.Swatch(skyDay[i]), up)
 		c = ok.Mix.Mix(c, grade.Swatch(skyGold[i]), gold)
 		stops[i] = functions.Stop{At: at, Swatch: c}
 	}
@@ -61,10 +62,13 @@ func At(sh grade.Sheet, sun view.Sun, horizon float64) grade.Stack {
 	sunU := 0.5 + 0.42*(sun.At.X/60)
 
 	st := grade.Stack{{
-		Name:  "sky",
-		Field: field.Linear{A: field.Point{U: 0.5}, B: field.Point{U: 0.5, V: horizon}},
-		Ramp:  functions.New(ok.Mix, stops...),
-		Gain:  1,
+		Name: "sky",
+		Field: field.Linear{
+			A: field.Point{U: 0.5},
+			B: field.Point{U: 0.5, V: horizon},
+		},
+		Ramp: functions.New(ok.Mix, stops...),
+		Gain: 1,
 	}, {
 		// stars, out only when the sky is dark enough to hold them
 		Name:  "stars",
@@ -89,16 +93,20 @@ func At(sh grade.Sheet, sun view.Sun, horizon float64) grade.Stack {
 			Field: field.Linear{
 				A: field.Point{U: sunU, V: sunV - 0.07},
 				B: field.Point{U: sunU, V: sunV + 0.07}},
-			Ramp: grade.Ramp(0.0, "fff6cc", 0.5, "ffc24a", 1.0, "ff6a5a"),
+			Ramp: grade.Ramp(
+				0.0, "fff6cc", 0.5, "ffc24a", 1.0, "ff6a5a",
+			),
 			Alpha: grade.Inside(field.Radial{
-				Centre: field.Point{U: sunU, V: sunV}, Radius: 0.095}, 0.78, 0.14),
+				Centre: field.Point{U: sunU, V: sunV},
+				Radius: 0.095}, 0.78, 0.14),
 			Gain: 1,
 		}, grade.Layer{
 			Name:  "bloom",
 			Field: grade.Flat(0),
 			Ramp:  grade.Ramp(0.0, "ffcf8a", 1.0, "ffcf8a"),
 			Alpha: grade.Inside(field.Radial{
-				Centre: field.Point{U: sunU, V: sunV}, Radius: 0.5}, 0.0, 0.95),
+				Centre: field.Point{U: sunU, V: sunV},
+				Radius: 0.5}, 0.0, 0.95),
 			Blend: grade.Add,
 			Gain:  0.22,
 		})

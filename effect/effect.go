@@ -85,7 +85,9 @@ func Lightness(path string) (map[byte]float64, error) {
 		}
 	}
 	if len(out) == 0 {
-		return nil, fmt.Errorf("%s: no roles of the alphabet found", path)
+		return nil, fmt.Errorf(
+			"%s: no roles of the alphabet found", path,
+		)
 	}
 	return out, nil
 }
@@ -101,14 +103,18 @@ func Alpha(c byte) float64 {
 
 // Quantise is a scalar as a ladder character.
 func Quantise(v float64) byte {
-	i := int(math.Round(math.Max(0, math.Min(1, v)) * float64(len(Ladder)-1)))
+	clamped := math.Max(0, math.Min(1, v))
+	i := int(math.Round(clamped * float64(len(Ladder)-1)))
 	return Ladder[i]
 }
 
 // Composite lights a base frame through an alpha frame. The result is a
 // stencil, not a picture: it goes back out as roles and is dressed by whatever
 // colourway plays it.
-func Composite(base, glow sprite.Frame, L map[byte]float64, strength float64, ox, oy int) sprite.Frame {
+func Composite(
+	base, glow sprite.Frame, L map[byte]float64, strength float64, ox,
+	oy int,
+) sprite.Frame {
 	if strength == 0 {
 		strength = 1
 	}
@@ -147,7 +153,7 @@ func Composite(base, glow sprite.Frame, L map[byte]float64, strength float64, ox
 			// so the faintest halo lifts every pixel it
 			// touches a whole step, and the effect reads at
 			// full strength from its first frame.
-			target := lb + a*(1-lb) // light adds; it never subtracts
+			target := lb + a*(1-lb) // light adds, never subtracts
 			best, bestD := byte(0), math.Inf(1)
 			for _, r := range ladder {
 				if d := math.Abs(r.l - target); d < bestD {
@@ -169,13 +175,13 @@ func Composite(base, glow sprite.Frame, L map[byte]float64, strength float64, ox
 type GlowOpts struct {
 	Source   string // roles the light comes out of; required
 	Within   motion.Mask
-	Band     int     // keep only rows within this many of the densest one; 0 keeps all
+	Band     int     // keep rows this near the densest one; 0 keeps all
 	Radius   float64 // extent, in pixels: the one genuine per-object knob
 	Gain     float64
 	Rays     int
 	RayGain  float64
 	RayReach float64
-	RayInner float64 // rays start this many radii out, so they do not spine the object
+	RayInner float64 // rays start this many radii out, clear of the object
 	RayTurn  float64
 }
 
@@ -229,7 +235,10 @@ func Glow(f sprite.Frame, o GlowOpts) sprite.Frame {
 		// must not be an error or a library of effects is unusable
 		// across a mixed set of objects, and it must not be silent or a
 		// misspelled role looks like a subtle effect.
-		fmt.Fprintf(os.Stderr, "glow: roles %q matched 0 pixels\n", o.Source)
+		fmt.Fprintf(
+			os.Stderr, "glow: roles %q matched 0 pixels\n",
+			o.Source,
+		)
 		return blank
 	}
 
@@ -252,17 +261,26 @@ func Glow(f sprite.Frame, o GlowOpts) sprite.Frame {
 			// here
 			d := math.Inf(1)
 			for _, p := range src {
-				d = math.Min(d, math.Hypot(float64(x-p.X), float64(y-p.Y)))
+				dx, dy := float64(x-p.X), float64(y-p.Y)
+				d = math.Min(d, math.Hypot(dx, dy))
 			}
 			d /= o.Radius
 			v := gain / (1 + 2.4*d*d)
 			if o.Rays > 0 && o.RayGain > 0 {
-				rd := math.Hypot(float64(x)-cx, float64(y)-cy) / o.Radius
+				rd := math.Hypot(
+					float64(x)-cx, float64(y)-cy,
+				) / o.Radius
 				if rd >= o.RayInner {
-					a := math.Atan2(float64(y)-cy, float64(x)-cx)
-					lobe := math.Pow(math.Abs(math.Cos(float64(o.Rays)*0.5*(a-o.RayTurn))), 9)
+					a := math.Atan2(
+						float64(y)-cy, float64(x)-cx,
+					)
+					turn := float64(o.Rays) * 0.5
+					cos := math.Cos(turn * (a - o.RayTurn))
+					lobe := math.Pow(math.Abs(cos), 9)
 					v += o.RayGain * gain * lobe *
-						math.Min(1, (rd-o.RayInner)*1.5) / (1 + o.RayReach*rd*rd)
+						math.Min(
+							1, (rd-o.RayInner)*1.5,
+						) / (1 + o.RayReach*rd*rd)
 				}
 			}
 			row[x] = Quantise(v)
@@ -324,8 +342,11 @@ func ClipTo(alpha, base sprite.Frame, keep string, grow int) sprite.Frame {
 			}
 			for dy := -grow; dy <= grow; dy++ {
 				for dx := -grow; dx <= grow; dx++ {
-					if y+dy >= 0 && y+dy < h && x+dx >= 0 && x+dx < w {
-						on[y+dy][x+dx] = true
+					ty, tx := y+dy, x+dx
+					inside := ty >= 0 && ty < h &&
+						tx >= 0 && tx < w
+					if inside {
+						on[ty][tx] = true
 					}
 				}
 			}

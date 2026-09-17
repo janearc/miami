@@ -44,16 +44,29 @@ func Specimen(cv canvas.Canvas) *raster.Scene {
 	for i, f := range faces {
 		top := float64(i) * band
 		panels = append(panels, geom.Poly{P: geom.Pts(
-			geom.Vec{X: 3, Y: top + 3}, geom.Vec{X: u - 3, Y: top + 3},
-			geom.Vec{X: u - 3, Y: top + band - 3}, geom.Vec{X: 3, Y: top + band - 3})})
+			geom.Vec{X: 3, Y: top + 3}, geom.Vec{
+				X: u - 3, Y: top + 3,
+			},
+			geom.Vec{X: u - 3, Y: top + band - 3}, geom.Vec{
+				X: 3, Y: top + band - 3,
+			})})
 
-		small := typeset.Line{Text: "LET THERE BE", Face: f, Tracking: 0.12,
-			Wobble: typeset.Wobble{Tilt: 3, Shift: 0.05, Scale: 0.03, Space: 0.04, Seed: 7}}
+		small := typeset.Line{Text: "LET THERE BE", Face: f,
+			Tracking: 0.12,
+			Wobble: typeset.Wobble{
+				Tilt: 3, Shift: 0.05, Scale: 0.03, Space: 0.04,
+				Seed: 7,
+			}}
 		small.CapHeight = fitCap(small, 0.62*u)
 		big := typeset.Line{Text: "LIGHTS", Face: f, Tracking: 0.10,
-			Wobble: typeset.Wobble{Tilt: 3, Shift: 0.04, Scale: 0.03, Space: 0.04, Seed: 11}}
+			Wobble: typeset.Wobble{
+				Tilt: 3, Shift: 0.04, Scale: 0.03, Space: 0.04,
+				Seed: 11,
+			}}
 		big.CapHeight = fitCap(big, 0.80*u)
-		letters = append(letters, small.Set(u/2, top+8+small.CapHeight)...)
+		letters = append(
+			letters, small.Set(u/2, top+8+small.CapHeight)...,
+		)
 		letters = append(letters, big.Set(u/2, top+band-7)...)
 	}
 	sc := &raster.Scene{W: u, H: band * float64(len(faces))}
@@ -65,6 +78,10 @@ func Specimen(cv canvas.Canvas) *raster.Scene {
 		'L': {96, 16, 20, 255},
 	}
 	sc.MinCover = map[byte]float64{'L': 0.30}
-	sc.Bg = func(x, y float64) color.RGBA { return color.RGBA{28, 30, 64, 255} }
+	sc.Bg = func(
+		x, y float64,
+	) color.RGBA {
+		return color.RGBA{28, 30, 64, 255}
+	}
 	return sc
 }

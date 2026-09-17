@@ -157,7 +157,8 @@ func (s Screen) Run(d Drawer, more func(Frame) bool) error {
 func rawMode() func() {
 	saved, err := exec.Command("stty", "-g").Output()
 	if err != nil {
-		return func() {} // not a terminal: it still draws, it just cannot be steered
+		// not a terminal: it still draws, it just cannot be steered
+		return func() {}
 	}
 	raw := exec.Command("stty", "raw", "-echo")
 	raw.Stdin = os.Stdin
@@ -300,9 +301,13 @@ func (s *Stage) Draw(f Frame, cols, rows int) [][]cells.Cell {
 	}
 
 	if s.Lit != nil {
-		compose.Blit(px, s.Lit.Trace(f.Since, cols, rows), s.Colours, 0, 0)
+		compose.Blit(
+			px, s.Lit.Trace(f.Since, cols, rows), s.Colours, 0, 0,
+		)
 	}
-	for _, p := range view.Resolve(s.Objects, view.DefaultEye(), f.Since, sh.W, sh.H) {
+	for _, p := range view.Resolve(
+		s.Objects, view.DefaultEye(), f.Since, sh.W, sh.H,
+	) {
 		compose.Blit(px, p.Frame, s.Colours, p.X, p.Y)
 	}
 
@@ -334,8 +339,12 @@ func Scrim(cs [][]cells.Cell, x0, y0, w, h int, k, feather float64) {
 			if x < 0 || x >= len(cs[y]) {
 				continue
 			}
-			ox := math.Max(0, math.Max(float64(x0-x), float64(x-(x0+w-1))))
-			oy := math.Max(0, math.Max(float64(y0-y), float64(y-(y0+h-1))))
+			ox := math.Max(
+				0, math.Max(float64(x0-x), float64(x-(x0+w-1))),
+			)
+			oy := math.Max(
+				0, math.Max(float64(y0-y), float64(y-(y0+h-1))),
+			)
 			if out := math.Max(ox, oy); out <= feather {
 				f := k + (1-k)*(out/feather)
 				cs[y][x].Fg = dim(cs[y][x].Fg, f)

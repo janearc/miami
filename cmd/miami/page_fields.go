@@ -17,9 +17,15 @@ func fieldsPage() ([][]cells.Cell, string) {
 	third := func(i int) field.Field {
 		switch i {
 		case 0:
-			return field.Linear{A: field.Point{U: 0.02, V: 0.5}, B: field.Point{U: 0.31, V: 0.5}}
+			return field.Linear{
+				A: field.Point{U: 0.02, V: 0.5},
+				B: field.Point{U: 0.31, V: 0.5},
+			}
 		case 1:
-			return field.Radial{Centre: field.Point{U: 0.5, V: 0.5}, Radius: 0.15}
+			return field.Radial{
+				Centre: field.Point{U: 0.5, V: 0.5},
+				Radius: 0.15,
+			}
 		default:
 			return field.Conic{Centre: field.Point{U: 0.82, V: 0.5}}
 		}

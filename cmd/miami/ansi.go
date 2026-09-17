@@ -33,6 +33,8 @@ func ansiToPNG(in, out string) {
 	}
 	proof.Must(proof.SaveImage(out, proof.NewCellImageOn(
 		proof.Mono(), 9, 18, color.RGBA{16, 14, 24, 255}).Draw(cs)))
-	fmt.Printf("%s: %d cols x %d rows -> %s\n", in, len(cs[0]), len(cs), out)
+	fmt.Printf(
+		"%s: %d cols x %d rows -> %s\n", in, len(cs[0]), len(cs), out,
+	)
 	fmt.Println("open it. do not judge the art from the bytes.")
 }

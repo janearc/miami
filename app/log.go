@@ -52,7 +52,9 @@ const logKeeps = 400
 func (l *Log) Say(s string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.lines = append(l.lines, strings.Split(strings.TrimRight(s, "\n"), "\n")...)
+	l.lines = append(
+		l.lines, strings.Split(strings.TrimRight(s, "\n"), "\n")...,
+	)
 	if n := len(l.lines) - logKeeps; n > 0 {
 		l.lines = append([]string(nil), l.lines[n:]...)
 	}
@@ -107,7 +109,8 @@ func (l *Log) Over(cs [][]cells.Cell, _ Frame) {
 	}
 	lines := box.Lines()
 	if len(lines) > h {
-		lines = lines[len(lines)-h:] // the tail: the newest fills the box
+		// the tail: the newest fills the box
+		lines = lines[len(lines)-h:]
 	}
 
 	// darkened over what is written rather than over the box it may one

@@ -18,9 +18,10 @@
 //	sfnt      a table directory: tag, checksum, offset, length --
 //	          sixteen bytes each
 //	maxp      how many glyphs there are, which sizes the sbix offset table
-//	sbix      version, flags, a count of strikes, then an offset per strike
-//	strike    pixels-per-em, resolution, then an offset per glyph, plus one
-//	          past the end so a glyph's length is the difference
+//	sbix      version, flags, a count of strikes, then an offset per
+//	          strike
+//	strike    pixels-per-em, resolution, then an offset per glyph, plus
+//	          one past the end so a glyph's length is the difference
 //	glyph     two origin offsets, a four-byte kind, then the bytes
 //
 // A strike entry whose length is zero is a glyph with no picture at that size,
@@ -68,7 +69,9 @@ func FromFile(path string, r rune) (Bitmap, error) {
 	}
 	sbix, ok := tables["sbix"]
 	if !ok {
-		return Bitmap{}, fmt.Errorf("%s: no sbix table; not a bitmap emoji font", path)
+		return Bitmap{}, fmt.Errorf(
+			"%s: no sbix table; not a bitmap emoji font", path,
+		)
 	}
 	numGlyphs, err := glyphCount(src, tables)
 	if err != nil {
@@ -96,10 +99,15 @@ func FromFile(path string, r rune) (Bitmap, error) {
 			continue
 		}
 		data := src[g+8 : strike+end]
-		best = Bitmap{PNG: append([]byte(nil), data...), PPEM: ppem, Glyph: gid}
+		best = Bitmap{
+			PNG: append([]byte(nil), data...), PPEM: ppem,
+			Glyph: gid,
+		}
 	}
 	if best.PNG == nil {
-		return Bitmap{}, fmt.Errorf("%U: no bitmap in any strike (glyph %d)", r, gid)
+		return Bitmap{}, fmt.Errorf(
+			"%U: no bitmap in any strike (glyph %d)", r, gid,
+		)
 	}
 	return best, nil
 }
@@ -158,10 +166,14 @@ func glyphCount(src []byte, tables map[string]int) (int, error) {
 }
 
 // be16 is a big-endian sixteen-bit number, which is how a font stores one.
-func be16(b []byte, at int) uint16 { return binary.BigEndian.Uint16(b[at : at+2]) }
+func be16(b []byte, at int) uint16 {
+	return binary.BigEndian.Uint16(b[at : at+2])
+}
 
 // be32 is a big-endian thirty-two-bit number.
-func be32(b []byte, at int) uint32 { return binary.BigEndian.Uint32(b[at : at+4]) }
+func be32(b []byte, at int) uint32 {
+	return binary.BigEndian.Uint32(b[at : at+4])
+}
 
 // Cells is an emoji as cells, at a width in columns.
 //

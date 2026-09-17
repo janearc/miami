@@ -57,10 +57,13 @@ func clock(args []string) {
 			once = true
 		}
 		if a == "--at" && i+1 < len(args) {
-			if t, err := time.Parse("15:04", args[i+1]); err == nil {
+			if t, err := time.Parse(
+				"15:04", args[i+1],
+			); err == nil {
 				n := time.Now()
 				at = time.Date(n.Year(), n.Month(), n.Day(),
-					t.Hour(), t.Minute(), 0, 0, n.Location())
+					t.Hour(), t.Minute(), 0, 0,
+					n.Location())
 			}
 		}
 	}
@@ -91,7 +94,8 @@ func newClock(at time.Time) (*clockApp, error) {
 		at:    at,
 	}
 	if c.face == nil {
-		return nil, fmt.Errorf("the clock scene has no clock named face")
+		return nil, fmt.Errorf(
+			"the clock scene has no clock named face")
 	}
 	return c, nil
 }

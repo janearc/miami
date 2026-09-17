@@ -24,7 +24,7 @@ import (
 //
 //	the view ray     what is seen here -- the ball, the floor, or nothing
 //	the shadow ray   from the floor toward the light: blocked, or not
-//	nothing else     no bounces, no ambient occlusion, no second generation
+//	nothing else     no bounces, no ambient occlusion, no secondary rays
 //
 // Colour never enters. Every answer comes back as a role, so the picture is
 // still a stencil and a colourway still dresses it -- including the shadow,
@@ -72,7 +72,9 @@ func HitSphere(r Ray, centre Vec, radius, near, far float64) (float64, bool) {
 		return 0, false
 	}
 	root := math.Sqrt(disc)
-	for _, t := range [2]float64{(-b - root) / (2 * a), (-b + root) / (2 * a)} {
+	for _, t := range [2]float64{
+		(-b - root) / (2 * a), (-b + root) / (2 * a),
+	} {
 		if t > near && t < far {
 			return t, true
 		}

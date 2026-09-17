@@ -72,7 +72,9 @@ func LoadFig(name string) (*FigFont, error) {
 			return readFig(p)
 		}
 	}
-	return nil, fmt.Errorf("figlet font %q not found in %v", name, FigFontDirs)
+	return nil, fmt.Errorf(
+		"figlet font %q not found in %v", name, FigFontDirs,
+	)
 }
 
 // readFig reads a font file: a header, comments to skip, then the characters
@@ -82,7 +84,9 @@ func readFig(path string) (*FigFont, error) {
 	if err != nil {
 		return nil, err
 	}
-	lines := strings.Split(strings.ReplaceAll(string(b), "\r\n", "\n"), "\n")
+	lines := strings.Split(
+		strings.ReplaceAll(string(b), "\r\n", "\n"), "\n",
+	)
 	if len(lines) == 0 || !strings.HasPrefix(lines[0], "flf2a") {
 		return nil, fmt.Errorf("%s: not a flf2a font", path)
 	}

@@ -31,7 +31,9 @@ func Sunset(sh grade.Sheet, horizon, phase float64) grade.Stack {
 
 	// the sun's colour runs top to bottom and knows nothing about being
 	// round
-	sunRamp := grade.Ramp(0.0, "fff1a8", 0.34, "ffb03a", 0.62, "ff4d7e", 1.0, "8e2a86")
+	sunRamp := grade.Ramp(
+		0.0, "fff1a8", 0.34, "ffb03a", 0.62, "ff4d7e", 1.0, "8e2a86",
+	)
 	sunBody := field.Linear{
 		A: field.Point{U: 0.5, V: sunC.V - 0.145},
 		B: field.Point{U: 0.5, V: sunC.V + 0.145},
@@ -51,16 +53,23 @@ func Sunset(sh grade.Sheet, horizon, phase float64) grade.Stack {
 
 	return grade.Stack{
 		{
-			Name:  "sky",
-			Field: field.Linear{A: field.Point{U: 0.5}, B: field.Point{U: 0.5, V: horizon}},
-			Ramp: grade.Ramp(0.0, "120631", 0.30, "3b0f63", 0.58, "7a1b6d",
+			Name: "sky",
+			Field: field.Linear{
+				A: field.Point{U: 0.5},
+				B: field.Point{U: 0.5, V: horizon},
+			},
+			Ramp: grade.Ramp(0.0, "120631", 0.30, "3b0f63",
+				0.58, "7a1b6d",
 				0.82, "c63f6b", 1.0, "ff8a4c"),
 			Gain: 1,
 		},
 		{
-			Name:  "ground",
-			Field: field.Linear{A: field.Point{U: 0.5, V: horizon}, B: field.Point{U: 0.5, V: 1}},
-			Ramp:  grade.Ramp(0.0, "2a0b44", 1.0, "07021a"),
+			Name: "ground",
+			Field: field.Linear{
+				A: field.Point{U: 0.5, V: horizon},
+				B: field.Point{U: 0.5, V: 1},
+			},
+			Ramp: grade.Ramp(0.0, "2a0b44", 1.0, "07021a"),
 			// the horizon line itself, as an alpha: nought above it
 			// and one below, over the space of a couple of
 			// subpixels
@@ -81,8 +90,11 @@ func Sunset(sh grade.Sheet, horizon, phase float64) grade.Stack {
 			// reads it, so a circle becomes a long low ellipse --
 			// which is what Through is for.
 			Alpha: grade.Inside(field.Through{
-				M:     [2][2]float64{{0.55, 0}, {0, 5.5}},
-				Field: field.Radial{Centre: field.Point{U: 0.5, V: horizon}, Radius: 0.62}},
+				M: [2][2]float64{{0.55, 0}, {0, 5.5}},
+				Field: field.Radial{
+					Centre: field.Point{U: 0.5, V: horizon},
+					Radius: 0.62,
+				}},
 				0.02, 0.86),
 			Blend: grade.Add,
 			Gain:  0.30,
@@ -94,13 +106,20 @@ func Sunset(sh grade.Sheet, horizon, phase float64) grade.Stack {
 			// round, and cut into slats: two alphas multiplied.
 			// neither knows what the other is for and neither
 			// touches the colour.
-			Alpha: grade.Times(grade.Inside(sunDisc, 0.85, 0.08), slats),
-			Gain:  1,
+			Alpha: grade.Times(
+				grade.Inside(sunDisc, 0.85, 0.08), slats,
+			),
+			Gain: 1,
 		},
 		{
-			Name:  "grid",
-			Field: field.Linear{A: field.Point{U: 0.5, V: horizon}, B: field.Point{U: 0.5, V: 1}},
-			Ramp:  grade.Ramp(0.0, "2de2e6", 0.55, "ff2a9d", 1.0, "ff2a9d"),
+			Name: "grid",
+			Field: field.Linear{
+				A: field.Point{U: 0.5, V: horizon},
+				B: field.Point{U: 0.5, V: 1},
+			},
+			Ramp: grade.Ramp(
+				0.0, "2de2e6", 0.55, "ff2a9d", 1.0, "ff2a9d",
+			),
 			Alpha: perspectiveGrid(sh, horizon, phase),
 			Blend: grade.Add,
 			Gain:  0.60,
@@ -111,7 +130,10 @@ func Sunset(sh grade.Sheet, horizon, phase float64) grade.Stack {
 			Name:  "bloom",
 			Field: grade.Flat(0),
 			Ramp:  grade.Ramp(0.0, "ffd08a", 1.0, "ffd08a"),
-			Alpha: grade.Inside(field.Radial{Centre: sunC, Radius: 0.44}, 0.0, 0.95),
+			Alpha: grade.Inside(
+				field.Radial{Centre: sunC, Radius: 0.44}, 0.0,
+				0.95,
+			),
 			Blend: grade.Add,
 			Gain:  0.16,
 		},
@@ -133,8 +155,9 @@ func Sunset(sh grade.Sheet, horizon, phase float64) grade.Stack {
 // is the difference between a floor and a smear.
 func perspectiveGrid(sh grade.Sheet, horizon, phase float64) field.Field {
 	const (
-		eye    = 0.055 // how far the camera sits above the floor
-		across = 0.014 // spacing of the lines running away from the viewer
+		eye = 0.055 // how far the camera sits above the floor
+		// spacing of the lines running away from the viewer
+		across = 0.014
 		along  = 0.055 // spacing of the lines running across
 		width  = 2.6   // line width, in subpixels of the sheet
 	)
@@ -150,13 +173,18 @@ func perspectiveGrid(sh grade.Sheet, horizon, phase float64) field.Field {
 		// x moves by z per unit of u, and a line half a pixel wide on
 		// screen is half a pixel times that.
 		x := (u - 0.5) * z
-		latGap := across / (z * du) // how many subpixels apart these lines are
-		lat := near(x/across, 0.5*width*du*(z/across)) * resolves(latGap)
+		// how many subpixels apart these lines are
+		latGap := across / (z * du)
+		lat := near(
+			x/across, 0.5*width*du*(z/across),
+		) * resolves(latGap)
 
 		// lines running across: constant depth, marching toward the
 		// viewer. z changes by z/d per unit of v.
 		lonGap := along * d / (z * dv)
-		lon := near((z-phase*0.6)/along, 0.5*width*dv*(z/d)/along) * resolves(lonGap)
+		lon := near(
+			(z-phase*0.6)/along, 0.5*width*dv*(z/d)/along,
+		) * resolves(lonGap)
 
 		return math.Max(lat, lon)
 	})
@@ -219,7 +247,9 @@ func Effects(sh grade.Sheet, horizon, phase float64) grade.Stack {
 			Name:  "scan",
 			Field: grade.Flat(0),
 			Ramp:  grade.Ramp(0.0, "000000", 1.0, "000000"),
-			Alpha: grade.Stripes(2*sh.Dv(), 0.5, phase*0.5*sh.Dv(), 0),
+			Alpha: grade.Stripes(
+				2*sh.Dv(), 0.5, phase*0.5*sh.Dv(), 0,
+			),
 			Blend: grade.Mul,
 			Gain:  0.30,
 		},
@@ -232,7 +262,10 @@ func Effects(sh grade.Sheet, horizon, phase float64) grade.Stack {
 			Field: grade.Flat(0),
 			Ramp:  grade.Ramp(0.0, "b9e6ff", 1.0, "b9e6ff"),
 			Alpha: grade.Band(
-				field.Linear{A: field.Point{U: 0, V: 0.25}, B: field.Point{U: 1, V: 0.75}},
+				field.Linear{
+					A: field.Point{U: 0, V: 0.25},
+					B: field.Point{U: 1, V: 0.75},
+				},
 				mod1(phase*0.5+0.15), 0.06, 0.20),
 			Blend: grade.Add,
 			Gain:  0.10,

@@ -18,11 +18,15 @@ func Car() *raster.Scene {
 	// wheelbase, 975 front overhang. eyeballing it produced a car sitting
 	// far too low with its wheels cut clean off the body.
 	shell := geom.Poly{P: geom.Pts(
-		geom.Vec{X: 14, Y: 63.5}, // nose tip, low and blank: pop-up lamps are down
+		geom.Vec{
+			X: 14, Y: 63.5,
+		}, // nose tip, low and blank: pop-up lamps are down
 		geom.Vec{X: 26, Y: 57},
 		geom.Vec{X: 44, Y: 48},
 		geom.Vec{X: 64, Y: 45},
-		geom.Vec{X: 92, Y: 43.5}, // screen base, bonnet almost flat behind the rise
+		geom.Vec{
+			X: 92, Y: 43.5,
+		}, // screen base, bonnet almost flat behind the rise
 		geom.Vec{X: 118, Y: 36.5},
 		geom.Vec{X: 150, Y: 36.5}, // short flat roof set well back
 		geom.Vec{X: 168, Y: 38.5},
@@ -32,7 +36,9 @@ func Car() *raster.Scene {
 		geom.Vec{X: 150, Y: 73},
 		geom.Vec{X: 60, Y: 74},
 		geom.Vec{X: 30, Y: 75},
-		geom.Vec{X: 15, Y: 75}, // blunt nose face: a knife edge reads as a doorstop
+		geom.Vec{
+			X: 15, Y: 75,
+		}, // blunt nose face: a knife edge reads as a doorstop
 	)}
 
 	fwCentre := geom.Vec{X: 51.5, Y: 67.3}
@@ -54,19 +60,23 @@ func Car() *raster.Scene {
 	// so the band carries the read and the slats sit inside it for the sake
 	// of the high resolution pass.
 	bank := geom.Poly{P: geom.Pts(
-		geom.Vec{X: 100, Y: 48}, geom.Vec{X: 152, Y: 44}, geom.Vec{X: 153, Y: 60}, geom.Vec{X: 102, Y: 63},
+		geom.Vec{X: 100, Y: 48}, geom.Vec{X: 152, Y: 44},
+		geom.Vec{X: 153, Y: 60}, geom.Vec{X: 102, Y: 63},
 	)}
 	var slats []geom.Shape
 	for i := 0; i < 4; i++ {
 		y := 50.0 + float64(i)*3.6
 		slats = append(slats, geom.Taper{
-			P: []geom.Vec{{X: 103, Y: y + 0.5}, {X: 149, Y: y - 1.3}},
+			P: []geom.Vec{
+				{X: 103, Y: y + 0.5}, {X: 149, Y: y - 1.3},
+			},
 			R: []float64{0.9, 0.9},
 		})
 	}
 
 	glass := geom.Poly{P: geom.Pts(
-		geom.Vec{X: 95, Y: 43}, geom.Vec{X: 120, Y: 37.5}, geom.Vec{X: 148, Y: 37}, geom.Vec{X: 144, Y: 46},
+		geom.Vec{X: 95, Y: 43}, geom.Vec{X: 120, Y: 37.5},
+		geom.Vec{X: 148, Y: 37}, geom.Vec{X: 144, Y: 46},
 	)}
 
 	shadow := geom.Ellipse{C: geom.Vec{X: 101, Y: 80.5}, Rx: 84, Ry: 4.0}
@@ -90,6 +100,10 @@ func Car() *raster.Scene {
 		'x': {58, 40, 54, 255},
 		'O': {26, 18, 30, 255},
 	}
-	sc.Bg = func(x, y float64) color.RGBA { return color.RGBA{240, 170, 120, 255} }
+	sc.Bg = func(
+		x, y float64,
+	) color.RGBA {
+		return color.RGBA{240, 170, 120, 255}
+	}
 	return sc
 }

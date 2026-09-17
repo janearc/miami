@@ -50,7 +50,8 @@ func Cassowary() *raster.Scene {
 	bill := geom.Union(
 		geom.Taper{P: []geom.Vec{at(28.0, 23.4), at(16.2, 26.4)},
 			R: []float64{2.6, 0.9}},
-		geom.Poly{P: geom.Pts(at(18.2, 25.6), at(15.2, 26.8), at(16.6, 28.8), at(19.6, 27.4))},
+		geom.Poly{P: geom.Pts(at(18.2, 25.6), at(15.2, 26.8),
+			at(16.6, 28.8), at(19.6, 27.4))},
 	)
 
 	// the neck, entering from below and running off the frame
@@ -63,16 +64,29 @@ func Cassowary() *raster.Scene {
 	// one shape they read as a bib; the gap between them is what makes them
 	// wattles, so it is kept wider than a cell.
 	wattles := geom.Union(
-		geom.Taper{P: []geom.Vec{at(31.0, 28.5), at(29.0, 38.5)}, R: []float64{2.0, 2.6}},
-		geom.Taper{P: []geom.Vec{at(35.6, 29.0), at(35.0, 40.0)}, R: []float64{1.8, 2.3}},
+		geom.Taper{
+			P: []geom.Vec{at(31.0, 28.5), at(29.0, 38.5)},
+			R: []float64{2.0, 2.6},
+		},
+		geom.Taper{
+			P: []geom.Vec{at(35.6, 29.0), at(35.0, 40.0)},
+			R: []float64{1.8, 2.3},
+		},
 	)
 
 	// the nape: the back of the neck goes violet where the blue runs out
-	nape := geom.Intersect(neck, geom.HalfPlane{C: at(36.4, 0), N: geom.Vec{X: -1}})
+	nape := geom.Intersect(
+		neck, geom.HalfPlane{C: at(36.4, 0), N: geom.Vec{X: -1}},
+	)
 
 	// the body, only suggested: a dark shoulder at the corner, so the neck
 	// is attached to something
 	body := geom.Ellipse{C: at(48, 52), Rx: 20, Ry: 13, Rot: -16}
+
+	// the eye: a pupil inside a ring, both on the same centre
+	eye := at(31.0, 19.4)
+	ring := geom.Ellipse{C: eye, Rx: 2.1, Ry: 1.9}
+	pupil := geom.Ellipse{C: eye, Rx: 1.0, Ry: 0.9}
 
 	sc := &raster.Scene{W: w, H: h}
 	sc.Parts = []raster.Part{
@@ -83,10 +97,11 @@ func Cassowary() *raster.Scene {
 		{Role: 'n', Shape: skull},
 		{Role: 'c', Shape: casque},
 		{Role: 'b', Shape: bill},
-		{Role: 'r', Shape: geom.Ellipse{C: at(31.0, 19.4), Rx: 2.1, Ry: 1.9}},
-		{Role: 'e', Shape: geom.Ellipse{C: at(31.0, 19.4), Rx: 1.0, Ry: 0.9}}}
+		{Role: 'r', Shape: ring},
+		{Role: 'e', Shape: pupil},
+	}
 	sc.Pal = map[byte]color.RGBA{
-		'p': {26, 22, 30, 255},   // plumage, near-black so it is a mass not a hole
+		'p': {26, 22, 30, 255},   // plumage, near-black
 		'n': {46, 130, 208, 255}, // the bare blue neck
 		'v': {74, 62, 150, 255},  // the violet nape
 		'w': {206, 46, 58, 255},  // wattles
@@ -96,6 +111,8 @@ func Cassowary() *raster.Scene {
 		'e': {18, 14, 16, 255},   // pupil
 	}
 	sc.MinCover = map[byte]float64{'e': 0.25, 'r': 0.30, 'b': 0.30}
-	sc.Bg = func(x, y float64) color.RGBA { return color.RGBA{16, 14, 24, 255} }
+	sc.Bg = func(x, y float64) color.RGBA {
+		return color.RGBA{16, 14, 24, 255}
+	}
 	return sc
 }

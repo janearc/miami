@@ -3,8 +3,8 @@ package canvas
 // cells are not square. everything that maps physical space onto terminal cells
 // reads this constant and nothing else.
 
-// CellAspect is the height of a terminal cell divided by its width. THIS IS THE
-// ONLY PLACE THE TERMINAL'S NON-SQUARE PIXEL IS HANDLED.
+// CellAspect is the height of a terminal cell divided by its width. It is the
+// one place the terminal's non-square pixel is handled.
 const CellAspect = 2.0
 
 // Rows gives the row count that keeps a picture of physical size w by h

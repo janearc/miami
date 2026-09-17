@@ -14,7 +14,11 @@ import (
 func BulbTest(cols int, h float64) *raster.Scene {
 	u := float64(cols)
 	b := motifs.NewBulb(u/2, 0.30*h, 0.62*h)
-	burst := motifs.Sunburst(b.Centre, b.R*1.42, []float64{b.R * 2.25, b.R * 1.62, b.R * 1.9, b.R * 1.62}, 28, -208, 28, b.R*0.07)
+	burst := motifs.Sunburst(
+		b.Centre, b.R*1.42,
+		[]float64{b.R * 2.25, b.R * 1.62, b.R * 1.9, b.R * 1.62}, 28,
+		-208, 28, b.R*0.07,
+	)
 
 	sc := &raster.Scene{W: u, H: h}
 	sc.Parts = []raster.Part{
@@ -38,8 +42,11 @@ func BulbTest(cols int, h float64) *raster.Scene {
 		'I': {40, 34, 40, 255},
 		'T': {120, 110, 100, 255},
 	}
-	sc.MinCover = map[byte]float64{'f': 0.25, 'g': 0.30, 'w': 0.35, 'r': 0.30}
-	glass := paint.Radial(b.Centre.X, b.Centre.Y-0.1*b.R, b.R*1.25, []paint.Stop{
+	sc.MinCover = map[byte]float64{
+		'f': 0.25, 'g': 0.30, 'w': 0.35, 'r': 0.30,
+	}
+	gy := b.Centre.Y - 0.1*b.R
+	glass := paint.Radial(b.Centre.X, gy, b.R*1.25, []paint.Stop{
 		{At: 0.00, C: color.RGBA{255, 252, 232, 255}},
 		{At: 0.55, C: color.RGBA{255, 228, 160, 255}},
 		{At: 1.00, C: color.RGBA{246, 176, 84, 255}}})
@@ -67,7 +74,10 @@ func BulbTest(cols int, h float64) *raster.Scene {
 		// inside the radius: gating on d > 1 left dark dots on the edge
 		if role != 'G' && role != 'f' && role != 'h' {
 			e := math.Max(d-1, 0)
-			c = paint.Screen(c, color.RGBA{255, 190, 105, 255}, 0.62/(1+3.2*e*e))
+			c = paint.Screen(
+				c, color.RGBA{255, 190, 105, 255},
+				0.62/(1+3.2*e*e),
+			)
 		}
 		return c
 	}

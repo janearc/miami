@@ -127,12 +127,16 @@ func (d *Doc) At(t float64) (grade.Stack, error) {
 	for _, l := range d.Layers {
 		f, err := l.Field.field(c)
 		if err != nil {
-			return nil, fmt.Errorf("layer %q field: %w", l.Name, err)
+			return nil, fmt.Errorf(
+				"layer %q field: %w", l.Name, err,
+			)
 		}
 		var a field.Field
 		if l.Alpha != nil {
 			if a, err = l.Alpha.field(c); err != nil {
-				return nil, fmt.Errorf("layer %q alpha: %w", l.Name, err)
+				return nil, fmt.Errorf(
+					"layer %q alpha: %w", l.Name, err,
+				)
 			}
 		}
 		blend, err := blendOf(l.Blend)
@@ -145,7 +149,9 @@ func (d *Doc) At(t float64) (grade.Stack, error) {
 		}
 		out = append(out, grade.Layer{
 			Name: l.Name, Field: f, Alpha: a, Blend: blend,
-			Gain: l.Gain.at(c), Ramp: functions.New(ok.Mix, stops...),
+			Gain: l.Gain.at(c), Ramp: functions.New(
+				ok.Mix, stops...,
+			),
 		})
 	}
 	return out, nil
@@ -193,7 +199,10 @@ func (v *Value) UnmarshalJSON(b []byte) error {
 	var s string
 	if json.Unmarshal(b, &s) == nil {
 		if len(s) < 2 || s[0] != '@' {
-			return fmt.Errorf("a value string must be \"@constant\", got %q", s)
+			return fmt.Errorf(
+				"a value string must be \"@constant\", got %q",
+				s,
+			)
 		}
 		v.ref = s[1:]
 		return nil
@@ -207,7 +216,8 @@ func (v *Value) UnmarshalJSON(b []byte) error {
 		return fmt.Errorf("value: %w", err)
 	}
 	v.from, v.to, v.ease = raw.From, raw.To, raw.Ease
-	v.mid, v.amp, v.period, v.phase = raw.Mid, raw.Amp, raw.Period, raw.Phase
+	v.mid, v.amp = raw.Mid, raw.Amp
+	v.period, v.phase = raw.Period, raw.Phase
 	v.mul, v.add, v.clamp, v.abs = raw.Mul, raw.Add, raw.Clamp, raw.Abs
 	return nil
 }
@@ -220,7 +230,9 @@ func (v Value) at(c ctx) float64 {
 	case v.ref != "":
 		return c.lookup(v.ref)
 	case v.from != nil && v.to != nil:
-		return v.from.at(c) + (v.to.at(c)-v.from.at(c))*curve(v.ease, c.e)
+		return v.from.at(c) + (v.to.at(c)-v.from.at(c))*curve(
+			v.ease, c.e,
+		)
 	case v.period != nil:
 		p := v.period.at(c)
 		if p == 0 {

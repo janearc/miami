@@ -50,7 +50,9 @@ func (c Cylinder) axis() Vec {
 // the axial part out of the ray and what is left is a circle problem in the
 // plane. The caps are two discs. Both are checked and the nearer wins, which is
 // what stops a ray that enters through an end from painting the far wall.
-func (c Cylinder) Hit(r Ray, t float64, near, far float64) (float64, byte, bool) {
+func (c Cylinder) Hit(r Ray, t float64, near, far float64) (
+	float64, byte, bool,
+) {
 	a := c.axis()
 	roll := c.Spin * t
 	half := c.Length / 2

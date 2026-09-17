@@ -41,7 +41,9 @@ func stops(a, b []string, t float64) functions.Ramp {
 	for i := range a {
 		at := float64(i) / float64(n-1)
 		out[i] = functions.Stop{At: at,
-			Swatch: ok.Mix.Mix(grade.Swatch(a[i]), grade.Swatch(b[i]), t)}
+			Swatch: ok.Mix.Mix(
+				grade.Swatch(a[i]), grade.Swatch(b[i]), t,
+			)}
 	}
 	return functions.New(ok.Mix, out...)
 }
@@ -54,6 +56,11 @@ func Dusk(sh grade.Sheet, t, dur float64) grade.Stack {
 	// the sun sinks past the horizon and takes its light with it
 	sunV := horizon - 0.075 + 0.20*ease(e)
 	sunC := field.Point{U: 0.42, V: sunV}
+	// the disc and the bloom around it are the same circle at two radii
+	sunDisc := field.Radial{Centre: sunC, Radius: 0.098}
+	sunBloom := field.Radial{Centre: sunC, Radius: 0.42}
+	// the haze stays on the horizon while the sun sinks past it
+	hazeC := field.Point{U: 0.42, V: horizon}
 	// below the horizon it is hidden by the ground layer, so its own alpha
 	// only has to fade what is left showing
 	sunGain := clamp01(1.25 - 1.5*e)
@@ -61,14 +68,25 @@ func Dusk(sh grade.Sheet, t, dur float64) grade.Stack {
 	// three drifts that do not share a period, so the clouds never arrive
 	// back at an arrangement they have already been in
 	drift := func(p float64) float64 { return t / p }
+	// one turn of a sine, so a sum of three of them still reads as a sum
+	wave := func(p float64) float64 { return math.Sin(2 * math.Pi * p) }
 
 	return grade.Stack{
 		{
-			Name:  "sky",
-			Field: field.Linear{A: field.Point{U: 0.5}, B: field.Point{U: 0.5, V: horizon}},
+			Name: "sky",
+			Field: field.Linear{
+				A: field.Point{U: 0.5},
+				B: field.Point{U: 0.5, V: horizon},
+			},
 			Ramp: stops(
-				[]string{"1b1040", "5a2071", "b8446b", "ff8f4a", "ffd08a"},
-				[]string{"03040f", "090a24", "141038", "241a47", "3a2452"}, ease(e)),
+				[]string{
+					"1b1040", "5a2071", "b8446b", "ff8f4a",
+					"ffd08a",
+				},
+				[]string{
+					"03040f", "090a24", "141038", "241a47",
+					"3a2452",
+				}, ease(e)),
 			Gain: 1,
 		},
 		{
@@ -92,18 +110,23 @@ func Dusk(sh grade.Sheet, t, dur float64) grade.Stack {
 			// unrelated periods, thresholded into bands rather than
 			// left as a haze, because a terminal cell cannot hold a
 			// haze.
-			Name:  "cloud",
-			Field: field.Linear{A: field.Point{U: 0.5, V: 0.10}, B: field.Point{U: 0.5, V: horizon}},
+			Name: "cloud",
+			Field: field.Linear{
+				A: field.Point{U: 0.5, V: 0.10},
+				B: field.Point{U: 0.5, V: horizon},
+			},
 			Ramp: stops(
 				[]string{"ffb27a", "e2708a", "6c2f63"},
-				[]string{"2a2340", "1a1730", "0d0b1c"}, ease(e)),
+				[]string{
+					"2a2340", "1a1730", "0d0b1c",
+				}, ease(e)),
 			Alpha: field.Func(func(u, v float64) float64 {
 				if v > horizon-0.005 {
 					return 0
 				}
-				s := math.Sin(2*math.Pi*(u*1.7-drift(19.1))) +
-					0.7*math.Sin(2*math.Pi*(u*3.1+v*2.0-drift(11.7))) +
-					0.5*math.Sin(2*math.Pi*(u*5.3-v*1.4-drift(7.3)))
+				s := wave(u*1.7-drift(19.1)) +
+					0.7*wave(u*3.1+v*2.0-drift(11.7)) +
+					0.5*wave(u*5.3-v*1.4-drift(7.3))
 				// bands: thin near the horizon, opening out
 				// above it
 				band := s*0.28 + 0.5 - (horizon-v)*1.1
@@ -114,20 +137,28 @@ func Dusk(sh grade.Sheet, t, dur float64) grade.Stack {
 		{
 			Name:  "haze",
 			Field: grade.Flat(0),
-			Ramp:  stops([]string{"ff7a3c"}, []string{"271a3a"}, ease(e)),
+			Ramp: stops(
+				[]string{"ff7a3c"}, []string{"271a3a"}, ease(e),
+			),
 			Alpha: grade.Inside(field.Through{
-				M:     [2][2]float64{{0.5, 0}, {0, 6.0}},
-				Field: field.Radial{Centre: field.Point{U: 0.42, V: horizon}, Radius: 0.7}},
+				M: [2][2]float64{{0.5, 0}, {0, 6.0}},
+				Field: field.Radial{
+					Centre: hazeC, Radius: 0.7}},
 				0.02, 0.86),
 			Blend: grade.Add,
 			Gain:  0.42 * sunGain,
 		},
 		{
-			Name:  "sun",
-			Field: field.Linear{A: field.Point{U: 0.42, V: sunV - 0.075}, B: field.Point{U: 0.42, V: sunV + 0.075}},
-			Ramp:  grade.Ramp(0.0, "fff3bc", 0.5, "ffb03a", 1.0, "ff5a5a"),
+			Name: "sun",
+			Field: field.Linear{
+				A: field.Point{U: 0.42, V: sunV - 0.075},
+				B: field.Point{U: 0.42, V: sunV + 0.075},
+			},
+			Ramp: grade.Ramp(
+				0.0, "fff3bc", 0.5, "ffb03a", 1.0, "ff5a5a",
+			),
 			Alpha: grade.Times(
-				grade.Inside(field.Radial{Centre: sunC, Radius: 0.098}, 0.80, 0.12),
+				grade.Inside(sunDisc, 0.80, 0.12),
 				grade.Flat(clamp01(sunGain*1.4))),
 			Gain: 1,
 		},
@@ -135,7 +166,7 @@ func Dusk(sh grade.Sheet, t, dur float64) grade.Stack {
 			Name:  "bloom",
 			Field: grade.Flat(0),
 			Ramp:  grade.Ramp(0.0, "ffcf8a", 1.0, "ffcf8a"),
-			Alpha: grade.Inside(field.Radial{Centre: sunC, Radius: 0.42}, 0.0, 0.95),
+			Alpha: grade.Inside(sunBloom, 0.0, 0.95),
 			Blend: grade.Add,
 			Gain:  0.26 * sunGain,
 		},
@@ -144,9 +175,15 @@ func Dusk(sh grade.Sheet, t, dur float64) grade.Stack {
 			// sun went on drawing a neat disc over the dark ground
 			// long after it had set, which is the one thing a
 			// horizon is for.
-			Name:  "ground",
-			Field: field.Linear{A: field.Point{U: 0.5, V: horizon}, B: field.Point{U: 0.5, V: 1}},
-			Ramp:  stops([]string{"2a1030", "070314"}, []string{"0a0616", "020108"}, ease(e)),
+			Name: "ground",
+			Field: field.Linear{
+				A: field.Point{U: 0.5, V: horizon},
+				B: field.Point{U: 0.5, V: 1},
+			},
+			Ramp: stops(
+				[]string{"2a1030", "070314"},
+				[]string{"0a0616", "020108"}, ease(e),
+			),
 			Alpha: field.Linear{
 				A: field.Point{U: 0.5, V: horizon - 0.004},
 				B: field.Point{U: 0.5, V: horizon + 0.004}},

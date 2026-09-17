@@ -81,14 +81,17 @@ func ColoursFrom(src []byte) (map[byte]color.RGBA, error) {
 
 // Over writes a sprite frame into a subpixel field at a subpixel position. The
 // transparent role is left alone, which is what makes a stencil a stencil.
-func Over(px [][]color.RGBA, f sprite.Frame, col map[byte]color.RGBA, atX, atY int) {
+func Over(
+	px [][]color.RGBA, f sprite.Frame, col map[byte]color.RGBA,
+	atX, atY int,
+) {
 	if len(px) == 0 {
 		return
 	}
 	h, w := len(px), len(px[0])
 	sh := f.Height()
 	for y := 0; y < h; y++ {
-		sy := (y - atY) * 2 / 3 // three subcell rows per two sprite rows
+		sy := (y - atY) * 2 / 3 // three subcell rows to two sprite rows
 		if y-atY < 0 || sy >= sh {
 			continue
 		}
@@ -108,7 +111,9 @@ func Over(px [][]color.RGBA, f sprite.Frame, col map[byte]color.RGBA, atX, atY i
 }
 
 // Size is a sprite frame's size in subcells.
-func Size(f sprite.Frame) (w, h int) { return f.Width() * 2, f.Height() * 3 / 2 }
+func Size(f sprite.Frame) (w, h int) {
+	return f.Width() * 2, f.Height() * 3 / 2
+}
 
 // At is the frame a looping stream is showing at time t, and nothing about it
 // is tied to the background's frame rate. A wingbeat has its own clock: the
@@ -152,7 +157,10 @@ func hold(f sprite.Frame) time.Duration {
 //
 // Two functions rather than a flag, because which one you want is a fact about
 // where the frame came from.
-func Blit(px [][]color.RGBA, f sprite.Frame, col map[byte]color.RGBA, atX, atY int) {
+func Blit(
+	px [][]color.RGBA, f sprite.Frame, col map[byte]color.RGBA,
+	atX, atY int,
+) {
 	if len(px) == 0 {
 		return
 	}

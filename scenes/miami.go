@@ -9,7 +9,7 @@ import (
 	"math"
 )
 
-// the composite is defined in PHYSICAL units: 96 cells wide by 68 tall, where a
+// the composite is defined in physical units: 96 cells wide by 68 tall, where a
 // cell is 1 wide and 2 tall. every sub-picture is rasterised at its own column
 // count and blitted in, so the cell aspect is still handled in exactly one
 // place -- canvas.CellAspect, up in raster.go.
@@ -45,10 +45,16 @@ func miamiSky(fx, fy float64) color.RGBA {
 		// wet shine on the road directly under the sun
 		d := math.Abs(px-48) / 26
 		if d < 1 {
-			g = paint.Lerp(g, color.RGBA{236, 150, 120, 255}, (1-d)*(1-t*3.2)*0.5)
+			g = paint.Lerp(
+				g, color.RGBA{236, 150, 120, 255},
+				(1-d)*(1-t*3.2)*0.5,
+			)
 		}
 		if py < horizonY+2.4 { // waterline
-			return paint.Lerp(color.RGBA{54, 158, 156, 255}, g, (py-horizonY)/2.4)
+			return paint.Lerp(
+				color.RGBA{54, 158, 156, 255}, g,
+				(py-horizonY)/2.4,
+			)
 		}
 		return g
 	}
@@ -66,7 +72,9 @@ func miamiSky(fx, fy float64) color.RGBA {
 	case r < sunR:
 		c = paint.Lerp(core, rim, math.Pow(r/sunR, 2.2))
 	case r < sunR+6:
-		c = paint.Lerp(rim, c, (r-sunR)/6) // a rim wide enough not to stair-step
+		c = paint.Lerp(
+			rim, c, (r-sunR)/6,
+		) // a rim wide enough not to stair-step
 	}
 
 	// horizontal cloud bars: period correct, and they stop the sky reading
@@ -101,7 +109,10 @@ func Miami() *raster.Scene {
 	// centre line is fixed by where the bird's toes land, so only the
 	// radius moved.
 	bough := geom.Taper{
-		P: []geom.Vec{{X: 96, Y: 25.5}, {X: 70, Y: 29.6}, {X: 48, Y: 33.2}, {X: 32, Y: 36.8}, {X: 25, Y: 39.2}},
+		P: []geom.Vec{
+			{X: 96, Y: 25.5}, {X: 70, Y: 29.6}, {X: 48, Y: 33.2},
+			{X: 32, Y: 36.8}, {X: 25, Y: 39.2},
+		},
 		R: []float64{1.4, 1.25, 1.15, 0.8, 0.25},
 	}
 
@@ -116,12 +127,19 @@ func Miami() *raster.Scene {
 		{91, 5, 39},
 	} {
 		city = append(city, geom.Poly{P: geom.Pts(
-			geom.Vec{X: b[0], Y: b[2]}, geom.Vec{X: b[0] + b[1], Y: b[2]},
-			geom.Vec{X: b[0] + b[1], Y: horizonY + 1}, geom.Vec{X: b[0], Y: horizonY + 1},
+			geom.Vec{X: b[0], Y: b[2]}, geom.Vec{
+				X: b[0] + b[1], Y: b[2],
+			},
+			geom.Vec{X: b[0] + b[1], Y: horizonY + 1}, geom.Vec{
+				X: b[0], Y: horizonY + 1,
+			},
 		)})
 	}
 	sc := &raster.Scene{W: compCols, H: compRows * canvas.CellAspect}
-	sc.Parts = []raster.Part{{Role: 'c', Shape: geom.Union(city...)}, {Role: 'b', Shape: bough}}
+	sc.Parts = []raster.Part{
+		{Role: 'c', Shape: geom.Union(city...)},
+		{Role: 'b', Shape: bough},
+	}
 	sc.Pal = map[byte]color.RGBA{
 		'b': {52, 32, 44, 255},
 		'c': {58, 28, 70, 255},

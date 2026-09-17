@@ -21,7 +21,9 @@ func Lerp(a, b color.RGBA, t float64) color.RGBA {
 	if t > 1 {
 		t = 1
 	}
-	f := func(x, y uint8) uint8 { return uint8(float64(x) + (float64(y)-float64(x))*t) }
+	f := func(x, y uint8) uint8 {
+		return uint8(float64(x) + (float64(y)-float64(x))*t)
+	}
 	return color.RGBA{f(a.R, b.R), f(a.G, b.G), f(a.B, b.B), 255}
 }
 
@@ -60,7 +62,9 @@ func Screen(c, light color.RGBA, amount float64) color.RGBA {
 		x, y := float64(a)/255, float64(b)/255*amount
 		return uint8(255 * (1 - (1-x)*(1-y)))
 	}
-	return color.RGBA{f(c.R, light.R), f(c.G, light.G), f(c.B, light.B), 255}
+	return color.RGBA{
+		f(c.R, light.R), f(c.G, light.G), f(c.B, light.B), 255,
+	}
 }
 
 // Luminance is WCAG 2.1 relative luminance. the 0.03928 threshold is copied

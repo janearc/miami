@@ -72,7 +72,8 @@ func Erode(ink [][]bool, scale, iters int) [][]bool {
 		for y := range up {
 			row := make([]bool, len(up[0]))
 			for x := range row {
-				row[x] = at(up, x, y) && at(up, x-1, y) && at(up, x+1, y) &&
+				row[x] = at(up, x, y) &&
+					at(up, x-1, y) && at(up, x+1, y) &&
 					at(up, x, y-1) && at(up, x, y+1)
 			}
 			next[y] = row

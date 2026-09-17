@@ -31,10 +31,9 @@ func FromANSI(s string) [][]Cell {
 	for _, line := range strings.Split(strings.TrimRight(s, "\n"), "\n") {
 		var row []Cell
 		for i := 0; i < len(line); {
-			if line[i] == 0x1b && i+1 < len(line) && line[i+1] == '[' {
+			if strings.HasPrefix(line[i:], "\x1b[") {
 				j := i + 2
-				for j < len(line) && (line[j] == ';' ||
-					(line[j] >= '0' && line[j] <= '9')) {
+				for j < len(line) && paramByte(line[j]) {
 					j++
 				}
 				if j < len(line) && line[j] == 'm' {

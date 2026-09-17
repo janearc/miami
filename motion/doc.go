@@ -85,7 +85,10 @@ func (r *docRun) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	if len(v) != 3 {
-		return fmt.Errorf("a delta run is [row, col, chars], got %d values", len(v))
+		return fmt.Errorf(
+			"a delta run is [row, col, chars], got %d values",
+			len(v),
+		)
 	}
 	row, ok1 := v[0].(float64)
 	col, ok2 := v[1].(float64)
@@ -150,12 +153,16 @@ func ReadDoc(path string) ([]sprite.Frame, error) {
 		art := df.Art
 		if art == nil {
 			if prev == nil {
-				return nil, fmt.Errorf("%s: frame %d is a delta with nothing before it",
+				return nil, fmt.Errorf(
+					"%s: frame %d is a delta with "+
+						"nothing before it",
 					path, i)
 			}
 			art = apply(prev, df.Delta)
 		}
-		out = append(out, sprite.Frame{Art: art, Hold: parseHold(df.Hold)})
+		out = append(
+			out, sprite.Frame{Art: art, Hold: parseHold(df.Hold)},
+		)
 		prev = art
 	}
 	return out, nil
@@ -176,10 +183,16 @@ func runsBetween(a, b sprite.Frame) []docRun {
 				continue
 			}
 			start := x
-			for x < len(row) && !(x < len(old) && old[x] == row[x]) {
+			unchanged := func(i int) bool {
+				return i < len(old) && old[i] == row[i]
+			}
+			for x < len(row) && !unchanged(x) {
 				x++
 			}
-			out = append(out, docRun{Row: y, Col: start, Run: row[start:x]})
+			out = append(
+				out,
+				docRun{Row: y, Col: start, Run: row[start:x]},
+			)
 		}
 	}
 	return out

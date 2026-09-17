@@ -36,33 +36,61 @@ func DolphinSprite() *raster.Scene {
 	const w, h = 118.0, 64.0
 	sc := &raster.Scene{W: w, H: h}
 	add := func(x, y, k float64) {
-		at := func(dx, dy float64) geom.Vec { return geom.Vec{X: x + dx*k, Y: y + dy*k} }
+		at := func(dx, dy float64) geom.Vec {
+			return geom.Vec{X: x + dx*k, Y: y + dy*k}
+		}
 		r := func(v float64) float64 { return v * k }
 		body := geom.Taper{
-			P: []geom.Vec{at(0, 6), at(9, 2.5), at(22, 0.5), at(40, 1.5), at(62, 8),
-				at(84, 20), at(102, 32), at(113, 40)},
-			R: []float64{r(1.0), r(4.2), r(7.4), r(8.2), r(6.6), r(4.0), r(1.9), r(0.9)},
+			P: []geom.Vec{at(0, 6), at(9, 2.5), at(22, 0.5),
+				at(40, 1.5), at(62, 8), at(84, 20),
+				at(102, 32), at(113, 40)},
+			R: []float64{
+				r(1.0), r(4.2), r(7.4), r(8.2), r(6.6), r(4.0),
+				r(1.9), r(0.9),
+			},
 		}
-		melon := geom.Ellipse{C: at(13, 0.2), Rx: r(8.0), Ry: r(5.2), Rot: -12}
-		beak := geom.Taper{P: []geom.Vec{at(-1, 7.2), at(8, 4.2)}, R: []float64{r(0.8), r(2.4)}}
-		dorsal := geom.Poly{P: geom.Pts(at(38, -4), at(46, -16), at(51, -17.5), at(55, -9), at(58, -4))}
-		pectoral := geom.Poly{P: geom.Pts(at(28, 6), at(38, 13), at(42, 19), at(34, 14), at(29, 9))}
+		melon := geom.Ellipse{
+			C: at(13, 0.2), Rx: r(8.0), Ry: r(5.2), Rot: -12,
+		}
+		beak := geom.Taper{
+			P: []geom.Vec{at(-1, 7.2), at(8, 4.2)},
+			R: []float64{r(0.8), r(2.4)},
+		}
+		dorsal := geom.Poly{P: geom.Pts(
+			at(38, -4), at(46, -16), at(51, -17.5), at(55, -9),
+			at(58, -4))}
+		pectoral := geom.Poly{P: geom.Pts(
+			at(28, 6), at(38, 13), at(42, 19),
+			at(34, 14), at(29, 9))}
 		fluke := geom.Poly{P: geom.Pts(
-			at(105, 35), at(114, 30.5), at(124, 26.5), at(127, 29), at(120, 35.5),
-			at(119, 39.5), at(124, 43.5), at(129, 50.5), at(125, 52), at(117, 45),
-			at(108, 42.5))}
-		belly := geom.Intersect(geom.Union(body, melon),
-			geom.HalfPlane{C: at(0, 5.5), N: geom.Vec{X: 0.17, Y: -0.98}})
+			at(105, 35), at(114, 30.5), at(124, 26.5),
+			at(127, 29), at(120, 35.5), at(119, 39.5),
+			at(124, 43.5), at(129, 50.5), at(125, 52),
+			at(117, 45), at(108, 42.5))}
+		mass := geom.Union(body, melon)
+		fins := geom.Union(dorsal, pectoral, fluke)
+		belly := geom.Intersect(mass, geom.HalfPlane{
+			C: at(0, 5.5), N: geom.Vec{X: 0.17, Y: -0.98},
+		})
+		// the rostrum takes three bands, cut off the beak at two
+		// places: s says which side of the cut is kept
+		band := func(x, s float64) geom.Shape {
+			return geom.Intersect(beak, geom.HalfPlane{
+				C: at(x, 0), N: geom.Vec{X: s},
+			})
+		}
+		ring := geom.Ellipse{C: at(17, 1.5), Rx: r(2.2), Ry: r(2.0)}
+		eye := geom.Ellipse{C: at(17, 1.5), Rx: r(1.1), Ry: r(1.0)}
 
 		sc.Parts = append(sc.Parts,
-			raster.Part{Role: RoleDark, Shape: geom.Union(body, melon)},
+			raster.Part{Role: RoleDark, Shape: mass},
 			raster.Part{Role: RoleLight, Shape: belly},
-			raster.Part{Role: RoleWing, Shape: geom.Union(dorsal, pectoral, fluke)},
-			raster.Part{Role: RoleBase, Shape: geom.Intersect(beak, geom.HalfPlane{C: at(5, 0), N: geom.Vec{X: 1}})},
-			raster.Part{Role: RoleBand, Shape: geom.Intersect(beak, geom.HalfPlane{C: at(2.5, 0), N: geom.Vec{X: 1}})},
-			raster.Part{Role: RoleTip, Shape: geom.Intersect(beak, geom.HalfPlane{C: at(2.5, 0), N: geom.Vec{X: -1}})},
-			raster.Part{Role: RoleEyeRing, Shape: geom.Ellipse{C: at(17, 1.5), Rx: r(2.2), Ry: r(2.0)}},
-			raster.Part{Role: RolePupil, Shape: geom.Ellipse{C: at(17, 1.5), Rx: r(1.1), Ry: r(1.0)}},
+			raster.Part{Role: RoleWing, Shape: fins},
+			raster.Part{Role: RoleBase, Shape: band(5, 1)},
+			raster.Part{Role: RoleBand, Shape: band(2.5, 1)},
+			raster.Part{Role: RoleTip, Shape: band(2.5, -1)},
+			raster.Part{Role: RoleEyeRing, Shape: ring},
+			raster.Part{Role: RolePupil, Shape: eye},
 		)
 	}
 	add(16, 10, 0.70)
@@ -124,10 +152,12 @@ func WordSprite(text string, w, pad float64) *raster.Scene {
 //
 // A wordmark two cells tall is not painted, it is a logotype, and the same
 // wobble there just reads as broken letters.
-func wordScene(text string, w, pad, weight float64, wob typeset.Wobble) *raster.Scene {
+func wordScene(
+	text string, w, pad, weight float64, wob typeset.Wobble,
+) *raster.Scene {
 	gothic := mustFace(supp+"Futura.ttc", "Futura Condensed Medium")
-	line := typeset.Line{Text: text, Face: gothic, Tracking: 0.10, Flat: true,
-		Weight: weight, Wobble: wob}
+	line := typeset.Line{Text: text, Face: gothic, Tracking: 0.10,
+		Flat: true, Weight: weight, Wobble: wob}
 	// fitCap is how the sign sets its own lines: ask what cap height fits
 	// the measure, rather than picking one and hoping
 	line.CapHeight = fitCap(line, w-2*pad)
@@ -148,11 +178,15 @@ func wordScene(text string, w, pad, weight float64, wob typeset.Wobble) *raster.
 // WriteSprite rasterises a scene into a stencil at daffy's pixel, which is one
 // column wide and half a row tall, and writes the .sprite file.
 func WriteSprite(sc *raster.Scene, name, path string, cols int) error {
-	rows := int(float64(cols)*sc.H/sc.W + 0.5) // pixels, not cells: pixels are half as tall
+	// pixels, not cells: pixels are half as tall
+	rows := int(float64(cols)*sc.H/sc.W + 0.5)
 	g := raster.Rasterize(sc, cols, rows, 4)
 	var b strings.Builder
-	fmt.Fprintf(&b, "# %s, from miami's own geometry: parts, not a photograph.\n", name)
-	fmt.Fprintf(&b, "# %d by %d at daffy pixels, which is %d by %d cells.\n",
+	fmt.Fprintf(&b,
+		"# %s, from miami's own geometry: parts, not a photograph.\n",
+		name)
+	fmt.Fprintf(&b,
+		"# %d by %d at daffy pixels, which is %d by %d cells.\n",
 		cols, rows, cols, (rows+1)/2)
 	fmt.Fprintf(&b, "sprite %s\n\nart\n", name)
 	for y := 0; y < rows; y++ {

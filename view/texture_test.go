@@ -21,7 +21,7 @@ func TestQuadrantsMatchTheBuiltInPattern(t *testing.T) {
 	bad := 0
 	for i := 0; i <= steps; i++ {
 		// latitude short of the poles: at the pole itself longitude is
-		// undefined and both sides are picking from a singularity, which
+		// undefined and both sides pick from a singularity, which
 		// is a property of spheres and not a disagreement
 		lat := (float64(i)/steps - 0.5) * math.Pi * 0.998
 		for j := 0; j < steps; j++ {
@@ -35,7 +35,7 @@ func TestQuadrantsMatchTheBuiltInPattern(t *testing.T) {
 			u, v := SphereUV(n)
 			if got := tex.At(u, v); got != want {
 				if bad++; bad < 6 {
-					t.Errorf("lat %.4f lon %.4f: texture %q, built in %q",
+					t.Errorf("lat %.4f lon %.4f: %q was %q",
 						lat, lon, got, want)
 				}
 			}

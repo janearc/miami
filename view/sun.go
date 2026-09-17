@@ -28,7 +28,8 @@ type Sun struct {
 
 // SunAt is the sun at a time of day.
 func SunAt(t time.Time) Sun {
-	h := float64(t.Hour()) + float64(t.Minute())/60 + float64(t.Second())/3600
+	h := float64(t.Hour()) + float64(t.Minute())/60 +
+		float64(t.Second())/3600
 
 	// noon is one, the horizons are nought, midnight is minus one
 	el := math.Sin(math.Pi * (h - 6) / 12)

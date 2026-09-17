@@ -25,8 +25,12 @@ func libraryPage() ([][]cells.Cell, string) {
 		Eye:    view.Eye{At: view.Vec{Y: 0.05}, Lens: 1, Near: 0.05},
 		Lights: []view.Light{{At: view.Vec{X: -1.2, Y: 3.0, Z: 1.6}}},
 		Solids: []view.Solid{
-			view.Floor{Y: -0.55, Tile: 0.62, Far: 9.5, A: 'V', B: 'K', Shade: floorShade},
-			&view.Ball{Radius: 0.3, At: view.Vec{X: 0.45, Y: -0.16, Z: 3.4},
+			view.Floor{
+				Y: -0.55, Tile: 0.62, Far: 9.5, A: 'V', B: 'K',
+				Shade: floorShade,
+			},
+			&view.Ball{Radius: 0.3,
+				At:   view.Vec{X: 0.45, Y: -0.16, Z: 3.4},
 				Spin: view.Vec{X: 0.11, Y: 0.43, Z: 0.07}},
 			// the progress bar, which is a cylinder rather than a
 			// row of blocks: it stands on the floor, the lamp
@@ -43,8 +47,12 @@ func libraryPage() ([][]cells.Cell, string) {
 				// where its bands crowd at the silhouette.
 				// flat roles make a tube look like a plank.
 				Texture: texture.Split{
-					Done: texture.Stripes{A: 'O', B: 'R', Period: 1.0 / 7},
-					Rest: texture.Stripes{A: 'D', B: 'K', Period: 1.0 / 7},
+					Done: texture.Stripes{
+						A: 'O', B: 'R', Period: 1.0 / 7,
+					},
+					Rest: texture.Stripes{
+						A: 'D', B: 'K', Period: 1.0 / 7,
+					},
 					Frac: func() float64 { return 0.58 },
 				},
 			},
@@ -52,10 +60,14 @@ func libraryPage() ([][]cells.Cell, string) {
 	}
 	stage.Sky = func(sh grade.Sheet, at time.Time) grade.Stack {
 		aspect := (float64(sh.H) * 4) / (float64(sh.W) * 3)
-		return sky.At(sh, view.SunAt(at), stage.Lit.Eye.HorizonV(aspect))
+		return sky.At(
+			sh, view.SunAt(at), stage.Lit.Eye.HorizonV(aspect),
+		)
 	}
 
-	title := &app.Text{Font: "small", Row: 1, Col: -1, Ink: app.Vaporwave, Scrim: 0.25}
+	title := &app.Text{
+		Font: "small", Row: 1, Col: -1, Ink: app.Vaporwave, Scrim: 0.25,
+	}
 	title.Set("building")
 	stage.Add(title)
 

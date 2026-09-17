@@ -64,7 +64,9 @@ func BuildMiami(out string, subH int) [][]cells.Cell {
 	// shape.
 	sx := 6
 	sy := int(float64(sx) * 2 * canvas.CellAspect / float64(subH))
-	proof.Must(proof.WritePNGXY("out/"+out+".png", cells.CellsToPixels(cs, 2, subH), sx, sy))
-	proof.Must(os.WriteFile("out/"+out+"-roles.txt", []byte(raster.RoleText(g)), 0o644))
+	px := cells.CellsToPixels(cs, 2, subH)
+	proof.Must(proof.WritePNGXY("out/"+out+".png", px, sx, sy))
+	proof.Must(os.WriteFile("out/"+out+"-roles.txt",
+		[]byte(raster.RoleText(g)), 0o644))
 	return cs
 }

@@ -79,9 +79,12 @@ func (m Affine) Apply(p Vec) Vec {
 
 // Then returns the transform that applies m first and n second.
 func (m Affine) Then(n Affine) Affine {
+	// m's six, spelled short, so each row of the result is one row of the
+	// matrix on one line
+	a, b, c, d, e, f := m.A, m.B, m.C, m.D, m.E, m.F
 	return Affine{
-		A: n.A*m.A + n.B*m.D, B: n.A*m.B + n.B*m.E, C: n.A*m.C + n.B*m.F + n.C,
-		D: n.D*m.A + n.E*m.D, E: n.D*m.B + n.E*m.E, F: n.D*m.C + n.E*m.F + n.F,
+		A: n.A*a + n.B*d, B: n.A*b + n.B*e, C: n.A*c + n.B*f + n.C,
+		D: n.D*a + n.E*d, E: n.D*b + n.E*e, F: n.D*c + n.E*f + n.F,
 	}
 }
 
@@ -96,18 +99,24 @@ func (m Affine) Invert() Affine {
 }
 
 // Translate moves by an offset.
-func Translate(dx, dy float64) Affine { return Affine{A: 1, C: dx, E: 1, F: dy} }
+func Translate(dx, dy float64) Affine {
+	return Affine{A: 1, C: dx, E: 1, F: dy}
+}
 
 // RotateAbout turns by deg degrees about c; positive is clockwise on screen.
 func RotateAbout(c Vec, deg float64) Affine {
 	a := deg * math.Pi / 180
 	s, k := math.Sin(a), math.Cos(a)
-	return Translate(-c.X, -c.Y).Then(Affine{A: k, B: -s, D: s, E: k}).Then(Translate(c.X, c.Y))
+	return Translate(-c.X, -c.Y).
+		Then(Affine{A: k, B: -s, D: s, E: k}).
+		Then(Translate(c.X, c.Y))
 }
 
 // ScaleAbout scales about a point rather than about the origin.
 func ScaleAbout(c Vec, sx, sy float64) Affine {
-	return Translate(-c.X, -c.Y).Then(Affine{A: sx, E: sy}).Then(Translate(c.X, c.Y))
+	return Translate(-c.X, -c.Y).
+		Then(Affine{A: sx, E: sy}).
+		Then(Translate(c.X, c.Y))
 }
 
 type transformed struct {
@@ -138,7 +147,9 @@ func Weight(s Shape, r float64) Shape {
 	ring := make([]Vec, n)
 	for i := range ring {
 		a := 2 * math.Pi * float64(i) / n
-		ring[i] = Vec{math.Abs(r) * math.Cos(a), math.Abs(r) * math.Sin(a)}
+		ring[i] = Vec{
+			math.Abs(r) * math.Cos(a), math.Abs(r) * math.Sin(a),
+		}
 	}
 	return weighted{s, r, ring}
 }

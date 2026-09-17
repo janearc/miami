@@ -92,7 +92,7 @@ type Text struct {
 	Row    int    // cells from the top; negative counts from the bottom
 	Col    int    // cells from the left; -1 centres it
 	Ink    Ramp
-	Scrim  float64 // how far to pull the cells behind it toward dark; 0 is none
+	Scrim  float64 // how far to darken the cells behind it; 0 is none
 	mu     sync.Mutex
 	text   string
 	cached string
@@ -276,8 +276,9 @@ func (b *Bar) Over(cs [][]cells.Cell, f Frame) {
 			cs[row][x] = cells.Cell{Glyph: '▄', Fg: ink.At(t),
 				Bg: dim(ink.At(t), 0.22)}
 		} else {
-			cs[row][x] = cells.Cell{Glyph: '▄', Fg: dim(cs[row][x].Bg, 1.6),
-				Bg: cs[row][x].Bg}
+			bg := cs[row][x].Bg
+			cs[row][x] = cells.Cell{Glyph: '▄', Fg: dim(bg, 1.6),
+				Bg: bg}
 		}
 	}
 	if b.Label != "" || note != "" {
@@ -293,7 +294,9 @@ func (b *Bar) Over(cs [][]cells.Cell, f Frame) {
 }
 
 // drawArt stamps figlet art, placed and themed.
-func drawArt(cs [][]cells.Cell, art []string, row, col int, ink Ramp, scrim float64) {
+func drawArt(
+	cs [][]cells.Cell, art []string, row, col int, ink Ramp, scrim float64,
+) {
 	if len(art) == 0 || len(cs) == 0 {
 		return
 	}
@@ -336,7 +339,9 @@ func writeText(cs [][]cells.Cell, row, col int, s string, fg color.RGBA) {
 
 // setSeparately lays characters side by side without kerning, and says which
 // columns each of the marked character took.
-func setSeparately(f *typeset.FigFont, s string, mark rune) ([]string, [][2]int) {
+func setSeparately(f *typeset.FigFont, s string, mark rune) (
+	[]string, [][2]int,
+) {
 	out := make([]string, f.Height)
 	var spans [][2]int
 	for _, r := range s {
@@ -348,7 +353,9 @@ func setSeparately(f *typeset.FigFont, s string, mark rune) ([]string, [][2]int)
 			}
 		}
 		if r == mark {
-			spans = append(spans, [2]int{len(out[0]), len(out[0]) + w})
+			spans = append(
+				spans, [2]int{len(out[0]), len(out[0]) + w},
+			)
 		}
 		for i := range out {
 			line := ""
@@ -433,7 +440,9 @@ func (e *Emoji) Over(cs [][]cells.Cell, _ Frame) {
 	for y, line := range e.art {
 		for x, c := range line {
 			ty, tx := row+y, col+x
-			if ty < 0 || ty >= len(cs) || tx < 0 || tx >= len(cs[ty]) {
+			outside := ty < 0 || ty >= len(cs) || tx < 0 ||
+				tx >= len(cs[ty])
+			if outside {
 				continue
 			}
 			if c.Bg == cells.Transparent && c.Glyph == ' ' {

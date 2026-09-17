@@ -105,8 +105,8 @@ type Shape struct {
 	Length  float64           `json:"length"`
 	Caps    bool              `json:"caps"`
 	Y       float64           `json:"y"`    // floor: its height
-	Tile    float64           `json:"tile"` // floor: world units to a square
-	Far     float64           `json:"far"`  // floor: where it stops being drawn
+	Tile    float64           `json:"tile"` // floor: world units to a tile
+	Far     float64           `json:"far"`  // floor: where drawing stops
 	Texture *Texture          `json:"texture"`
 	Shade   map[string]string `json:"shade"`
 
@@ -120,7 +120,7 @@ type Shape struct {
 	Scrim   float64  `json:"scrim"`
 	Font    string   `json:"font"`
 	Format  string   `json:"format"`  // clock: a go time layout
-	Flicker bool     `json:"flicker"` // clock: separators out for half a second
+	Flicker bool     `json:"flicker"` // clock: separators out half a second
 	Text    string   `json:"text"`
 	Label   string   `json:"label"`
 	Width   int      `json:"width"`
@@ -168,9 +168,12 @@ func (s *Shape) UnmarshalJSON(b []byte) error {
 		return fmt.Errorf("a shape needs a kind; one of %s", kindList())
 	}
 	if !kinds[p.Kind] {
-		return fmt.Errorf("unknown shape %q; want one of %s", p.Kind, kindList())
+		return fmt.Errorf(
+			"unknown shape %q; want one of %s", p.Kind, kindList(),
+		)
 	}
-	if (p.Kind == "bar" || p.Kind == "cylinder") && p.Name == "" && p.Value == nil {
+	drivable := p.Kind == "bar" || p.Kind == "cylinder"
+	if drivable && p.Name == "" && p.Value == nil {
 		return fmt.Errorf("a %s that nothing drives needs a name, "+
 			"so a program can find it", p.Kind)
 	}
@@ -180,7 +183,8 @@ func (s *Shape) UnmarshalJSON(b []byte) error {
 
 // kindList is the kinds, in a fixed order, for an error a person has to read.
 func kindList() string {
-	return "sky, floor, sphere, cylinder, light, clock, text, bar, emoji, log"
+	return "sky, floor, sphere, cylinder, light, clock, " +
+		"text, bar, emoji, log"
 }
 
 // Texture is a pattern, as a document says it.

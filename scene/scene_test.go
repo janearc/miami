@@ -16,7 +16,10 @@ func TestDuskDocumentMatchesItsParameters(t *testing.T) {
 		t.Fatal(err)
 	}
 	if d.Seconds != 20 || len(d.Layers) != 7 {
-		t.Fatalf("dusk.json: %g seconds, %d layers", d.Seconds, len(d.Layers))
+		t.Fatalf(
+			"dusk.json: %g seconds, %d layers", d.Seconds,
+			len(d.Layers),
+		)
 	}
 	sh := grade.Sextants(40, 12)
 	// the sun sinks and the sky darkens: the same pixel must not be the
@@ -31,7 +34,7 @@ func TestDuskDocumentMatchesItsParameters(t *testing.T) {
 	}
 	u, v := sh.UV(sh.W/2, sh.H/4)
 	if a.At(u, v) == b.At(u, v) {
-		t.Errorf("the sky is the same colour at nought and twenty seconds")
+		t.Errorf("the sky is one colour at nought and at twenty")
 	}
 }
 
@@ -51,7 +54,8 @@ func TestUnknownFieldIsRefused(t *testing.T) {
 // A value binding must actually travel.
 func TestValueTravels(t *testing.T) {
 	var v Value
-	if err := v.UnmarshalJSON([]byte(`{"from":0,"to":1,"ease":"smooth"}`)); err != nil {
+	bind := []byte(`{"from":0,"to":1,"ease":"smooth"}`)
+	if err := v.UnmarshalJSON(bind); err != nil {
 		t.Fatal(err)
 	}
 	if got := v.at(ctx{e: 0}); got != 0 {

@@ -35,7 +35,9 @@ func (n *Node) UnmarshalJSON(b []byte) error {
 		return fmt.Errorf("field: %w", err)
 	}
 	if len(n.raw) != 1 {
-		return fmt.Errorf("a field has exactly one name, got %d", len(n.raw))
+		return fmt.Errorf(
+			"a field has exactly one name, got %d", len(n.raw),
+		)
 	}
 	return nil
 }
@@ -68,7 +70,9 @@ func (n Node) field(c ctx) (field.Field, error) {
 			if err := json.Unmarshal(body, &a); err != nil {
 				return nil, err
 			}
-			return field.Radial{Centre: a.Centre.at(c), Radius: a.Radius.at(c)}, nil
+			return field.Radial{
+				Centre: a.Centre.at(c), Radius: a.Radius.at(c),
+			}, nil
 
 		case "conic":
 			var a struct{ Centre Pt }
@@ -116,7 +120,9 @@ func (n Node) field(c ctx) (field.Field, error) {
 			if err != nil {
 				return nil, err
 			}
-			return grade.Inside(inner, a.At.at(c), a.Soft.at(c)), nil
+			return grade.Inside(
+				inner, a.At.at(c), a.Soft.at(c),
+			), nil
 
 		case "band":
 			var a struct {
@@ -130,7 +136,9 @@ func (n Node) field(c ctx) (field.Field, error) {
 			if err != nil {
 				return nil, err
 			}
-			return grade.Band(inner, a.At.at(c), a.Width.at(c), a.Soft.at(c)), nil
+			return grade.Band(
+				inner, a.At.at(c), a.Width.at(c), a.Soft.at(c),
+			), nil
 
 		case "stripes":
 			var a struct{ Period, Duty, Phase, Lean Value }
@@ -277,7 +285,8 @@ func stars(body []byte, c ctx) (field.Field, error) {
 		if d > size {
 			return 0
 		}
-		bright := 0.55 + 0.45*math.Sin(t*(0.7+rate*hash2(cu+3, cv+5))+h*40)
+		speed := 0.7 + rate*hash2(cu+3, cv+5)
+		bright := 0.55 + 0.45*math.Sin(t*speed+h*40)
 		return (1 - d/size) * bright
 	}), nil
 }

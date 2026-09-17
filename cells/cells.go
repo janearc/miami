@@ -122,7 +122,9 @@ func ToCells(rgb [][]color.RGBA, subW, subH int) [][]Cell {
 			sub := make([]color.RGBA, 0, subW*subH)
 			for y := 0; y < subH; y++ {
 				for x := 0; x < subW; x++ {
-					sub = append(sub, rgb[r*subH+y][c*subW+x])
+					sub = append(
+						sub, rgb[r*subH+y][c*subW+x],
+					)
 				}
 			}
 			line[c] = fit(sub, glyph)
@@ -145,8 +147,10 @@ func ANSI(cells [][]Cell) string {
 	var b strings.Builder
 	for _, row := range cells {
 		for _, c := range row {
-			fmt.Fprintf(&b, "\x1b[38;2;%d;%d;%dm\x1b[48;2;%d;%d;%dm%c",
-				c.Fg.R, c.Fg.G, c.Fg.B, c.Bg.R, c.Bg.G, c.Bg.B, c.Glyph)
+			fmt.Fprintf(
+				&b, "\x1b[38;2;%d;%d;%dm\x1b[48;2;%d;%d;%dm%c",
+				c.Fg.R, c.Fg.G, c.Fg.B, c.Bg.R, c.Bg.G,
+				c.Bg.B, c.Glyph)
 		}
 		b.WriteString("\x1b[0m\n")
 	}
@@ -212,7 +216,7 @@ type Mark struct {
 	X, Y  float64 // physical units
 	Glyph rune
 	Fg    color.RGBA
-	Bg    *color.RGBA // nil keeps the colour that dominates the cell already
+	Bg    *color.RGBA // nil keeps the colour that dominates the cell
 }
 
 // Place writes marks into a grid of cells covering a w by h physical page. two
@@ -223,10 +227,11 @@ func Place(cs [][]Cell, marks []Mark, w, h float64) {
 	for _, m := range marks {
 		c := int(m.X / w * float64(cols))
 		r := int(m.Y / h * float64(rows))
-		if r < 0 || c < 0 || r >= rows || c >= cols || taken[[2]int{r, c}] {
+		key := [2]int{r, c}
+		if r < 0 || c < 0 || r >= rows || c >= cols || taken[key] {
 			continue
 		}
-		taken[[2]int{r, c}] = true
+		taken[key] = true
 		cell := cs[r][c]
 		bg := cell.Bg
 		if m.Bg != nil {
@@ -291,8 +296,13 @@ func Sample(src image.Image, w, h int, ground color.RGBA) [][]color.RGBA {
 			var sr, sg, sb, sa, n float64
 			for py := y0; py < y1; py++ {
 				for px := x0; px < x1; px++ {
-					r, g, bl, a := src.At(px, py).RGBA() // already premultiplied
-					sr, sg, sb, sa = sr+float64(r), sg+float64(g), sb+float64(bl), sa+float64(a)
+					r, g, bl, a := src.At(
+						px, py,
+					).RGBA() // already premultiplied
+					sr += float64(r)
+					sg += float64(g)
+					sb += float64(bl)
+					sa += float64(a)
 					n++
 				}
 			}
@@ -308,8 +318,10 @@ func Sample(src image.Image, w, h int, ground color.RGBA) [][]color.RGBA {
 				}
 				return uint8(v*255 + 0.5)
 			}
-			out[y][x] = color.RGBA{mix(sr, ground.R), mix(sg, ground.G),
-				mix(sb, ground.B), 255}
+			out[y][x] = color.RGBA{
+				mix(sr, ground.R), mix(sg, ground.G),
+				mix(sb, ground.B), 255,
+			}
 		}
 	}
 	return out
@@ -345,7 +357,9 @@ func SampleNearest(src image.Image, w, h int) [][]color.RGBA {
 			// un-premultiply, or a half-covered edge pixel reads as
 			// a dark version of its own colour
 			un := func(c uint32) uint8 { return uint8(c * 255 / a) }
-			out[y][x] = color.RGBA{un(r), un(g), un(bl), uint8(a >> 8)}
+			out[y][x] = color.RGBA{
+				un(r), un(g), un(bl), uint8(a >> 8),
+			}
 		}
 	}
 	return out
@@ -390,12 +404,18 @@ func ToCellsAlpha(rgb [][]color.RGBA, subW, subH int, cut uint8) [][]Cell {
 			}
 			switch {
 			case ink == 0:
-				line[c] = Cell{Glyph: ' ', Fg: Transparent, Bg: Transparent}
+				line[c] = Cell{
+					Glyph: ' ', Fg: Transparent,
+					Bg: Transparent,
+				}
 			case ink == subW*subH:
 				line[c] = fitFlat(sub, glyph)
 			default:
-				line[c] = Cell{Glyph: glyph(mask), Fg: dominant(sub, cut),
-					Bg: Transparent}
+				line[c] = Cell{
+					Glyph: glyph(mask),
+					Fg:    dominant(sub, cut),
+					Bg:    Transparent,
+				}
 			}
 		}
 		out[r] = line
@@ -433,11 +453,17 @@ func ANSIAlpha(cells [][]Cell) string {
 				b.WriteString("\x1b[0m ")
 				continue
 			}
-			fmt.Fprintf(&b, "\x1b[38;2;%d;%d;%dm", c.Fg.R, c.Fg.G, c.Fg.B)
+			fmt.Fprintf(
+				&b, "\x1b[38;2;%d;%d;%dm", c.Fg.R, c.Fg.G,
+				c.Fg.B,
+			)
 			if c.Bg == Transparent {
 				b.WriteString("\x1b[49m")
 			} else {
-				fmt.Fprintf(&b, "\x1b[48;2;%d;%d;%dm", c.Bg.R, c.Bg.G, c.Bg.B)
+				fmt.Fprintf(
+					&b, "\x1b[48;2;%d;%d;%dm", c.Bg.R,
+					c.Bg.G, c.Bg.B,
+				)
 			}
 			b.WriteRune(c.Glyph)
 		}
@@ -448,7 +474,9 @@ func ANSIAlpha(cells [][]Cell) string {
 
 // OnGround expands cells into pixels for previewing, painting transparent cells
 // with the ground the reader's terminal would supply.
-func OnGround(cells [][]Cell, subW, subH int, ground color.RGBA) [][]color.RGBA {
+func OnGround(
+	cells [][]Cell, subW, subH int, ground color.RGBA,
+) [][]color.RGBA {
 	out := CellsToPixels(cells, subW, subH)
 	for r, row := range cells {
 		for c, cell := range row {
@@ -456,9 +484,10 @@ func OnGround(cells [][]Cell, subW, subH int, ground color.RGBA) [][]color.RGBA 
 				continue
 			}
 			for y := 0; y < subH; y++ {
+				dst := out[r*subH+y]
 				for x := 0; x < subW; x++ {
-					if out[r*subH+y][c*subW+x] == Transparent {
-						out[r*subH+y][c*subW+x] = ground
+					if dst[c*subW+x] == Transparent {
+						dst[c*subW+x] = ground
 					}
 				}
 			}
@@ -547,7 +576,9 @@ func PaletteOf(px [][]color.RGBA, n int, tol float64) []color.RGBA {
 		if all[i].n != all[j].n {
 			return all[i].n > all[j].n
 		}
-		return lessRGBA(all[i].c, all[j].c) // ties broken by value, so it is repeatable
+		return lessRGBA(
+			all[i].c, all[j].c,
+		) // ties broken by value, so it is repeatable
 	})
 
 	var pal []ok.OKLab
@@ -575,8 +606,12 @@ func PaletteOf(px [][]color.RGBA, n int, tol float64) []color.RGBA {
 // labOf is a terminal colour in oklab, where a fixed distance means the same
 // amount of visible difference everywhere.
 func labOf(c color.RGBA) ok.OKLab {
-	return ok.FromSwatch(srgb.RGB{
-		R: float64(c.R) / 255, G: float64(c.G) / 255, B: float64(c.B) / 255}.Swatch())
+	rgb := srgb.RGB{
+		R: float64(c.R) / 255,
+		G: float64(c.G) / 255,
+		B: float64(c.B) / 255,
+	}
+	return ok.FromSwatch(rgb.Swatch())
 }
 
 // lessRGBA orders colours by value, so a tie in a count breaks the same way
@@ -612,7 +647,9 @@ func lessRGBA(a, b color.RGBA) bool {
 // Keeping the existing background means a word laid over a picture is type on
 // the picture, and a word laid over nothing is still type on nothing, because
 // nothing is what was already there.
-func Letters(cs [][]Cell, art []string, col, row int, fg func(x, y int) color.RGBA) {
+func Letters(
+	cs [][]Cell, art []string, col, row int, fg func(x, y int) color.RGBA,
+) {
 	for y, line := range art {
 		for x, ch := range line {
 			if ch == ' ' {
@@ -622,7 +659,9 @@ func Letters(cs [][]Cell, art []string, col, row int, fg func(x, y int) color.RG
 			if r < 0 || r >= len(cs) || c < 0 || c >= len(cs[r]) {
 				continue
 			}
-			cs[r][c] = Cell{Glyph: ch, Fg: fg(x, y), Bg: cs[r][c].Bg}
+			cs[r][c] = Cell{
+				Glyph: ch, Fg: fg(x, y), Bg: cs[r][c].Bg,
+			}
 		}
 	}
 }
@@ -701,8 +740,11 @@ func SampleFlat(src image.Image, w, h, n int, tol float64) [][]color.RGBA {
 						continue
 					}
 					opaque++
-					un := func(c uint32) uint8 { return uint8(c * 255 / a) }
-					c := nearest(color.RGBA{un(r), un(g), un(bl), 255})
+					un := func(c uint32) uint8 {
+						return uint8(c * 255 / a)
+					}
+					c := nearest(color.RGBA{un(r), un(g),
+						un(bl), 255})
 					votes[c]++
 					if votes[c] > bestN {
 						best, bestN = c, votes[c]
@@ -784,7 +826,9 @@ func paletteOfImage(src image.Image, n int, tol float64) []color.RGBA {
 			cs = append(cs, cluster{l, s.c, s.n})
 		}
 	}
-	sort.SliceStable(cs, func(i, j int) bool { return cs[i].cover > cs[j].cover })
+	sort.SliceStable(
+		cs, func(i, j int) bool { return cs[i].cover > cs[j].cover },
+	)
 	if len(cs) > n {
 		cs = cs[:n]
 	}
@@ -824,7 +868,10 @@ func fitFlat(sub []color.RGBA, glyph func(int) rune) Cell {
 	}
 	if len(distinct) == 1 {
 		// a solid cell: everything on, so the glyph is the full block
-		return Cell{Glyph: glyph((1 << len(sub)) - 1), Fg: distinct[0], Bg: distinct[0]}
+		return Cell{
+			Glyph: glyph((1 << len(sub)) - 1), Fg: distinct[0],
+			Bg: distinct[0],
+		}
 	}
 	bestErr, best := -1, Cell{Glyph: ' '}
 	for i := 0; i < len(distinct); i++ {
@@ -841,7 +888,9 @@ func fitFlat(sub []color.RGBA, glyph func(int) rune) Cell {
 				}
 			}
 			if bestErr < 0 || e < bestErr {
-				bestErr, best = e, Cell{Glyph: glyph(mask), Fg: fg, Bg: bg}
+				bestErr, best = e, Cell{
+					Glyph: glyph(mask), Fg: fg, Bg: bg,
+				}
 			}
 		}
 	}
@@ -866,8 +915,12 @@ func Delta(prev, cur [][]Cell) string {
 	var haveFg, haveBg bool
 	for r, row := range cur {
 		col := -1
+		var old []Cell
+		if prev != nil && r < len(prev) {
+			old = prev[r]
+		}
 		for c, cell := range row {
-			if prev != nil && r < len(prev) && c < len(prev[r]) && prev[r][c] == cell {
+			if c < len(old) && old[c] == cell {
 				continue
 			}
 			if col != c {
@@ -878,14 +931,20 @@ func Delta(prev, cur [][]Cell) string {
 				haveFg, haveBg = false, false
 			}
 			if !haveFg || cell.Fg != lastFg {
-				fmt.Fprintf(&b, "\x1b[38;2;%d;%d;%dm", cell.Fg.R, cell.Fg.G, cell.Fg.B)
+				fmt.Fprintf(
+					&b, "\x1b[38;2;%d;%d;%dm", cell.Fg.R,
+					cell.Fg.G, cell.Fg.B,
+				)
 				lastFg, haveFg = cell.Fg, true
 			}
 			if !haveBg || cell.Bg != lastBg {
 				if cell.Bg == Transparent {
 					b.WriteString("\x1b[49m")
 				} else {
-					fmt.Fprintf(&b, "\x1b[48;2;%d;%d;%dm", cell.Bg.R, cell.Bg.G, cell.Bg.B)
+					fmt.Fprintf(
+						&b, "\x1b[48;2;%d;%d;%dm",
+						cell.Bg.R, cell.Bg.G, cell.Bg.B,
+					)
 				}
 				lastBg, haveBg = cell.Bg, true
 			}
@@ -913,7 +972,7 @@ func Apply(grid [][]Cell, delta string) {
 			continue
 		}
 		j := i + 2
-		for j < len(delta) && (delta[j] == ';' || (delta[j] >= '0' && delta[j] <= '9')) {
+		for j < len(delta) && paramByte(delta[j]) {
 			j++
 		}
 		args, verb := delta[i+2:j], delta[j]
@@ -925,11 +984,19 @@ func Apply(grid [][]Cell, delta string) {
 			r, c = rr-1, cc-1
 		case 'm':
 			var a, b2, x, y, z int
-			if n, _ := fmt.Sscanf(args, "%d;%d;%d;%d;%d", &a, &b2, &x, &y, &z); n == 5 && b2 == 2 {
+			if n, _ := fmt.Sscanf(
+				args, "%d;%d;%d;%d;%d", &a, &b2, &x, &y, &z,
+			); n == 5 && b2 == 2 {
 				if a == 38 {
-					fg = color.RGBA{uint8(x), uint8(y), uint8(z), 255}
+					fg = color.RGBA{
+						uint8(x), uint8(y), uint8(z),
+						255,
+					}
 				} else {
-					bg = color.RGBA{uint8(x), uint8(y), uint8(z), 255}
+					bg = color.RGBA{
+						uint8(x), uint8(y), uint8(z),
+						255,
+					}
 				}
 			} else if args == "49" {
 				bg = Transparent
@@ -937,6 +1004,10 @@ func Apply(grid [][]Cell, delta string) {
 		}
 	}
 }
+
+// paramByte reports whether b belongs to the numeric argument of a control
+// sequence rather than the letter that ends it.
+func paramByte(b byte) bool { return b == ';' || (b >= '0' && b <= '9') }
 
 // decodeRune is the first rune of a string, and how many bytes it took.
 func decodeRune(s string) (rune, int) {

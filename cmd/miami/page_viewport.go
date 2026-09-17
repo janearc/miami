@@ -12,7 +12,7 @@ import (
 // viewport: one sprite, three distances. Nothing here resizes anything; the
 // objects are asked what they look like and they answer smaller.
 func viewportPage() ([][]cells.Cell, string) {
-	frames, err := motion.ReadStream("sprites/made/starling-flight-full.stream")
+	frames, err := motion.ReadStream(starlingStream)
 	if err != nil {
 		return nil, "no starling: " + err.Error()
 	}
@@ -23,13 +23,18 @@ func viewportPage() ([][]cells.Cell, string) {
 	const cols, rows = 66, 11
 	px := blank(cols*2, rows*3)
 	objs := []view.Object{
-		view.Billboard{Frames: frames, At: view.Vec{X: -0.46, Y: -0.02, Z: 1.5}, Height: 1.05},
-		view.Billboard{Frames: frames, At: view.Vec{X: 0.06, Y: 0.02, Z: 2.5}, Height: 1.05,
+		view.Billboard{Frames: frames, Height: 1.05,
+			At: view.Vec{X: -0.46, Y: -0.02, Z: 1.5}},
+		view.Billboard{Frames: frames, Height: 1.05,
+			At:    view.Vec{X: 0.06, Y: 0.02, Z: 2.5},
 			Phase: 190 * time.Millisecond},
-		view.Billboard{Frames: frames, At: view.Vec{X: 0.52, Y: 0.0, Z: 3.7}, Height: 1.05,
+		view.Billboard{Frames: frames, Height: 1.05,
+			At:    view.Vec{X: 0.52, Y: 0.0, Z: 3.7},
 			Phase: 370 * time.Millisecond},
 	}
-	for _, p := range view.Resolve(objs, view.DefaultEye(), 0, cols*2, rows*3) {
+	for _, p := range view.Resolve(
+		objs, view.DefaultEye(), 0, cols*2, rows*3,
+	) {
 		compose.Blit(px, p.Frame, col, p.X, p.Y)
 	}
 	return cells.ToCells(px, 2, 3), `

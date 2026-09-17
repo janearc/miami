@@ -37,6 +37,10 @@ var single = map[string]func() *raster.Scene{
 	"cassowary": scenes.Cassowary,
 }
 
+// the wingbeat several verbs fly. it is a stream rather than a stencil
+// because the beat is the point, and it is built by "miami anim".
+const starlingStream = "sprites/made/starling-flight-full.stream"
+
 // main is the verb table, dispatched.
 func main() {
 	if len(os.Args) < 2 {
@@ -53,16 +57,20 @@ func main() {
 		fmt.Sscan(os.Args[3], &h)
 		sc := scenes.BulbTest(c, h)
 		proof.RenderScene(sc, c, 3, fmt.Sprintf("bulb-%d", c))
-		g := raster.Rasterize(sc, c*4, int(h*4), 3) // square samples, or the silhouette lies
-		proof.Must(proof.WritePNG(fmt.Sprintf("out/bulb-%d-sil.png", c), proof.Silhouette(g, 'r'), 2))
+		g := raster.Rasterize(
+			sc, c*4, int(h*4), 3,
+		) // square samples, or the silhouette lies
+		proof.Must(proof.WritePNG(
+			fmt.Sprintf("out/bulb-%d-sil.png", c),
+			proof.Silhouette(g, 'r'), 2))
 		return
 	case "sprite":
 		cols := 78
 		if len(os.Args) > 2 {
 			fmt.Sscan(os.Args[2], &cols)
 		}
-		proof.Must(scenes.WriteSprite(scenes.DolphinSprite(), "dolphins",
-			"sprites/made/dolphins.sprite", cols))
+		proof.Must(scenes.WriteSprite(scenes.DolphinSprite(),
+			"dolphins", "sprites/made/dolphins.sprite", cols))
 		fmt.Println("wrote sprites/made/dolphins.sprite")
 		return
 	case "bulbsprite":
@@ -85,13 +93,19 @@ func main() {
 		cs := cells.ToCells(px, 2, 3)
 		proof.Must(write("out/sunset.ansi", []byte(cells.ANSI(cs))))
 		proof.Must(proof.WritePNG("out/sunset-px.png", px, 4))
-		proof.Must(proof.WritePNG("out/sunset.png", cells.CellsToPixels(cs, 2, 3), 4))
+		proof.Must(proof.WritePNG("out/sunset.png",
+			cells.CellsToPixels(cs, 2, 3), 4))
 		cols2, als, names := sh.Contact(scenes.Sunset(sh, 0.52, 0))
 		for i, n := range names {
-			proof.Must(proof.WritePNG("out/sunset-l-"+n+".png", cols2[i], 2))
-			proof.Must(proof.WritePNG("out/sunset-a-"+n+".png", als[i], 2))
+			proof.Must(proof.WritePNG(
+				"out/sunset-l-"+n+".png", cols2[i], 2))
+			proof.Must(proof.WritePNG(
+				"out/sunset-a-"+n+".png", als[i], 2))
 		}
-		fmt.Println("wrote out/sunset.ansi and out/sunset*.png; layers:", names)
+		fmt.Println(
+			"wrote out/sunset.ansi and out/sunset*.png; layers:",
+			names,
+		)
 		return
 	case "sunsetanim":
 		cols, rows, n := 100, 30, 16
@@ -104,11 +118,15 @@ func main() {
 		var frames []string
 		for i := 0; i < n; i++ {
 			ph := float64(i) / float64(n)
-			st := append(scenes.Sunset(sh, 0.52, ph), scenes.Effects(sh, 0.52, ph)...)
+			st := append(
+				scenes.Sunset(sh, 0.52, ph),
+				scenes.Effects(sh, 0.52, ph)...,
+			)
 			px := sh.Paint(st)
 			cs := cells.ToCells(px, 2, 3)
 			frames = append(frames, cells.ANSI(cs))
-			proof.Must(proof.WritePNG(fmt.Sprintf("out/anim-%02d.png", i),
+			proof.Must(proof.WritePNG(
+				fmt.Sprintf("out/anim-%02d.png", i),
 				cells.CellsToPixels(cs, 2, 3), 2))
 		}
 		proof.Must(write("out/sunset-frames.ansi",
@@ -123,7 +141,9 @@ func main() {
 		proof.Must(os.MkdirAll(dir, 0o755))
 		rs, err := scenes.Animations("sprites/made/")
 		proof.Must(err)
-		lit, err := scenes.Lit("sprites/made/", "sprites/made/starling.css")
+		lit, err := scenes.Lit(
+			"sprites/made/", "sprites/made/starling.css",
+		)
 		proof.Must(err)
 		said, err := scenes.WriteAll(dir, append(rs, lit...))
 		proof.Must(err)
@@ -143,11 +163,14 @@ func main() {
 			body string
 		}
 		var frames []fr
-		for _, block := range strings.Split(string(raw), "\nframe ")[1:] {
+		for _, block := range strings.Split(
+			string(raw), "\nframe ",
+		)[1:] {
 			nl := strings.Index(block, "\n")
 			ms := 100
 			fmt.Sscanf(block[:nl], "%dms", &ms)
-			frames = append(frames, fr{time.Duration(ms) * time.Millisecond, block[nl+1:]})
+			hold := time.Duration(ms) * time.Millisecond
+			frames = append(frames, fr{hold, block[nl+1:]})
 		}
 		fmt.Print("\x1b[?25l\x1b[2J")
 		defer fmt.Print("\x1b[?25h\x1b[0m\n")
@@ -167,7 +190,9 @@ func main() {
 		}
 	case "png":
 		if len(os.Args) > 2 && strings.HasSuffix(os.Args[2], ".ansi") {
-			out := "out/" + strings.TrimSuffix(filepath.Base(os.Args[2]), ".ansi") + ".png"
+			out := "out/" + strings.TrimSuffix(
+				filepath.Base(os.Args[2]), ".ansi",
+			) + ".png"
 			if len(os.Args) > 3 {
 				out = os.Args[3]
 			}
@@ -239,8 +264,12 @@ func main() {
 		if shift > 0 {
 			cells.ShiftLeft(cs, shift, color.RGBA{16, 14, 24, 255})
 		}
-		wx := map[string]int{"cassowary": 26, "bender": 40, "libtheme-css": 2}[name]
-		wy := map[string]int{"cassowary": 6, "bender": 6, "libtheme-css": 0}[name]
+		wx := map[string]int{
+			"cassowary": 26, "bender": 40, "libtheme-css": 2,
+		}[name]
+		wy := map[string]int{
+			"cassowary": 6, "bender": 6, "libtheme-css": 0,
+		}[name]
 		var art []string
 		if word != "" {
 			ff, err := typeset.LoadFig("small")
@@ -255,7 +284,10 @@ func main() {
 			ramp = ramp[len(ramp)/2:]
 		}
 		ink := func(x, y int) color.RGBA {
-			return paint.Hot(ramp, float64(y)/math.Max(1, float64(len(art)-1)))
+			return paint.Hot(
+				ramp,
+				float64(y)/math.Max(1, float64(len(art)-1)),
+			)
 		}
 		if name == "libtheme-css" {
 			// coloured from the ramps it stands above, column by
@@ -274,12 +306,16 @@ func main() {
 			// glyph comes out half gold and half blue and reads as
 			// a fault rather than a spectrum
 			ink = func(x, _ int) color.RGBA {
-				t := float64(x) / math.Max(1, float64(wide-1)) * float64(len(marks)-1)
+				t := float64(x) / math.Max(
+					1, float64(wide-1),
+				) * float64(len(marks)-1)
 				i := int(t)
 				if i >= len(marks)-1 {
 					return paint.Hex(marks[len(marks)-1])
 				}
-				return paint.Blend(marks[i], marks[i+1], t-float64(i))
+				return paint.Blend(
+					marks[i], marks[i+1], t-float64(i),
+				)
 			}
 		}
 		if art != nil {
@@ -316,7 +352,9 @@ func main() {
 		if hi > lo {
 			for y := range lum {
 				for x := range lum[y] {
-					lum[y][x] = math.Pow((lum[y][x]-lo)/(hi-lo), 0.75)
+					lum[y][x] = math.Pow(
+						(lum[y][x]-lo)/(hi-lo), 0.75,
+					)
 				}
 			}
 		}
@@ -326,19 +364,28 @@ func main() {
 				if ch == ' ' {
 					continue
 				}
-				if r2, c2 := wy+y, wx+x; r2 < len(tone) && c2 < len(tone[r2]) {
-					tone[r2][c2] = ch
+				r2, c2 := wy+y, wx+x
+				if r2 >= len(tone) || c2 >= len(tone[r2]) {
+					continue
 				}
+				tone[r2][c2] = ch
 			}
 		}
 		var plain strings.Builder
 		for _, r2 := range tone {
-			plain.WriteString(strings.TrimRight(string(r2), " ") + "\n")
+			plain.WriteString(
+				strings.TrimRight(string(r2), " ") + "\n")
 		}
-		proof.Must(write("dist/"+name+"-plain.txt", []byte(plain.String())))
+		proof.Must(write("dist/"+name+"-plain.txt",
+			[]byte(plain.String())))
 		proof.Must(proof.SaveImage("out/card-"+name+".png",
-			proof.NewCellImageOn(proof.Mono(), 9, 18, color.RGBA{16, 14, 24, 255}).Draw(cs)))
-		fmt.Printf("dist/%s.ansi  %d cols x %d rows\n", name, cols, rows)
+			proof.NewCellImageOn(
+				proof.Mono(), 9, 18,
+				color.RGBA{16, 14, 24, 255},
+			).Draw(cs)))
+		fmt.Printf(
+			"dist/%s.ansi  %d cols x %d rows\n", name, cols, rows,
+		)
 		return
 	case "bench":
 		bench(os.Args[2:])
@@ -362,43 +409,52 @@ func main() {
 		var prev [][]cells.Cell
 		hold := time.Duration(float64(time.Second) / float64(fps))
 		n := int(secs*float64(fps) + 0.5)
-		fmt.Fprintf(&out, "# a ball over a floor, and a shadow cast by a located light.\n")
+		fmt.Fprintf(&out, "# a ball over a floor, and a shadow"+
+			" cast by a located light.\n")
 		for i := 0; i < n; i++ {
 			t := float64(i) / float64(fps)
 			e := t / secs
-			sc := view.Lit{
-				// the floor sits below the eye and the eye
-				// looks along it
-				Eye: view.Eye{At: view.Vec{Y: 0.30}, Lens: 1.0, Near: 0.05},
-				// the lamp: high, and behind the ball as well
-				// as above it, so its shadow is thrown toward
-				// the viewer.
-				//
-				// with the lamp in front, every shadow fell
-				// away from the camera and hid behind the thing
-				// casting it.
-				Lights: []view.Light{{At: view.Vec{X: -1.2, Y: 3.0, Z: 1.6}}},
-				Solids: []view.Solid{
-					view.Floor{Y: -0.55, Tile: 0.62, Far: 9.5, A: 'V', B: 'K',
-						// a shadow is a remap, so every
-						// colour in it was already
-						// chosen by the colourway
-						Shade: map[byte]byte{'V': 'K', 'K': 'D'}},
-					// a bounce: the height is a sine's
-					// absolute, so it arrives at the
-					// floor rather than easing into it
-					&view.Ball{
-						At: view.Vec{
-							X: 1.30 * math.Sin(2*math.Pi*e),
-							Y: -0.21 + 0.66*math.Abs(math.Sin(3*math.Pi*e)),
-							Z: 3.6 - 0.7*math.Cos(2*math.Pi*e),
-						},
-						Radius: 0.34,
-						Spin:   view.Vec{X: 0.11, Y: 0.43, Z: 0.07},
-					},
-				},
+			// the floor sits below the eye and the eye looks
+			// along it
+			eye := view.Eye{
+				At: view.Vec{Y: 0.30}, Lens: 1.0, Near: 0.05,
 			}
-			f := sc.Trace(time.Duration(t*float64(time.Second)), cols, rows)
+			floor := view.Floor{
+				Y: -0.55, Tile: 0.62, Far: 9.5, A: 'V', B: 'K',
+				// a shadow is a remap, so every colour in it
+				// was already chosen by the colourway
+				Shade: map[byte]byte{'V': 'K', 'K': 'D'},
+			}
+			// a bounce: the height is a sine's absolute, so it
+			// arrives at the floor rather than easing into it
+			bounce := math.Abs(math.Sin(3 * math.Pi * e))
+			ball := &view.Ball{
+				At: view.Vec{
+					X: 1.30 * math.Sin(2*math.Pi*e),
+					Y: -0.21 + 0.66*bounce,
+					Z: 3.6 - 0.7*math.Cos(2*math.Pi*e),
+				},
+				Radius: 0.34,
+				Spin:   view.Vec{X: 0.11, Y: 0.43, Z: 0.07},
+			}
+			// the lamp: high, and behind the ball as well as
+			// above it, so its shadow is thrown toward the
+			// viewer.
+			//
+			// with the lamp in front, every shadow fell away from
+			// the camera and hid behind the thing casting it.
+			lamp := view.Light{
+				At: view.Vec{X: -1.2, Y: 3.0, Z: 1.6},
+			}
+			sc := view.Lit{
+				Eye:    eye,
+				Lights: []view.Light{lamp},
+				Solids: []view.Solid{floor, ball},
+			}
+			f := sc.Trace(
+				time.Duration(t*float64(time.Second)), cols,
+				rows,
+			)
 			px := make([][]color.RGBA, rows*3)
 			for y := range px {
 				px[y] = make([]color.RGBA, cols*2)
@@ -416,7 +472,9 @@ func main() {
 			}
 			prev = cs
 			if i%(n/6) == 0 && i/(n/6) < 6 {
-				proof.Must(proof.WritePNGXY(fmt.Sprintf("out/shadow-%d.png", i/(n/6)),
+				k := i / (n / 6)
+				proof.Must(proof.WritePNGXY(
+					fmt.Sprintf("out/shadow-%d.png", k),
 					cells.CellsToPixels(cs, 2, 3), 3, 4))
 			}
 		}
@@ -443,7 +501,10 @@ func main() {
 		var prev [][]cells.Cell
 		hold := time.Duration(float64(time.Second) / float64(fps))
 		n := int(secs*float64(fps) + 0.5)
-		fmt.Fprintf(&out, "# a checkered ball: spinning, scaling and moving.\n")
+		fmt.Fprintf(
+			&out,
+			"# a checkered ball: spinning, scaling and moving.\n",
+		)
 		for i := 0; i < n; i++ {
 			t := float64(i) / float64(fps)
 			e := t / secs
@@ -466,8 +527,10 @@ func main() {
 				Radius: 0.42,
 				Spin:   view.Vec{X: 0.13, Y: 0.37, Z: 0.05},
 			}
-			for _, p := range view.Resolve([]view.Object{ball}, eye,
-				time.Duration(t*float64(time.Second)), sh.W, sh.H) {
+			at := time.Duration(t * float64(time.Second))
+			for _, p := range view.Resolve(
+				[]view.Object{ball}, eye, at, sh.W, sh.H,
+			) {
 				compose.Blit(px, p.Frame, col, p.X, p.Y)
 			}
 			cs := cells.ToCells(px, 2, 3)
@@ -479,7 +542,9 @@ func main() {
 			}
 			prev = cs
 			if i%(n/8) == 0 && i/(n/8) < 8 {
-				proof.Must(proof.WritePNGXY(fmt.Sprintf("out/ball-%d.png", i/(n/8)),
+				k := i / (n / 8)
+				proof.Must(proof.WritePNGXY(
+					fmt.Sprintf("out/ball-%d.png", k),
 					cells.CellsToPixels(cs, 2, 3), 3, 4))
 			}
 		}
@@ -492,26 +557,34 @@ func main() {
 		spin := view.Ball{At: view.Vec{Z: 2.4}, Radius: 0.42,
 			Spin: view.Vec{X: 0.13, Y: 0.37, Z: 0.05}}
 		for i := 0; i < n; i++ {
-			f := spin.Render(eye, time.Duration(float64(i)/float64(fps)*float64(time.Second)), 24)
+			ns := float64(i) / float64(fps) * float64(time.Second)
+			f := spin.Render(eye, time.Duration(ns), 24)
 			f.Hold = hold
 			baked = append(baked, f)
 		}
-		proof.Must(motion.WriteDoc("out/ball-full.json", "ball", baked, false))
-		proof.Must(motion.WriteDoc("out/ball.json", "ball", baked, true))
+		proof.Must(motion.WriteDoc(
+			"out/ball-full.json", "ball", baked, false))
+		proof.Must(motion.WriteDoc(
+			"out/ball.json", "ball", baked, true))
 		back, err := motion.ReadDoc("out/ball.json")
 		proof.Must(err)
 		for i := range baked {
 			for y := range baked[i].Art {
-				if back[i].Art[y] != baked[i].Art[y] {
-					proof.Must(fmt.Errorf("frame %d row %d did not replay", i, y))
+				if back[i].Art[y] == baked[i].Art[y] {
+					continue
 				}
+				proof.Must(fmt.Errorf(
+					"frame %d row %d did not replay",
+					i, y))
 			}
 		}
 		a, _ := os.Stat("out/ball-full.json")
 		b2, _ := os.Stat("out/ball.json")
 		fmt.Printf("%d frames -> out/ball.frames\n", n)
-		fmt.Printf("baked %d frames: full %d bytes, deltas %d bytes (%.0f%%), replayed exactly\n",
-			len(baked), a.Size(), b2.Size(), 100*float64(b2.Size())/float64(a.Size()))
+		pct := 100 * float64(b2.Size()) / float64(a.Size())
+		fmt.Printf("baked %d frames: full %d bytes,"+
+			" deltas %d bytes (%.0f%%), replayed exactly\n",
+			len(baked), a.Size(), b2.Size(), pct)
 		return
 	case "flock":
 		// a flock at different depths over the dusk. every bird is the
@@ -526,7 +599,7 @@ func main() {
 		sh := grade.Sextants(cols, rows)
 		doc, err := scene.Load("scenes/dusk.json")
 		proof.Must(err)
-		frames, err := motion.ReadStream("sprites/made/starling-flight-full.stream")
+		frames, err := motion.ReadStream(starlingStream)
 		proof.Must(err)
 		col, err := compose.Colours("sprites/made/starling.css")
 		proof.Must(err)
@@ -559,7 +632,8 @@ func main() {
 		var prev [][]cells.Cell
 		hold := time.Duration(float64(time.Second) / float64(fps))
 		n := int(secs*float64(fps) + 0.5)
-		fmt.Fprintf(&out, "# a flock at nine depths over a dusk. one sprite, one viewport.\n")
+		fmt.Fprintf(&out, "# a flock at nine depths over a dusk."+
+			" one sprite, one viewport.\n")
 		for i := 0; i < n; i++ {
 			t := float64(i) / float64(fps)
 			st, err := doc.At(t)
@@ -568,20 +642,24 @@ func main() {
 
 			objs := make([]view.Object, 0, len(birds))
 			for _, b := range birds {
+				// wrapped, so the sky does not empty out:
+				//
+				// a bird that leaves on the right comes back
+				// on the left, and at its own depth nobody can
+				// tell it is the same one
+				x := math.Mod(b.x0+b.speed*t+4.5, 9) - 4.5
+				y := b.y + 0.05*math.Sin(t*0.9+b.z)
 				objs = append(objs, view.Billboard{
-					Frames: frames, Height: 0.5, Phase: b.phase,
-					// wrapped, so the sky does not empty
-					// out:
-					//
-					// a bird that leaves on the right comes
-					// back on the left, and at its own
-					// depth nobody can tell it is the same
-					// one
-					At: view.Vec{X: math.Mod(b.x0+b.speed*t+4.5, 9) - 4.5,
-						Y: b.y + 0.05*math.Sin(t*0.9+b.z), Z: b.z},
+					Frames: frames, Height: 0.5,
+					Phase: b.phase,
+					At:    view.Vec{X: x, Y: y, Z: b.z},
 				})
 			}
-			for _, p := range view.Resolve(objs, eye, time.Duration(t*float64(time.Second)), sh.W, sh.H) {
+			for _, p := range view.Resolve(
+				objs, eye,
+				time.Duration(t*float64(time.Second)), sh.W,
+				sh.H,
+			) {
 				compose.Blit(px, p.Frame, col, p.X, p.Y)
 			}
 
@@ -594,7 +672,9 @@ func main() {
 			}
 			prev = cs
 			if i%(n/6) == 0 && i/(n/6) < 6 {
-				proof.Must(proof.WritePNGXY(fmt.Sprintf("out/flock-%d.png", i/(n/6)),
+				k := i / (n / 6)
+				proof.Must(proof.WritePNGXY(
+					fmt.Sprintf("out/flock-%d.png", k),
 					cells.CellsToPixels(cs, 2, 3), 3, 4))
 			}
 		}
@@ -615,7 +695,7 @@ func main() {
 		doc, err := scene.Load("scenes/dusk.json")
 		proof.Must(err)
 		secs = doc.Seconds
-		bird, err := motion.ReadStream("sprites/made/starling-flight-full.stream")
+		bird, err := motion.ReadStream(starlingStream)
 		proof.Must(err)
 		col, err := compose.Colours("sprites/made/starling.css")
 		proof.Must(err)
@@ -625,8 +705,12 @@ func main() {
 		hold := time.Duration(float64(time.Second) / float64(fps))
 		var out strings.Builder
 		var prev [][]cells.Cell
-		fmt.Fprintf(&out, "# a dusk that does not repeat, and a starling crossing it.\n")
-		fmt.Fprintf(&out, "# %d by %d cells, %d frames at %d per second.\n", cols, rows, n, fps)
+		fmt.Fprintf(&out, "# a dusk that does not repeat,"+
+			" and a starling crossing it.\n")
+		fmt.Fprintf(
+			&out, "# %d by %d cells, %d frames at %d per second.\n",
+			cols, rows, n, fps,
+		)
 		for i := 0; i < n; i++ {
 			t := float64(i) / float64(fps)
 			st, err := doc.At(t)
@@ -640,7 +724,8 @@ func main() {
 			x := int(float64(-bw) + float64(cols*2+2*bw)*e)
 			y := int(float64(rows*3)*(0.62-0.34*e) - float64(bh)/2 +
 				float64(rows)*0.22*math.Sin(2*math.Pi*t/6.4))
-			compose.Over(px, compose.At(bird, time.Duration(t*float64(time.Second))), col, x, y)
+			at := time.Duration(t * float64(time.Second))
+			compose.Over(px, compose.At(bird, at), col, x, y)
 
 			cs := cells.ToCells(px, 2, 3)
 			fmt.Fprintf(&out, "\nframe %dms\n", hold.Milliseconds())
@@ -653,22 +738,18 @@ func main() {
 			// onto the previous frame and it must give this one
 			// back exactly
 			if prev != nil {
-				echo := make([][]cells.Cell, len(prev))
-				for i := range prev {
-					echo[i] = append([]cells.Cell(nil), prev[i]...)
-				}
-				cells.Apply(echo, cells.Delta(prev, cs))
-				for r := range echo {
-					for c := range echo[r] {
-						if echo[r][c] != cs[r][c] {
-							proof.Must(fmt.Errorf("frame %d: delta does not replay at %d,%d", i, r, c))
-						}
-					}
+				if r, c, ok := replayed(prev, cs); !ok {
+					proof.Must(fmt.Errorf(
+						"frame %d: delta does not"+
+							" replay at %d,%d",
+						i, r, c))
 				}
 			}
 			prev = cs
 			if i%(n/6) == 0 && i/(n/6) < 6 {
-				proof.Must(proof.WritePNGXY(fmt.Sprintf("out/fly-%d.png", i/(n/6)),
+				k := i / (n / 6)
+				proof.Must(proof.WritePNGXY(
+					fmt.Sprintf("out/fly-%d.png", k),
 					cells.CellsToPixels(cs, 2, 3), 3, 4))
 			}
 		}
@@ -694,24 +775,28 @@ func main() {
 			proof.Must(err)
 			got := sh.Paint(st)
 			cs := cells.ToCells(got, 2, 3)
-			proof.Must(proof.WritePNGXY(fmt.Sprintf("out/scene-%d.png", i),
+			proof.Must(proof.WritePNGXY(
+				fmt.Sprintf("out/scene-%d.png", i),
 				cells.CellsToPixels(cs, 2, 3), 3, 4))
 			want := sh.Paint(scenes.Dusk(sh, t, doc.Seconds))
 		compare:
 			for y := range want {
 				for x := range want[y] {
-					if want[y][x] != got[y][x] {
-						fmt.Printf("t=%.0f differs first at %d,%d: go %v json %v\n",
-							t, x, y, want[y][x], got[y][x])
-						same = false
-						break compare
+					if want[y][x] == got[y][x] {
+						continue
 					}
+					fmt.Printf("t=%.0f differs first"+
+						" at %d,%d: go %v json %v\n",
+						t, x, y, want[y][x], got[y][x])
+					same = false
+					break compare
 				}
 			}
 			_ = i
 		}
 		if same {
-			fmt.Println("json scene paints the same pixels as the go scene, at every sample")
+			fmt.Println("json scene paints the same pixels" +
+				" as the go scene, at every sample")
 		}
 		return
 	case "dusk":
@@ -722,8 +807,11 @@ func main() {
 		}
 		sh := grade.Sextants(cols, rows)
 		for i, t := range []float64{0, 4, 8, 12, 16, 20} {
-			cs := cells.ToCells(sh.Paint(scenes.Dusk(sh, t, 20)), 2, 3)
-			proof.Must(proof.WritePNGXY(fmt.Sprintf("out/dusk-%d.png", i),
+			cs := cells.ToCells(
+				sh.Paint(scenes.Dusk(sh, t, 20)), 2, 3,
+			)
+			proof.Must(proof.WritePNGXY(
+				fmt.Sprintf("out/dusk-%d.png", i),
 				cells.CellsToPixels(cs, 2, 3), 3, 4))
 		}
 		fmt.Println("wrote six dusk samples")
@@ -756,7 +844,8 @@ func main() {
 		// image's own aspect and then halved. that is the only place
 		// the aspect is applied.
 		ib := img.Bounds()
-		rows := int(float64(cols)*float64(ib.Dy())/float64(ib.Dx())/2 + 0.5)
+		iw, ih := float64(ib.Dx()), float64(ib.Dy())
+		rows := int(float64(cols)*ih/iw/2 + 0.5)
 		// palette first, then snap, then vote down: reducing after
 		// sampling lets the source's anti-aliased edges into the
 		// palette
@@ -780,9 +869,11 @@ func main() {
 		if art != nil {
 			ramp := paint.ByLightness(cells.PaletteOf(px, n, 0.055))
 			top := (len(cs) - len(art)) / 2
-			cells.Letters(cs, art, cols+2, top, func(x, y int) color.RGBA {
-				return paint.Hot(ramp, float64(y)/math.Max(1, float64(len(art)-1)))
-			})
+			last := math.Max(1, float64(len(art)-1))
+			cells.Letters(cs, art, cols+2, top,
+				func(x, y int) color.RGBA {
+					return paint.Hot(ramp, float64(y)/last)
+				})
 		}
 		name := fmt.Sprintf("out/emoji-%X", cp)
 		proof.Must(write(name+".ansi", []byte(cells.ANSIAlpha(cs))))
@@ -797,9 +888,14 @@ func main() {
 		for _, g := range []struct {
 			suffix string
 			ground color.RGBA
-		}{{"", color.RGBA{18, 16, 28, 255}}, {"-light", color.RGBA{238, 236, 230, 255}}} {
+		}{
+			{"", color.RGBA{18, 16, 28, 255}},
+			{"-light", color.RGBA{238, 236, 230, 255}},
+		} {
 			proof.Must(proof.SaveImage(name+g.suffix+".png",
-				proof.NewCellImageOn(proof.Mono(), 14, 28, g.ground).Draw(cs)))
+				proof.NewCellImageOn(
+					proof.Mono(), 14, 28, g.ground,
+				).Draw(cs)))
 		}
 		fmt.Printf("%U at %dx%d cells (ppem %d) -> %s.ansi\n",
 			cp, len(cs[0]), len(cs), bm.PPEM, name)
@@ -814,14 +910,18 @@ func main() {
 			fmt.Sscan(os.Args[3], &cols)
 		}
 		sc := scenes.WordSprite(text, 100, 5)
-		proof.Must(scenes.WriteSprite(sc, "word", "sprites/made/word.sprite", cols))
+		proof.Must(scenes.WriteSprite(sc, "word",
+			"sprites/made/word.sprite", cols))
 		fmt.Println("wrote sprites/made/word.sprite")
 		return
 	case "dolphins":
 		sc := scenes.Dolphins()
-		g := raster.Rasterize(sc, int(sc.W*5), int(sc.H*5), 3)
-		proof.Must(proof.WritePNG("out/dolphins-sil.png", proof.Silhouette(g), 1))
-		proof.Must(proof.WritePNG("out/dolphins-grey.png", raster.Resolve(g, sc, 0, 0, int(sc.W*5), int(sc.H*5)), 1))
+		gw, gh := int(sc.W*5), int(sc.H*5)
+		g := raster.Rasterize(sc, gw, gh, 3)
+		proof.Must(proof.WritePNG("out/dolphins-sil.png",
+			proof.Silhouette(g), 1))
+		proof.Must(proof.WritePNG("out/dolphins-grey.png",
+			raster.Resolve(g, sc, 0, 0, gw, gh), 1))
 		cols := 76
 		if len(os.Args) > 2 {
 			fmt.Sscan(os.Args[2], &cols)
@@ -830,10 +930,16 @@ func main() {
 		return
 	case "lights":
 		sc, marks := scenes.Lights(canvas.Manpage)
-		proof.Page(sc, canvas.Manpage.Cols, "lights", scenes.LightsText, marks)
+		proof.Page(
+			sc, canvas.Manpage.Cols, "lights", scenes.LightsText,
+			marks,
+		)
 		return
 	case "specimen":
-		proof.RenderScene(scenes.Specimen(canvas.Manpage), canvas.Manpage.Cols, 3, "specimen")
+		proof.RenderScene(
+			scenes.Specimen(canvas.Manpage), canvas.Manpage.Cols, 3,
+			"specimen",
+		)
 		return
 	case "faces":
 		for _, f := range os.Args[2:] {
@@ -873,12 +979,16 @@ func main() {
 		g := raster.Rasterize(sc, gw, gh, 3)
 		switch mode {
 		case "sil":
-			proof.Must(proof.WritePNG("out/"+os.Args[1]+"-sil.png", proof.Silhouette(g, 'P', 'x'), 2))
+			proof.Must(proof.WritePNG(
+				"out/"+os.Args[1]+"-sil.png",
+				proof.Silhouette(g, 'P', 'x'), 2))
 		case "roles":
 			fmt.Print(raster.RoleText(g))
 		default:
 			raster.Contour(g, 'O', 1)
-			proof.Must(proof.WritePNG("out/"+os.Args[1]+".png", raster.Resolve(g, sc, 0, 0, gw, gh), 2))
+			proof.Must(proof.WritePNG(
+				"out/"+os.Args[1]+".png",
+				raster.Resolve(g, sc, 0, 0, gw, gh), 2))
 		}
 	case "term":
 		rows := raster.TermRows(sc, cols)
@@ -888,9 +998,30 @@ func main() {
 		rgb := raster.Resolve(g, sc, 0, 0, gw, gh)
 		cs := cells.ToCells(rgb, 2, 3)
 		fmt.Print(cells.ANSI(cs))
-		proof.Must(proof.WritePNGXY("out/"+os.Args[1]+"-term.png", cells.CellsToPixels(cs, 2, 3), 7, 9))
+		proof.Must(proof.WritePNGXY("out/"+os.Args[1]+"-term.png",
+			cells.CellsToPixels(cs, 2, 3), 7, 9))
 		fmt.Fprintf(os.Stderr, "%d cols x %d rows\n", cols, rows)
 	}
+}
+
+// replayed applies the delta from prev and reports whether it gives cs back
+// exactly. On a difference it names the first cell that disagrees, because
+// "the delta is wrong" is not a thing anyone can act on at four in the
+// morning.
+func replayed(prev, cs [][]cells.Cell) (int, int, bool) {
+	echo := make([][]cells.Cell, len(prev))
+	for i := range prev {
+		echo[i] = append([]cells.Cell(nil), prev[i]...)
+	}
+	cells.Apply(echo, cells.Delta(prev, cs))
+	for r := range echo {
+		for c := range echo[r] {
+			if echo[r][c] != cs[r][c] {
+				return r, c, false
+			}
+		}
+	}
+	return 0, 0, true
 }
 
 // bigBirds renders the negative-space piece at a size, with its knobs.

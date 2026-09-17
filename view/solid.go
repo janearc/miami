@@ -27,7 +27,9 @@ type Solid interface {
 	// is at a moment is set by whoever is moving it, before the frame is
 	// drawn; what a spinning ball is showing at a moment is the shape's own
 	// business, and this is how it knows.
-	Hit(r Ray, t float64, near, far float64) (dist float64, role byte, ok bool)
+	Hit(r Ray, t float64, near, far float64) (
+		dist float64, role byte, ok bool,
+	)
 
 	// Blocks says whether this shape stands in the segment of the ray
 	// between near and far. It is the shadow question, and it is separate

@@ -25,11 +25,18 @@ func (a ArchPanel) arc() (geom.Vec, float64) {
 func (a ArchPanel) Shape(inset float64) geom.Shape {
 	cen, r := a.arc()
 	rect := geom.Poly{P: geom.Pts(
-		geom.Vec{X: a.X0 + inset, Y: a.Crown + inset}, geom.Vec{X: a.X1 - inset, Y: a.Crown + inset},
-		geom.Vec{X: a.X1 - inset, Y: a.Bottom - inset}, geom.Vec{X: a.X0 + inset, Y: a.Bottom - inset})}
+		geom.Vec{X: a.X0 + inset, Y: a.Crown + inset}, geom.Vec{
+			X: a.X1 - inset, Y: a.Crown + inset,
+		},
+		geom.Vec{X: a.X1 - inset, Y: a.Bottom - inset}, geom.Vec{
+			X: a.X0 + inset, Y: a.Bottom - inset,
+		})}
 	top := geom.Union(
 		geom.Ellipse{C: cen, Rx: r - inset, Ry: r - inset},
-		geom.HalfPlane{C: geom.Vec{X: 0, Y: a.Spring}, N: geom.Vec{X: 0, Y: -1}},
+		geom.HalfPlane{
+			C: geom.Vec{X: 0, Y: a.Spring},
+			N: geom.Vec{X: 0, Y: -1},
+		},
 	)
 	return geom.Intersect(rect, top)
 }
@@ -51,10 +58,14 @@ func (a ArchPanel) Border(inset, spacing float64) []geom.Vec {
 	const n = 60
 	for i := 0; i <= n; i++ {
 		t := aL + (aR-aL)*float64(i)/n
-		path = append(path, geom.Vec{X: cen.X + ri*math.Cos(t), Y: cen.Y + ri*math.Sin(t)})
+		path = append(path, geom.Vec{X: cen.X + ri*math.Cos(t),
+			Y: cen.Y + ri*math.Sin(t)})
 	}
 	yb := a.Bottom - inset
-	path = append(path, geom.Vec{X: x1, Y: yb}, geom.Vec{X: x0, Y: yb}, geom.Vec{X: x0, Y: yJoin})
+	path = append(
+		path, geom.Vec{X: x1, Y: yb}, geom.Vec{X: x0, Y: yb},
+		geom.Vec{X: x0, Y: yJoin},
+	)
 	return Along(path, spacing)
 }
 
@@ -88,7 +99,8 @@ func along(path []geom.Vec, spacing float64) []geom.Vec {
 		l := math.Hypot(b.X-a.X, b.Y-a.Y)
 		for d := carry; d < l; d += spacing {
 			t := d / l
-			out = append(out, geom.Vec{X: a.X + (b.X-a.X)*t, Y: a.Y + (b.Y-a.Y)*t})
+			out = append(out, geom.Vec{X: a.X + (b.X-a.X)*t,
+				Y: a.Y + (b.Y-a.Y)*t})
 		}
 		carry = math.Mod(carry-l, spacing)
 		if carry < 0 {
@@ -116,8 +128,9 @@ func Sparkle(c geom.Vec, arm float64) geom.Shape {
 		a := float64(i)*math.Pi/3 + math.Pi/6
 		l := arm
 		w := arm * 0.17
+		tip := geom.Vec{X: c.X + l*math.Cos(a), Y: c.Y + l*math.Sin(a)}
 		s = append(s, geom.Taper{
-			P: []geom.Vec{c, {X: c.X + l*math.Cos(a), Y: c.Y + l*math.Sin(a)}},
+			P: []geom.Vec{c, tip},
 			R: []float64{w, w * 0.2},
 		})
 	}
@@ -132,10 +145,15 @@ type Arrow struct {
 // Shape is the arrow as geometry: a shaft and a head.
 func (a Arrow) Shape() geom.Shape {
 	hx := a.X1 - a.HeadLen
+	top, bot := a.Y-a.Shaft/2, a.Y+a.Shaft/2
+	hTop, hBot := a.Y-a.Head/2, a.Y+a.Head/2
 	return geom.Union(
-		geom.Poly{P: geom.Pts(geom.Vec{X: a.X0, Y: a.Y - a.Shaft/2}, geom.Vec{X: hx, Y: a.Y - a.Shaft/2},
-			geom.Vec{X: hx, Y: a.Y + a.Shaft/2}, geom.Vec{X: a.X0, Y: a.Y + a.Shaft/2})},
-		geom.Poly{P: geom.Pts(geom.Vec{X: hx, Y: a.Y - a.Head/2}, geom.Vec{X: a.X1, Y: a.Y}, geom.Vec{X: hx, Y: a.Y + a.Head/2})},
+		geom.Poly{P: geom.Pts(
+			geom.Vec{X: a.X0, Y: top}, geom.Vec{X: hx, Y: top},
+			geom.Vec{X: hx, Y: bot}, geom.Vec{X: a.X0, Y: bot})},
+		geom.Poly{P: geom.Pts(
+			geom.Vec{X: hx, Y: hTop}, geom.Vec{X: a.X1, Y: a.Y},
+			geom.Vec{X: hx, Y: hBot})},
 	)
 }
 
@@ -145,9 +163,11 @@ func (a Arrow) Lights(inset, spacing float64) []geom.Vec {
 	top, bot := a.Y-a.Shaft/2+inset, a.Y+a.Shaft/2-inset
 	// the head's edges, pulled in along their normals by roughly inset
 	tip := geom.Vec{X: a.X1 - inset*2.2, Y: a.Y}
+	x0, flank := a.X0+inset, hx+inset*0.4
 	path := []geom.Vec{
-		{X: a.X0 + inset, Y: bot}, {X: a.X0 + inset, Y: top}, {X: hx, Y: top},
-		{X: hx + inset*0.4, Y: a.Y - a.Head/2 + inset*1.8}, tip,
-		{X: hx + inset*0.4, Y: a.Y + a.Head/2 - inset*1.8}, {X: hx, Y: bot}, {X: a.X0 + inset, Y: bot}}
+		{X: x0, Y: bot}, {X: x0, Y: top}, {X: hx, Y: top},
+		{X: flank, Y: a.Y - a.Head/2 + inset*1.8}, tip,
+		{X: flank, Y: a.Y + a.Head/2 - inset*1.8},
+		{X: hx, Y: bot}, {X: x0, Y: bot}}
 	return Along(path, spacing)
 }

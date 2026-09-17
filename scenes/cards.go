@@ -44,7 +44,9 @@ const Band = 5.0 / 17.0
 // LibthemeMarks are the six ramps' top notes, in order. The wordmark is
 // coloured from them column by column, so the mark is made of the palette it
 // sits above rather than of a colour somebody liked.
-var LibthemeMarks = []string{"ff8f4a", "9df7f2", "ff8ad0", "f5c542", "8fc0f2", "c9c2cc"}
+var LibthemeMarks = []string{
+	"ff8f4a", "9df7f2", "ff8ad0", "f5c542", "8fc0f2", "c9c2cc",
+}
 
 // Libtheme is the colour library's card, and it has no form on purpose.
 func Libtheme(sh grade.Sheet) grade.Stack {
@@ -80,9 +82,12 @@ func Libtheme(sh grade.Sheet) grade.Stack {
 			stops = append(stops, float64(k)/float64(len(run)-1), c)
 		}
 		st = append(st, grade.Layer{
-			Name:  "band",
-			Field: field.Linear{A: field.Point{U: 0.03}, B: field.Point{U: 0.97}},
-			Ramp:  grade.Ramp(stops...),
+			Name: "band",
+			Field: field.Linear{
+				A: field.Point{U: 0.03},
+				B: field.Point{U: 0.97},
+			},
+			Ramp: grade.Ramp(stops...),
 			// a hard band: the edge between two ramps is the only
 			// line in the picture, and a soft one would read as a
 			// seventh colour
@@ -141,21 +146,42 @@ func Bender() *raster.Scene {
 	}
 	sc := &raster.Scene{W: w, H: h}
 	for _, p := range plates {
-		sc.Parts = append(sc.Parts, raster.Part{Role: p.role, Shape: geom.Intersect(head,
-			geom.Poly{P: geom.Pts(at(p.x0, p.y0), at(p.x1, p.y0), at(p.x1, p.y1), at(p.x0, p.y1))},
-		)})
+		box := geom.Poly{P: geom.Pts(
+			at(p.x0, p.y0), at(p.x1, p.y0),
+			at(p.x1, p.y1), at(p.x0, p.y1))}
+		sc.Parts = append(sc.Parts, raster.Part{Role: p.role,
+			Shape: geom.Intersect(head,
+				box,
+			)})
 	}
 	// two eyes, cut into the face plates so they belong to the head rather
 	// than sitting on it
 	sc.Parts = append(sc.Parts,
-		raster.Part{Role: 'o', Shape: geom.Ellipse{C: at(29, 26.8), Rx: 3.8, Ry: 3.1}},
-		raster.Part{Role: 'i', Shape: geom.Ellipse{C: at(29, 26.8), Rx: 1.8, Ry: 1.5}},
-		raster.Part{Role: 'o', Shape: geom.Ellipse{C: at(54, 26.8), Rx: 3.8, Ry: 3.1}},
-		raster.Part{Role: 'i', Shape: geom.Ellipse{C: at(54, 26.8), Rx: 1.8, Ry: 1.5}},
+		raster.Part{
+			Role:  'o',
+			Shape: geom.Ellipse{C: at(29, 26.8), Rx: 3.8, Ry: 3.1},
+		},
+		raster.Part{
+			Role:  'i',
+			Shape: geom.Ellipse{C: at(29, 26.8), Rx: 1.8, Ry: 1.5},
+		},
+		raster.Part{
+			Role:  'o',
+			Shape: geom.Ellipse{C: at(54, 26.8), Rx: 3.8, Ry: 3.1},
+		},
+		raster.Part{
+			Role:  'i',
+			Shape: geom.Ellipse{C: at(54, 26.8), Rx: 1.8, Ry: 1.5},
+		},
 		// an aerial, because a robot has one
 		raster.Part{Role: '4', Shape: geom.Taper{
-			P: []geom.Vec{at(57, 3.5), at(62, 0.8)}, R: []float64{0.7, 0.7}}},
-		raster.Part{Role: 'o', Shape: geom.Ellipse{C: at(62.6, 0.9), Rx: 1.8, Ry: 1.5}},
+			P: []geom.Vec{at(57, 3.5), at(62, 0.8)}, R: []float64{
+				0.7, 0.7,
+			}}},
+		raster.Part{
+			Role:  'o',
+			Shape: geom.Ellipse{C: at(62.6, 0.9), Rx: 1.8, Ry: 1.5},
+		},
 	)
 	sc.Pal = map[byte]color.RGBA{
 		'1': {58, 52, 86, 255},
@@ -171,7 +197,11 @@ func Bender() *raster.Scene {
 		'i': {20, 16, 26, 255},
 	}
 	sc.MinCover = map[byte]float64{'i': 0.25, 'o': 0.30, '4': 0.30}
-	sc.Bg = func(x, y float64) color.RGBA { return color.RGBA{16, 14, 24, 255} }
+	sc.Bg = func(
+		x, y float64,
+	) color.RGBA {
+		return color.RGBA{16, 14, 24, 255}
+	}
 	return sc
 }
 
@@ -179,5 +209,8 @@ func Bender() *raster.Scene {
 // and magenta to gold, which shows a mixer doing its job because a
 // magenta-to-orange run is exactly where a bad one goes through mud.
 func PageRamp() functions.Ramp {
-	return grade.Ramp(0.0, "120631", 0.3, "5a2071", 0.55, "c63f6b", 0.8, "ff8f4a", 1.0, "ffd08a")
+	return grade.Ramp(
+		0.0, "120631", 0.3, "5a2071", 0.55, "c63f6b", 0.8, "ff8f4a",
+		1.0, "ffd08a",
+	)
 }

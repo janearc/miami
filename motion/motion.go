@@ -19,9 +19,9 @@
 //	       and majority-voted per pixel, the same way a cell is decided,
 //	       because a nearest-neighbour rotation of a one-pixel feather
 //	       tears it into dashes.
-//	Role   an edit addressed by what a pixel is, never by where it is. Blink
-//	       closes whatever the pupil and eye-ring roles cover; a stencil
-//	       carrying no eye gets no blink and no error.
+//	Role   an edit addressed by what a pixel is, never by where it is.
+//	       Blink closes whatever the pupil and eye-ring roles cover; a
+//	       stencil carrying no eye gets no blink and no error.
 //
 // One warning worth putting at the top, because it cost a rebuild to find: a
 // warp that is not an exact whole-pixel translation runs the stencil through
@@ -60,7 +60,11 @@ func All(int, int) bool { return true }
 
 // Box owns a rectangle.
 func Box(x0, y0, x1, y1 int) Mask {
-	return func(x, y int) bool { return x >= x0 && x < x1 && y >= y0 && y < y1 }
+	return func(
+		x, y int,
+	) bool {
+		return x >= x0 && x < x1 && y >= y0 && y < y1
+	}
 }
 
 // Left owns the columns before x.
@@ -123,12 +127,16 @@ func Warp(f sprite.Frame, inv Map, owns Mask, o ...WarpOpts) sprite.Frame {
 			var votes [256]int
 			seen := order[:0]
 			hits := 0
+			fx, fy := float64(x), float64(y)
 			for sy := 0; sy < opt.Sub; sy++ {
 				for sx := 0; sx < opt.Sub; sx++ {
-					px := float64(x) + (float64(sx)+0.5)*step - 0.5
-					py := float64(y) + (float64(sy)+0.5)*step - 0.5
+					px := fx + (float64(sx)+0.5)*step - 0.5
+					py := fy + (float64(sy)+0.5)*step - 0.5
 					ux, uy := inv(px, py)
-					c := At(f, int(math.Round(ux)), int(math.Round(uy)))
+					c := At(
+						f, int(math.Round(ux)),
+						int(math.Round(uy)),
+					)
 					if c == None {
 						continue
 					}
@@ -230,7 +238,8 @@ func Bend(cx, cy, deg, span, k, sx float64) Map {
 // the canvas, and a negative x under a fractional power is not a real number.
 func Undulate(amp func(x float64) float64, wavelength, phase float64) Map {
 	return func(x, y float64) (float64, float64) {
-		dy := amp(math.Max(0, x)) * math.Sin(2*math.Pi*x/wavelength-phase)
+		grow := amp(math.Max(0, x))
+		dy := grow * math.Sin(2*math.Pi*x/wavelength-phase)
 		return x, y - dy
 	}
 }
@@ -308,13 +317,21 @@ func Components(f sprite.Frame) [][]Pt {
 				p := stack[len(stack)-1]
 				stack = stack[:len(stack)-1]
 				cells = append(cells, p)
-				for _, n := range []Pt{{p.X + 1, p.Y}, {p.X - 1, p.Y},
-					{p.X, p.Y + 1}, {p.X, p.Y - 1}} {
-					if n.X >= 0 && n.X < w && n.Y >= 0 && n.Y < h &&
-						!seen[n.Y][n.X] && f.Art[n.Y][n.X] != None {
-						seen[n.Y][n.X] = true
-						stack = append(stack, n)
+				nbrs := []Pt{
+					{p.X + 1, p.Y}, {p.X - 1, p.Y},
+					{p.X, p.Y + 1}, {p.X, p.Y - 1},
+				}
+				for _, n := range nbrs {
+					inside := n.X >= 0 && n.X < w &&
+						n.Y >= 0 && n.Y < h
+					if !inside || seen[n.Y][n.X] {
+						continue
 					}
+					if f.Art[n.Y][n.X] == None {
+						continue
+					}
+					seen[n.Y][n.X] = true
+					stack = append(stack, n)
 				}
 			}
 			out = append(out, cells)
@@ -494,7 +511,8 @@ func ReadSprite(path string) (sprite.Frame, error) {
 		lines := strings.Split(text, "\n")
 		for i, l := range lines {
 			if strings.TrimSpace(l) == "art" {
-				lines = append(lines[:i], append([]string{"frame"}, lines[i:]...)...)
+				rest := append([]string{"frame"}, lines[i:]...)
+				lines = append(lines[:i], rest...)
 				break
 			}
 		}
@@ -595,7 +613,9 @@ func Hold(f sprite.Frame, ms int) sprite.Frame {
 // separates a stream from a bare sprite.
 func hasFrameLine(s string) bool {
 	for _, l := range strings.Split(s, "\n") {
-		if t := strings.TrimSpace(l); t == "frame" || strings.HasPrefix(t, "frame ") {
+		if t := strings.TrimSpace(l); t == "frame" || strings.HasPrefix(
+			t, "frame ",
+		) {
 			return true
 		}
 	}

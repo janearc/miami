@@ -30,7 +30,8 @@ func DetectGround(want string) Ground {
 	if strings.HasPrefix(want, "#") && len(want) == 7 {
 		v, err := strconv.ParseUint(want[1:], 16, 32)
 		if err == nil {
-			return Ground{C: color.RGBA{uint8(v >> 16), uint8(v >> 8), uint8(v), 255}}
+			return Ground{C: color.RGBA{
+				uint8(v >> 16), uint8(v >> 8), uint8(v), 255}}
 		}
 	}
 	// COLORFGBG is "fg;bg" in terminal colour numbers; 0 to 6 and 8 are

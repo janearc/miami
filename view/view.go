@@ -14,7 +14,7 @@
 //
 //	occlusion   whoever is nearer wins, and alpha says where they are
 //	scale       a sprite asked from further away comes back smaller
-//	facing      an object with several poses returns the one that faces you
+//	facing      an object with several poses returns the one facing you
 //	a ray       walk the objects front to back and stop at the first alpha
 //
 // The last one is the point. A ray does not need to intersect a surface; it
@@ -42,7 +42,7 @@ type Vec struct{ X, Y, Z float64 }
 // Eye is where the picture is seen from.
 type Eye struct {
 	At   Vec     // where the viewer is
-	Lens float64 // picture-plane units across the sheet; smaller is longer lens
+	Lens float64 // sheet width in picture-plane units; smaller is longer
 	Near float64 // anything closer than this is behind the viewer
 	// Yaw and Pitch turn the view, in radians. Pitch is positive looking
 	// up. Only the ray tracer reads them: a billboard has nothing to
@@ -109,7 +109,9 @@ type Billboard struct {
 }
 
 // Extent is where the billboard hangs.
-func (b Billboard) Extent(time.Duration) (Vec, float64) { return b.At, b.Height }
+func (b Billboard) Extent(time.Duration) (Vec, float64) {
+	return b.At, b.Height
+}
 
 // Render scales the frame it is showing. A drawn sprite has no choice: it was
 // drawn at one size and everything else is a resample.
@@ -121,7 +123,8 @@ func (b Billboard) Render(_ Eye, t time.Duration, rows int) sprite.Frame {
 	// keep its proportions: a daffy pixel is one column by half a row, and
 	// a sextant subcell is half a column by a third, so a sprite pixel is
 	// two subcells across and one and a half down
-	w := int(float64(rows) * float64(f.Width()) / float64(f.Height()) * 2 / 3)
+	fw, fh := float64(f.Width()), float64(f.Height())
+	w := int(float64(rows) * fw / fh * 2 / 3)
 	if w < 1 {
 		w = 1
 	}
@@ -173,7 +176,8 @@ func (s Turning) Render(e Eye, t time.Duration, rows int) sprite.Frame {
 	if f.Height() == 0 {
 		return f
 	}
-	w := int(float64(rows) * float64(f.Width()) / float64(f.Height()) * 2 / 3)
+	fw, fh := float64(f.Width()), float64(f.Height())
+	w := int(float64(rows) * fw / fh * 2 / 3)
 	if w < 1 {
 		w = 1
 	}
@@ -229,11 +233,15 @@ func Resolve(objs []Object, e Eye, t time.Duration, subW, subH int) []Placed {
 		if x+w < 0 || x >= subW || y+h < 0 || y >= subH {
 			continue
 		}
-		out = append(out, Placed{Frame: f, X: x, Y: y, W: w, H: f.Height(), Depth: d})
+		out = append(out, Placed{
+			Frame: f, X: x, Y: y, W: w, H: f.Height(), Depth: d,
+		})
 	}
 	// far first, so nearer objects paint over them. this is the whole of
 	// occlusion when everything composites by alpha.
-	sort.SliceStable(out, func(i, j int) bool { return out[i].Depth > out[j].Depth })
+	sort.SliceStable(out, func(i, j int) bool {
+		return out[i].Depth > out[j].Depth
+	})
 	return out
 }
 

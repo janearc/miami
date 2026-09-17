@@ -57,7 +57,7 @@ const (
 
 // Layer is one gradient and how much of it there is.
 type Layer struct {
-	Name  string // reported when a layer contributes nothing, so a typo is visible
+	Name  string // reported when a layer contributes nothing; a typo shows
 	Field field.Field
 	Ramp  functions.Ramp
 	Alpha field.Field // nil is fully present
@@ -182,7 +182,8 @@ func ToRGBA(sw swatch.Swatch) color.RGBA {
 	if !ok {
 		xy := srgb.Gamut.Fit(sw.XY())
 		_, luminance, _ := sw.XYZ()
-		c, _ = srgb.FromSwatch(swatch.FromXY(xy, math.Min(1, luminance)))
+		lum := math.Min(1, luminance)
+		c, _ = srgb.FromSwatch(swatch.FromXY(xy, lum))
 	}
 	q := func(v float64) uint8 {
 		return uint8(math.Round(math.Max(0, math.Min(1, v)) * 255))
@@ -272,7 +273,9 @@ func step(t, duty float64) float64 {
 //
 // So the inspector is part of the package rather than a thing rebuilt by hand
 // each time.
-func (s Sheet) Contact(st Stack) (colour, alpha [][][]color.RGBA, names []string) {
+func (s Sheet) Contact(st Stack) (
+	colour, alpha [][][]color.RGBA, names []string,
+) {
 	for _, l := range st {
 		c := make([][]color.RGBA, s.H)
 		a := make([][]color.RGBA, s.H)
@@ -287,7 +290,8 @@ func (s Sheet) Contact(st Stack) (colour, alpha [][][]color.RGBA, names []string
 					t = l.Alpha.T(u, v)
 				}
 				t *= l.Gain
-				g := uint8(math.Round(math.Max(0, math.Min(1, t)) * 255))
+				clamped := math.Max(0, math.Min(1, t))
+				g := uint8(math.Round(clamped * 255))
 				a[y][x] = color.RGBA{g, g, g, 255}
 			}
 		}

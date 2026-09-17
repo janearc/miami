@@ -40,34 +40,36 @@ type verb struct{ name, args, what string }
 
 var verbs = []verb{
 	{"card", "<name>", "a repository card, 75 by 17, colour escapes only"},
-	{"emoji", "<hex> [cols] [colours] [word] [font]", "an emoji from the system font, as cells"},
-	{"scene", "<file.json> [cols] [rows]", "render a scene document, and diff it against its go twin"},
-	{"fly", "[cols rows secs fps]", "a starling crossing a dusk, to out/fly.frames"},
-	{"flock", "[cols rows secs]", "nine birds at nine depths, to out/flock.frames"},
-	{"ball", "[cols rows secs]", "a checkered ball spinning, scaling and moving"},
+	{"emoji", "<hex> [cols] [n] [word] [font]", "an emoji, as cells"},
+	{"scene", "<file.json> [cols rows]", "a document, and its go twin"},
+	{"fly", "[cols rows secs fps]", "a starling crossing a dusk"},
+	{"flock", "[cols rows secs]", "nine birds at nine depths"},
+	{"ball", "[cols rows secs]", "a checkered ball, spinning and moving"},
 	{"dusk", "[cols rows]", "six samples across the twenty seconds"},
-	{"sunset", "[cols rows]", "the vaporwave stack, plus every layer on its own"},
-	{"sunsetanim", "[cols rows n]", "the same with its effect layers running"},
-	{"anim", "[dir]", "rebuild every sprite animation, from the stencils"},
-	{"clock", "[cols rows fps]", "a vaporwave clock, generated as it is shown"},
-	{"bench", "", "what a size costs, and which ceiling it hits first"},
+	{"sunset", "[cols rows]", "the vaporwave stack, and each layer"},
+	{"sunsetanim", "[cols rows n]", "the same, with its effects running"},
+	{"anim", "[dir]", "rebuild every animation from the stencils"},
+	{"clock", "[cols rows fps]", "a vaporwave clock, made as it is shown"},
+	{"bench", "", "what a size costs, and which ceiling first"},
 	{"play", "<file.frames> [loop]", "play a frames file to this terminal"},
-	{"check", "<file>", "say what a document holds and what is wrong with it"},
-	{"docs", "[page] [--png|--go]", "the documentation, painted; --png so an agent can see it"},
-	{"png", "<file.ansi> [out.png]", "render an ansi file to a png, so it can be looked at"},
+	{"check", "<file>", "what a document holds, and what is wrong"},
+	{"docs", "[page] [--png|--go]", "the documentation, painted"},
+	{"png", "<file.ansi> [out.png]", "an ansi file as a png, to look at"},
 	{"sprite", "[cols]", "emit the dolphin stencil"},
 	{"bulbsprite", "[cols]", "emit the bulb stencil, cold"},
 	{"word", "<text> [cols]", "set a word as a stencil"},
 	{"bb", "<cols> <rows>", "the big.birds negative-space piece"},
 	{"lights", "", "the roadside sign"},
 	{"miami", "[term]", "the composite scene"},
-	{"<scene>", "<png|sil|roles|term> [cols]", "macaw, palm, car, cassowary: one drawing"},
+	{"<scene>", "<png|sil|roles|term> [cols]", "macaw, palm, car"},
 }
 
-// usage prints what miami is and every verb, and is the only place a verb is
-// described.
-func usage() {
-	fmt.Println(`miami draws for terminals: stills, motion, effects and lighting.
+// about is what miami is, in the words the bare command prints.
+//
+// At the margin rather than indented inside the function: a raw string
+// keeps every tab in it, so prose nested two levels deep is eighty columns
+// of sentence plus sixteen of indent, and the lint counts both.
+const about = `miami draws for terminals: stills, motion, effects and lighting.
 
 It paints with fields and ramps, moves stencils in daffy's eleven-role
 alphabet, and composites the two by alpha. Output is cells -- sextant glyphs,
@@ -81,7 +83,12 @@ If you are an agent: you cannot see an escape sequence, so do not try. Every
 verb here writes a png beside its output, and "miami docs PAGE --png" and
 "miami png FILE.ansi" render anything else. Open the png, look at it, and
 change one thing. That loop is how this library was built and it is the only
-way to tell whether a picture works.`)
+way to tell whether a picture works.`
+
+// usage prints what miami is and every verb, and is the only place a verb is
+// described.
+func usage() {
+	fmt.Println(about)
 	fmt.Println("\nverbs:")
 	for _, v := range verbs {
 		fmt.Printf("  %-12s %-38s %s\n", v.name, v.args, v.what)

@@ -26,7 +26,7 @@ type Scene struct {
 	MinCover map[byte]float64
 
 	// Shade runs after the palette and background have given a sample its
-	// colour. it sees the role and the PHYSICAL position, so it can lay a
+	// colour. it sees the role and the physical position, so it can lay a
 	// gradient on a part or light spilling across everything. nil does
 	// nothing.
 	Shade func(role byte, x, y float64, c color.RGBA) color.RGBA
@@ -56,7 +56,10 @@ func ToneField(g *Grid, sc *Scene) (f [][]float64, ok bool) {
 				continue
 			}
 			if sc.ToneBg != nil {
-				row[x] = sc.ToneBg((float64(x)+0.5)/float64(g.W)*sc.W, (float64(y)+0.5)/float64(g.H)*sc.H)
+				row[x] = sc.ToneBg(
+					(float64(x)+0.5)/float64(g.W)*sc.W,
+					(float64(y)+0.5)/float64(g.H)*sc.H,
+				)
 			}
 		}
 		f[y] = row
@@ -100,6 +103,8 @@ func Rasterize(sc *Scene, gw, gh, ss int) *Grid {
 	g := &Grid{W: gw, H: gh, SX: sc.W / float64(gw), SY: sc.H / float64(gh)}
 	g.Rows = make([][]byte, gh)
 	var tally [256]int
+	fss := float64(ss)
+	parts := sc.Parts
 	for y := 0; y < gh; y++ {
 		row := make([]byte, gw)
 		for x := 0; x < gw; x++ {
@@ -107,14 +112,17 @@ func Rasterize(sc *Scene, gw, gh, ss int) *Grid {
 				tally[i] = 0
 			}
 			for sy := 0; sy < ss; sy++ {
+				// subsample centre, as a fraction of a cell
+				oy := (float64(sy) + 0.5) / fss
 				for sx := 0; sx < ss; sx++ {
-					px := (float64(x) + (float64(sx)+0.5)/float64(ss)) * g.SX
-					py := (float64(y) + (float64(sy)+0.5)/float64(ss)) * g.SY
+					ox := (float64(sx) + 0.5) / fss
+					px := (float64(x) + ox) * g.SX
+					py := (float64(y) + oy) * g.SY
 					r := byte(Empty)
 					p := geom.Vec{X: px, Y: py}
-					for i := len(sc.Parts) - 1; i >= 0; i-- {
-						if sc.Parts[i].Shape.In(p) {
-							r = sc.Parts[i].Role
+					for i := len(parts) - 1; i >= 0; i-- {
+						if parts[i].Shape.In(p) {
+							r = parts[i].Role
 							break
 						}
 					}
@@ -132,7 +140,10 @@ func Rasterize(sc *Scene, gw, gh, ss int) *Grid {
 				pn := 0
 				for r := 0; r < 256; r++ {
 					f, ok := sc.MinCover[byte(r)]
-					if ok && tally[r] > pn && float64(tally[r]) >= f*total {
+					if !ok || tally[r] <= pn {
+						continue
+					}
+					if float64(tally[r]) >= f*total {
 						best, pn = byte(r), tally[r]
 					}
 				}
@@ -155,7 +166,9 @@ func Contour(g *Grid, role byte, thick int) {
 					continue
 				}
 				hit := false
-				for _, d := range [][2]int{{1, 0}, {-1, 0}, {0, 1}, {0, -1}} {
+				for _, d := range [][2]int{
+					{1, 0}, {-1, 0}, {0, 1}, {0, -1},
+				} {
 					n := g.At(x+d[0], y+d[1])
 					if n != Empty && n != role {
 						hit = true

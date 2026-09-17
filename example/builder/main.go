@@ -35,15 +35,22 @@ func main() {
 	// a sky that knows the time of day, and a ball on a floor under it
 	stage.Sky = func(sh grade.Sheet, at time.Time) grade.Stack {
 		aspect := (float64(sh.H) * 4) / (float64(sh.W) * 3)
-		return sky.At(sh, view.SunAt(at), stage.Lit.Eye.HorizonV(aspect))
+		return sky.At(
+			sh, view.SunAt(at), stage.Lit.Eye.HorizonV(aspect),
+		)
 	}
-	ball := &view.Ball{Radius: 0.34, Spin: view.Vec{X: 0.11, Y: 0.43, Z: 0.07}}
+	ball := &view.Ball{
+		Radius: 0.34, Spin: view.Vec{X: 0.11, Y: 0.43, Z: 0.07},
+	}
 	stage.Lit = &view.Lit{
 		Eye:    view.Eye{At: view.Vec{Y: 0.05}, Lens: 1, Near: 0.05},
 		Lights: []view.Light{{At: view.Vec{X: -1.2, Y: 3.0, Z: 1.6}}},
 		Solids: []view.Solid{
-			view.Floor{Y: -0.55, Tile: 0.62, Far: 9.5, A: 'V', B: 'K',
-				Shade: map[byte]byte{'V': 'K', 'K': 'D', 'D': 'E'}},
+			view.Floor{
+				Y: -0.55, Tile: 0.62, Far: 9.5, A: 'V', B: 'K',
+				Shade: map[byte]byte{
+					'V': 'K', 'K': 'D', 'D': 'E',
+				}},
 			ball,
 		},
 	}
@@ -57,8 +64,8 @@ func main() {
 	stage.Add(bar)
 
 	// the work. it knows nothing about frames and is not on their clock.
-	steps := []string{"geom", "raster", "cells", "paint", "typeset", "grade",
-		"scene", "motion", "effect", "view", "compose", "app"}
+	steps := []string{"geom", "raster", "cells", "paint", "typeset",
+		"grade", "scene", "motion", "effect", "view", "compose", "app"}
 	var done int64
 	go func() {
 		for i, s := range steps {

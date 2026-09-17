@@ -13,10 +13,16 @@ func Palm() *raster.Scene {
 	// leans left, so it frames the left edge of the composite and arches
 	// away from the subject rather than into it.
 	trunk := geom.Taper{
-		P: []geom.Vec{{X: 64, Y: 150}, {X: 60, Y: 126}, {X: 53, Y: 100}, {X: 45, Y: 76}, {X: 40, Y: 60}},
+		P: []geom.Vec{
+			{X: 64, Y: 150}, {X: 60, Y: 126}, {X: 53, Y: 100},
+			{X: 45, Y: 76}, {X: 40, Y: 60},
+		},
 		R: []float64{5.0, 4.2, 3.4, 2.8, 2.4},
 	}
-	shaft := geom.Taper{P: []geom.Vec{{X: 41, Y: 66}, {X: 40, Y: 56}}, R: []float64{2.8, 4.0}}
+	shaft := geom.Taper{
+		P: []geom.Vec{{X: 41, Y: 66}, {X: 40, Y: 56}},
+		R: []float64{2.8, 4.0},
+	}
 	crown := geom.Vec{X: 40, Y: 56}
 
 	// six fronds, three a side, 35-40 degrees apart at launch. any more and
@@ -32,7 +38,9 @@ func Palm() *raster.Scene {
 	}
 	var fronds []geom.Shape
 	for _, f := range specs {
-		fronds = append(fronds, motifs.Frond(crown, f.ang, f.bend, f.len, f.w))
+		fronds = append(
+			fronds, motifs.Frond(crown, f.ang, f.bend, f.len, f.w),
+		)
 	}
 
 	nuts := geom.Union(
@@ -52,6 +60,10 @@ func Palm() *raster.Scene {
 		'C': {46, 32, 50, 255},
 		'O': {22, 14, 34, 255},
 	}
-	sc.Bg = func(x, y float64) color.RGBA { return color.RGBA{240, 170, 120, 255} }
+	sc.Bg = func(
+		x, y float64,
+	) color.RGBA {
+		return color.RGBA{240, 170, 120, 255}
+	}
 	return sc
 }

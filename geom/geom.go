@@ -154,5 +154,8 @@ func Cat(groups ...[]Vec) []Vec {
 func Rotate(p, c Vec, deg float64) Vec {
 	a := deg * math.Pi / 180
 	dx, dy := p.X-c.X, p.Y-c.Y
-	return Vec{c.X + dx*math.Cos(a) - dy*math.Sin(a), c.Y + dx*math.Sin(a) + dy*math.Cos(a)}
+	return Vec{
+		c.X + dx*math.Cos(a) - dy*math.Sin(a),
+		c.Y + dx*math.Sin(a) + dy*math.Cos(a),
+	}
 }

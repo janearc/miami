@@ -32,7 +32,9 @@ func TestStreamsMatchGolden(t *testing.T) {
 	for _, r := range append(runs, lit...) {
 		t.Run(r.name, func(t *testing.T) {
 			var got bytes.Buffer
-			if err := motion.WriteStream(&got, r.name, r.note, r.frames); err != nil {
+			if err := motion.WriteStream(
+				&got, r.name, r.note, r.frames,
+			); err != nil {
 				t.Fatal(err)
 			}
 			want, err := os.ReadFile(made + r.name + ".stream")
@@ -40,7 +42,9 @@ func TestStreamsMatchGolden(t *testing.T) {
 				t.Fatal(err)
 			}
 			if !bytes.Equal(got.Bytes(), want) {
-				t.Errorf("%s differs from the golden stream (%d bytes vs %d)",
+				t.Errorf(
+					"%s differs from the golden stream "+
+						"(%d bytes vs %d)",
 					r.name, got.Len(), len(want))
 			}
 		})
@@ -54,7 +58,9 @@ func TestBlinkWithoutAnEye(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := motion.Blink(f, 1, "", ""); got.Art[0] != f.Art[0] || len(got.Art) != len(f.Art) {
+	if got := motion.Blink(
+		f, 1, "", "",
+	); got.Art[0] != f.Art[0] || len(got.Art) != len(f.Art) {
 		t.Errorf("blink changed a stencil with no eye roles")
 	}
 }
@@ -70,7 +76,10 @@ func TestIntegerTranslateIsLossless(t *testing.T) {
 	back := motion.Warp(down, motion.Translate(0, -3), motion.All)
 	for y := 0; y < f.Height()-3; y++ {
 		if back.Art[y] != f.Art[y] {
-			t.Fatalf("row %d changed under a whole-pixel round trip", y)
+			t.Fatalf(
+				"row %d changed under a whole-pixel round trip",
+				y,
+			)
 		}
 	}
 }

@@ -17,7 +17,7 @@ import (
 // halved twice.
 
 var bbSky = []paint.Stop{
-	// the horizon must stay DARKER than the sun. ramping the sky to gold
+	// the horizon must stay darker than the sun. ramping the sky to gold
 	// made the sky brighter than the disc and the sun lost its edge
 	// entirely.
 	{At: 0.00, C: color.RGBA{24, 8, 60, 255}},
@@ -47,7 +47,7 @@ func BigBirds(cols, rows int) *raster.Scene {
 	u := float64(cols)
 	v := float64(rows) * canvas.CellAspect
 	hy := 0.850 * v
-	// scale the round and tall things off the SMALLER of the two
+	// scale the round and tall things off the smaller of the two
 	// dimensions. keying them to height alone made the sun eat 84 percent
 	// of a square frame and pushed both palm crowns off the edge.
 	s := math.Min(v, 0.70*u)
@@ -66,8 +66,14 @@ func BigBirds(cols, rows int) *raster.Scene {
 	// wordmark, and two dark shapes of the same value that overlap stop
 	// being two shapes.
 	palms := geom.Union(append(
-		motifs.PalmAt(geom.Vec{X: 0.135 * u, Y: hy + 0.006*v}, 0.680*s, -0.046*u, false, -4),
-		motifs.PalmAt(geom.Vec{X: 0.885 * u, Y: hy + 0.004*v}, 0.510*s, -0.034*u, true, 3)...)...)
+		motifs.PalmAt(
+			geom.Vec{X: 0.135 * u, Y: hy + 0.006*v}, 0.680*s,
+			-0.046*u, false, -4,
+		),
+		motifs.PalmAt(
+			geom.Vec{X: 0.885 * u, Y: hy + 0.004*v}, 0.510*s,
+			-0.034*u, true, 3,
+		)...)...)
 
 	raw, _, _ := typeset.ParseInk(bbFigs)
 	ink := typeset.Erode(raw, BBErodeUp, BBErodeIter)
@@ -82,11 +88,17 @@ func BigBirds(cols, rows int) *raster.Scene {
 	//
 	// they are the only thing living in the negative space.
 	birds := geom.Union(
-		motifs.BirdAt(geom.Vec{X: 0.560 * u, Y: 0.148 * v}, 0.110*u, -7),
+		motifs.BirdAt(
+			geom.Vec{X: 0.560 * u, Y: 0.148 * v}, 0.110*u, -7,
+		),
 		motifs.BirdAt(geom.Vec{X: 0.668 * u, Y: 0.258 * v}, 0.078*u, 5),
-		motifs.BirdAt(geom.Vec{X: 0.726 * u, Y: 0.100 * v}, 0.060*u, -4),
+		motifs.BirdAt(
+			geom.Vec{X: 0.726 * u, Y: 0.100 * v}, 0.060*u, -4,
+		),
 		motifs.BirdAt(geom.Vec{X: 0.430 * u, Y: 0.062 * v}, 0.070*u, 6),
-		motifs.BirdAt(geom.Vec{X: 0.615 * u, Y: 0.058 * v}, 0.048*u, -5),
+		motifs.BirdAt(
+			geom.Vec{X: 0.615 * u, Y: 0.058 * v}, 0.048*u, -5,
+		),
 	)
 
 	sc.Parts = []raster.Part{
@@ -105,11 +117,15 @@ func BigBirds(cols, rows int) *raster.Scene {
 			g := paint.Ramp(bbGround, t)
 			d := math.Abs(px-sunC.X) / (0.30 * u)
 			if d < 1 {
-				g = paint.Lerp(g, color.RGBA{250, 168, 122, 255},
+				dawn := color.RGBA{250, 168, 122, 255}
+				g = paint.Lerp(g, dawn,
 					(1-d)*(1-t)*(1-t)*0.55)
 			}
 			if w := 0.055 * v; py < hy+w {
-				return paint.Lerp(color.RGBA{58, 166, 162, 255}, g, (py-hy)/w)
+				return paint.Lerp(
+					color.RGBA{58, 166, 162, 255}, g,
+					(py-hy)/w,
+				)
 			}
 			return g
 		}

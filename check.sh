@@ -35,6 +35,22 @@ for s in 144x44 80x40 80x25 72x22 36x11; do
 	cp "out/bb-$s.ansi" "out/bb-$s-roles.txt" regress/
 done
 
+# the cards in dist/ are what other repositories put in their readmes, and
+# nothing was comparing them. cassowary had been stale since the first commit
+# in this repository: the colour code moved underneath it several times --
+# oklab mixing among them -- and no gate said so, because the gate only ever
+# looked at what lives under regress/.
+#
+# they are written where they are read from, like the streams below, so they
+# are compared in place rather than copied.
+for c in cassowary bender libtheme-css; do
+	cp "dist/$c.ansi" "regress/$c.ansi.was"
+	bin/miami card "$c" > /dev/null 2>&1
+	if ! cmp -s "regress/$c.ansi.was" "dist/$c.ansi"; then
+		echo "DIFFERS  dist/$c.ansi"
+	fi
+done
+
 # the animations are golden too: the library that makes them replaced a
 # throwaway pipeline, and the only proof a port is a port is the same bytes.
 # they are regenerated into a scratch directory and compared where they live,

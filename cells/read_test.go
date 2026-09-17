@@ -17,7 +17,10 @@ func sample() [][]Cell {
 				Bg: color.RGBA{250, 251, 252, 255}},
 		},
 		{
-			{Glyph: ' ', Fg: color.RGBA{9, 9, 9, 255}, Bg: Transparent},
+			{
+				Glyph: ' ', Fg: color.RGBA{9, 9, 9, 255},
+				Bg: Transparent,
+			},
 			{Glyph: '\U0001FB3B', Fg: color.RGBA{128, 64, 32, 255},
 				Bg: Transparent},
 		},
@@ -54,11 +57,18 @@ func TestANSIAlphaRoundTrips(t *testing.T) {
 			// a transparent cell holding a space is written as a
 			// plain reset, which loses a foreground nothing is
 			// drawn in. that is not a colour anyone can see.
-			if g.Fg != w.Fg && !(w.Bg == Transparent && w.Glyph == ' ') {
-				t.Errorf("%d,%d fg: got %v want %v", x, y, g.Fg, w.Fg)
+			blank := w.Bg == Transparent && w.Glyph == ' '
+			if g.Fg != w.Fg && !blank {
+				t.Errorf(
+					"%d,%d fg: got %v want %v", x, y, g.Fg,
+					w.Fg,
+				)
 			}
 			if g.Bg != w.Bg {
-				t.Errorf("%d,%d bg: got %v want %v", x, y, g.Bg, w.Bg)
+				t.Errorf(
+					"%d,%d bg: got %v want %v", x, y, g.Bg,
+					w.Bg,
+				)
 			}
 		}
 	}
@@ -77,7 +87,10 @@ func TestANSIFlattensTransparency(t *testing.T) {
 		t.Errorf("ANSI transparent bg: got %v, want opaque black", bg)
 	}
 	if bg := FromANSI(ANSIAlpha(sample()))[1][0].Bg; bg != Transparent {
-		t.Errorf("ANSIAlpha transparent bg: got %v, want transparent", bg)
+		t.Errorf(
+			"ANSIAlpha transparent bg: got %v, want transparent",
+			bg,
+		)
 	}
 }
 

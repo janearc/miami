@@ -23,7 +23,9 @@ import (
 // Deltas are what make the second number bearable, so both are measured: the
 // first frame in full, and the steady state as a difference.
 func bench(args []string) {
-	sizes := [][2]int{{80, 24}, {96, 28}, {120, 34}, {160, 44}, {200, 56}, {240, 68}}
+	sizes := [][2]int{
+		{80, 24}, {96, 28}, {120, 34}, {160, 44}, {200, 56}, {240, 68},
+	}
 	const runs = 12
 
 	c, err := newClock(time.Time{})
@@ -66,10 +68,13 @@ func bench(args []string) {
 			build.Round(10*time.Microsecond),
 			kb(full), kb(delta), min(byFrame, byWire), limit)
 	}
-	fmt.Println("\ncells is subpixels: a cell is six of them, and every one is a ray.")
-	fmt.Println("build is ours and scales with that. full and delta are what the")
-	fmt.Println("terminal has to swallow per frame; ceiling is whichever gives first.")
+	fmt.Println(benchNote)
 }
+
+const benchNote = `
+cells is subpixels: a cell is six of them, and every one is a ray.
+build is ours and scales with that. full and delta are what the
+terminal has to swallow per frame; ceiling is whichever gives first.`
 
 // kb is a byte count, readably.
 func kb(n int) string {
