@@ -359,22 +359,46 @@ func dim(c color.RGBA, k float64) color.RGBA {
 //
 // Through stty, for the same reason raw mode is: it is on every machine this
 // runs on, and the size of a window is not worth a dependency.
+func Size() (cols, rows int) {
+	// stty reports the size of whatever is on its standard input, and the
+	// terminal worth asking about is the one being drawn to -- which is
+	// stdout. asking with no input at all was the first try: it got
+	// /dev/null, said "stdin isn't a terminal", and every window however
+	// large got the ninety-by-twenty-four fallback in its corner.
+	//
+	// stdin second, for a program drawing somewhere other than its own
+	// stdout, and the controlling terminal last, for one whose standard
+	// streams are both redirected.
+	for _, in := range []*os.File{os.Stdout, os.Stdin} {
+		if c, r, ok := sttySize(in); ok {
+			return c, r
+		}
+	}
+	if tty, err := os.Open("/dev/tty"); err == nil {
+		defer tty.Close()
+		if c, r, ok := sttySize(tty); ok {
+			return c, r
+		}
+	}
+	return 90, 24
+}
+
+// sttySize asks stty about one file, and says whether the answer was a size.
 //
 // A row is kept back. A picture drawn to the full height scrolls the moment
 // anything is written after it -- the shell's next prompt will do -- and a
 // scrolled frame tears every frame after it, because a delta is addressed to
 // where the last one was.
-func Size() (cols, rows int) {
-	cols, rows = 90, 24
-	out, err := exec.Command("stty", "size").Output()
+func sttySize(in *os.File) (cols, rows int, ok bool) {
+	cmd := exec.Command("stty", "size")
+	cmd.Stdin = in
+	out, err := cmd.Output()
 	if err != nil {
-		// not a terminal, or stty could not see one through the pipe
-		// it was given. the caller still gets a size it can draw to.
-		return cols, rows
+		return 0, 0, false
 	}
 	var r, c int
 	if n, _ := fmt.Sscan(string(out), &r, &c); n != 2 || r < 4 || c < 20 {
-		return cols, rows
+		return 0, 0, false
 	}
-	return c, r - 1
+	return c, r - 1, true
 }
