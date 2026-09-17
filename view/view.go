@@ -78,6 +78,14 @@ func (e Eye) unaim(d Vec) Vec {
 // space -- a traced ball, a black hole, a spark -- goes through this and
 // Project, so they agree about where a point lands.
 func (e Eye) Ray(x, y, w, h int) Vec {
+	return e.Through(float64(x)+0.5, float64(y)+0.5, w, h)
+}
+
+// Through is Ray at any point of the sheet rather than a subpixel's middle,
+// in subpixels from the top left corner: a subpixel spans x to x+1. It is
+// how one subpixel is asked about several times, where something inside it
+// is finer than it is.
+func (e Eye) Through(x, y float64, w, h int) Vec {
 	lens := e.Lens
 	if lens == 0 {
 		lens = 1
@@ -86,8 +94,8 @@ func (e Eye) Ray(x, y, w, h int) Vec {
 	// as tall as it is wide the sheet is four rows high for every three
 	// columns across
 	aspect := (float64(h) * 4) / (float64(w) * 3)
-	px := (float64(x)+0.5)/float64(w) - 0.5
-	py := (0.5 - (float64(y)+0.5)/float64(h)) * aspect
+	px := x/float64(w) - 0.5
+	py := (0.5 - y/float64(h)) * aspect
 	return e.Aim(Vec{px / lens, py / lens, 1})
 }
 
