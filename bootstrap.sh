@@ -10,14 +10,21 @@
 #   sh bootstrap.sh --force  clone again over what is there
 set -eu
 cd "$(dirname "$0")"
-ROOTS="${GAME_ROOTS:-$HOME/mesh/frontier/roots}"
+# where the libraries come from.
+#
+# the published urls by default, so a clone of this on a machine that has
+# never heard of us builds. GAME_ROOTS points at a directory of bare
+# repositories instead, which is how it is built here: the local road has
+# today's work on it and the published one has the last release.
+#
+# the name on the left is what go.work calls it. the name on the right is what
+# the local repository is called, and they differ because some of these have a
+# working remote and a clean one -- cloning from the name go uses got "does
+# not exist" on a fresh machine and nowhere else, which is the only kind of
+# bug a bootstrap has.
+ROOTS="${GAME_ROOTS:-}"
 mkdir -p libs
 
-# the name on the left is what go.work calls it; the name on the right is what
-# the root is actually called. they differ because some of these have a working
-# remote and a clean one, and it is the working one a build wants -- cloning
-# from the name go uses got "does not exist" on a fresh machine and nowhere
-# else, which is the only kind of bug a bootstrap has.
 for pair in libdaffy:libdaffy-road libdaffy-sprite:libdaffy-sprite \
 	libtheme-css:libtheme-css-road bandersnatch:bandersnatch; do
 	repo=${pair%%:*}
@@ -26,12 +33,22 @@ for pair in libdaffy:libdaffy-road libdaffy-sprite:libdaffy-sprite \
 		echo "have  libs/$repo"
 		continue
 	fi
-	if [ ! -d "$ROOTS/$from.git" ]; then
-		echo "skip  libs/$repo (no $ROOTS/$from.git)"
-		continue
+	if [ -n "$ROOTS" ]; then
+		url="$ROOTS/$from.git"
+		if [ ! -d "$url" ]; then
+			echo "skip  libs/$repo (no $url)"
+			continue
+		fi
+	else
+		url="https://github.com/janearc/$repo.git"
 	fi
 	rm -rf "libs/$repo"
-	git clone -q "$ROOTS/$from.git" "libs/$repo"
+	if ! git clone -q "$url" "libs/$repo" 2>/dev/null; then
+		# bandersnatch is the player and is optional: it is how you
+		# watch a stream rather than how you build one.
+		echo "skip  libs/$repo (could not clone $url)"
+		continue
+	fi
 	echo "clone libs/$repo"
 done
 
