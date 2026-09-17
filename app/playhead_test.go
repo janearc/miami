@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"math"
 	"os"
 	"path/filepath"
@@ -487,5 +488,72 @@ func TestARestartLeavesThePreviousPassPlaying(t *testing.T) {
 	}
 	if running, total := alive(); running != 0 {
 		t.Errorf("stop left %d of %d passes playing", running, total)
+	}
+}
+
+// TestAFailureBeforeTheAttachStillRests puts a restart's failure in the gap
+// between the sound starting and Score attaching the piece. No real period is
+// short enough to land there, which is exactly why the timing cannot be the
+// thing a test relies on: the fake fails before it even returns.
+func TestAFailureBeforeTheAttachStillRests(t *testing.T) {
+	was := play
+	defer func() { play = was }()
+	play = func(_ string, _ time.Duration, onFail func(error)) (
+		time.Time, func() error, error) {
+		onFail(errors.New("gone before the attach"))
+		return time.Now(), func() error { return nil }, nil
+	}
+
+	s, err := stageFrom(t, bounceDoc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Score("piece", fakeHead{}, time.Second); err != nil {
+		t.Fatal(err)
+	}
+	s.mu.Lock()
+	_, resting := s.Music.(silence)
+	s.mu.Unlock()
+	if !resting {
+		t.Error("a piece that failed before it was attached was attached")
+	}
+}
+
+// TestAScoreThatCannotStartLeavesThePlayingPieceAbleToRest checks the other
+// way reserving the generation could go wrong. A Score that fails to start at
+// all must not move the generation on, or the piece already playing could no
+// longer be put to rest when its own restart fails.
+func TestAScoreThatCannotStartLeavesThePlayingPieceAbleToRest(t *testing.T) {
+	was := play
+	defer func() { play = was }()
+
+	var failA func(error)
+	play = func(_ string, _ time.Duration, onFail func(error)) (
+		time.Time, func() error, error) {
+		failA = onFail
+		return time.Now(), func() error { return nil }, nil
+	}
+	s, err := stageFrom(t, bounceDoc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Score("a", fakeHead{}, time.Second); err != nil {
+		t.Fatal(err)
+	}
+
+	play = func(string, time.Duration, func(error)) (
+		time.Time, func() error, error) {
+		return time.Time{}, nil, errors.New("no such file")
+	}
+	if _, err := s.Score("b", otherHead{}, 0); err == nil {
+		t.Fatal("a Score that could not start returned no error")
+	}
+
+	failA(errors.New("a's restart failed"))
+	s.mu.Lock()
+	_, resting := s.Music.(silence)
+	s.mu.Unlock()
+	if !resting {
+		t.Error("a failed Score stopped the playing piece from resting")
 	}
 }

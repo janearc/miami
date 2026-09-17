@@ -375,22 +375,42 @@ func (s *sound) stop() error {
 // one that holds a slice.
 func (s *Stage) Score(path string, p Playhead, period time.Duration) (
 	stop func() error, err error) {
-	var gen int
+	// the generation is reserved before the sound starts and committed
+	// when the piece is attached. reserved rather than committed early:
+	// a Score whose file is missing must not make the piece already
+	// playing unable to rest.
+	//
+	// and a failure that arrives before the attach -- a restart due
+	// sooner than this goroutine takes the lock -- is written down and
+	// read at the attach, so the failed piece is never left moving the
+	// scene, whichever of the two gets there first.
+	s.mu.Lock()
+	s.nextGen++
+	gen := s.nextGen
+	s.mu.Unlock()
+	failed := false // guarded by s.mu
 	rest := func(error) {
 		s.mu.Lock()
 		defer s.mu.Unlock()
+		failed = true
 		if s.musicGen == gen {
 			s.Music = Silence
 		}
 	}
-	started, stop, err := playing(path, period, rest)
+	started, stop, err := play(path, period, rest)
 	if err != nil {
 		return nil, err
 	}
 	s.mu.Lock()
-	s.musicGen++
-	gen = s.musicGen
+	s.musicGen = gen
 	s.Music, s.Started, s.heldBeats = p, started, 0
+	if failed {
+		s.Music = Silence
+	}
 	s.mu.Unlock()
 	return stop, nil
 }
+
+// play is playing, as Score reaches it: a variable so a test can put a failure
+// exactly where the timing of a real one never would.
+var play = playing
