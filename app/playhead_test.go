@@ -4,7 +4,9 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -423,5 +425,67 @@ func TestAFailedRestartLeavesALaterPieceAlone(t *testing.T) {
 	s.mu.Unlock()
 	if !still {
 		t.Error("the first piece's failure replaced the piece scored after it")
+	}
+}
+
+// TestARestartLeavesThePreviousPassPlaying pins the seam. Each pass records its
+// process; a restart must leave the earlier ones running, and stop must end
+// every one of them.
+//
+// Killing the previous pass at the restart cut the last latency's worth of
+// audio off a piece exactly one period long, mid-waveform. Nobody here can hear
+// that click, so the test watches the processes instead.
+func TestARestartLeavesThePreviousPassPlaying(t *testing.T) {
+	was := player
+	defer func() { player = was }()
+	player = "sh"
+	dir := t.TempDir()
+	pids := filepath.Join(dir, "pids")
+	script := filepath.Join(dir, "piece")
+	body := "echo $$ >> " + pids + "\nsleep 5\n"
+	if err := os.WriteFile(script, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	alive := func() (running, total int) {
+		b, _ := os.ReadFile(pids)
+		for _, f := range strings.Fields(string(b)) {
+			pid, err := strconv.Atoi(f)
+			if err != nil {
+				continue
+			}
+			total++
+			if syscall.Kill(pid, 0) == nil {
+				running++
+			}
+		}
+		return running, total
+	}
+
+	_, stop, err := playing(script, 60*time.Millisecond, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(220 * time.Millisecond)
+	running, total := alive()
+	if total < 3 {
+		t.Fatalf("only %d passes started in 220ms at a 60ms period", total)
+	}
+	if running != total {
+		t.Errorf("%d of %d passes still playing after restarts; "+
+			"a restart ended the pass before it", running, total)
+	}
+
+	// stop has to end the passes, not outlast them. it waits for every
+	// exit before it returns, so a stop that killed nothing still returns
+	// with every pass gone -- five seconds later, when each one has
+	// finished by itself. time is the only thing that tells the two apart.
+	began := time.Now()
+	stop()
+	if took := time.Since(began); took > time.Second {
+		t.Errorf("stop took %v: it waited for the passes to finish "+
+			"rather than ending them", took)
+	}
+	if running, total := alive(); running != 0 {
+		t.Errorf("stop left %d of %d passes playing", running, total)
 	}
 }

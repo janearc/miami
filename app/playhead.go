@@ -239,7 +239,7 @@ func playing(path string, period time.Duration, onFail func(error)) (
 		return time.Time{}, nil, ErrNoPlayer
 	}
 	snd := &sound{bin: bin, path: path, stopped: make(chan struct{}),
-		onFail: onFail}
+		onFail: onFail, live: map[*exec.Cmd]chan struct{}{}}
 	if err := snd.start(); err != nil {
 		return time.Time{}, nil, err
 	}
@@ -257,18 +257,25 @@ type sound struct {
 	once      sync.Once
 	onFail    func(error)
 
-	mu     sync.Mutex
-	cmd    *exec.Cmd
-	exited chan struct{} // closed when cmd has been waited for
-	err    error         // why a restart failed, for stop to return
+	mu   sync.Mutex
+	live map[*exec.Cmd]chan struct{} // passes still sounding, and exits
+	err  error                       // why a restart failed, for stop
 }
 
-// start begins the piece, ending the previous pass if it is still going.
+// start begins a pass of the piece.
 //
-// Every process is waited for as soon as it exits, by its own goroutine. Only
-// waiting in stop left a finished piece as a zombie until somebody called
-// stop, which is one process for a piece played once and one per loop for a
-// piece that repeats.
+// It does not end the previous pass, and it used to. A piece exactly one
+// period long is still sounding when its restart is due: its sound began one
+// latency after its process did, so it ends one latency after the period.
+//
+// The kill cut that tail off every pass, mid-waveform, which clicks. Left
+// alone, a pass ends by itself about when the next begins to sound.
+//
+// A period shorter than its piece now overlaps rather than truncates. That is
+// audible rather than silent, and the period is the music side's to get right.
+//
+// Every process is waited for by its own goroutine as it exits, so a finished
+// pass is never left as a zombie waiting on stop.
 func (s *sound) start() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -277,17 +284,19 @@ func (s *sound) start() error {
 		return nil // stopped while a restart was due: start nothing
 	default:
 	}
-	if s.cmd != nil {
-		s.cmd.Process.Kill()
-		<-s.exited
-	}
 	cmd := exec.Command(s.bin, s.path)
 	if err := cmd.Start(); err != nil {
 		return err
 	}
 	exited := make(chan struct{})
-	go func() { cmd.Wait(); close(exited) }()
-	s.cmd, s.exited = cmd, exited
+	s.live[cmd] = exited
+	go func() {
+		cmd.Wait()
+		s.mu.Lock()
+		delete(s.live, cmd)
+		s.mu.Unlock()
+		close(exited)
+	}()
 	return nil
 }
 
@@ -322,16 +331,24 @@ func nextStart(started time.Time, period time.Duration,
 	return started.Add(k * period)
 }
 
-// stop ends the piece and every restart it had coming, and says why a restart
-// failed if one did.
+// stop ends every pass still sounding and every restart still to come, and
+// says why a restart failed if one did.
+//
+// The exits are collected under the lock and waited on outside it. A pass's
+// own waiter takes the lock to say it has gone, so waiting while holding it
+// would wait for ever.
 func (s *sound) stop() error {
 	s.once.Do(func() {
 		close(s.stopped)
 		s.mu.Lock()
-		defer s.mu.Unlock()
-		if s.cmd != nil {
-			s.cmd.Process.Kill()
-			<-s.exited
+		var exits []chan struct{}
+		for cmd, exited := range s.live {
+			cmd.Process.Kill()
+			exits = append(exits, exited)
+		}
+		s.mu.Unlock()
+		for _, exited := range exits {
+			<-exited
 		}
 	})
 	s.mu.Lock()
