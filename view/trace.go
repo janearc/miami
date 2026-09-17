@@ -6,6 +6,7 @@ import (
 
 	sprite "github.com/janearc/libdaffy-sprite"
 
+	"github.com/janearc/miami/internal/split"
 	"github.com/janearc/miami/texture"
 )
 
@@ -177,18 +178,22 @@ func (s Lit) Trace(t time.Duration, cols, rows int) sprite.Frame {
 	}
 	secs := t.Seconds()
 
+	// on every core: a ray asks the shapes questions and changes nothing
+	// about them, so rows cannot see each other
 	art := make([]string, h)
-	for y := 0; y < h; y++ {
+	split.Rows(h, func(lo, hi int) {
 		row := make([]byte, w)
-		py := (0.5 - (float64(y)+0.5)/float64(h)) * aspect
-		for x := 0; x < w; x++ {
-			px := (float64(x)+0.5)/float64(w) - 0.5
-			eye := Ray{At: s.Eye.At,
-				Dir: s.Eye.Aim(Vec{px / lens, py / lens, 1})}
-			row[x] = s.shade(eye, secs)
+		for y := lo; y < hi; y++ {
+			py := (0.5 - (float64(y)+0.5)/float64(h)) * aspect
+			for x := 0; x < w; x++ {
+				px := (float64(x)+0.5)/float64(w) - 0.5
+				dir := Vec{px / lens, py / lens, 1}
+				eye := Ray{At: s.Eye.At, Dir: s.Eye.Aim(dir)}
+				row[x] = s.shade(eye, secs)
+			}
+			art[y] = string(row)
 		}
-		art[y] = string(row)
-	}
+	})
 	return sprite.Frame{Art: art}
 }
 
