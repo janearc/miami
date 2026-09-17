@@ -361,14 +361,14 @@ func dim(c color.RGBA, k float64) color.RGBA {
 // runs on, and the size of a window is not worth a dependency.
 func Size() (cols, rows int) {
 	// stty reports the size of whatever is on its standard input, and the
-	// terminal worth asking about is the one being drawn to -- which is
-	// stdout. asking with no input at all was the first try: it got
-	// /dev/null, said "stdin isn't a terminal", and every window however
-	// large got the ninety-by-twenty-four fallback in its corner.
+	// terminal worth asking about is the one being drawn to: stdout.
 	//
-	// stdin second, for a program drawing somewhere other than its own
-	// stdout, and the controlling terminal last, for one whose standard
-	// streams are both redirected.
+	// asking with no input at all was the first try. it got /dev/null,
+	// said "stdin isn't a terminal", and every window however large drew
+	// ninety by twenty-four in the corner of itself.
+	//
+	// stdin second, for a program drawing somewhere else, and the
+	// controlling terminal last, for one with both streams redirected.
 	for _, in := range []*os.File{os.Stdout, os.Stdin} {
 		if c, r, ok := sttySize(in); ok {
 			return c, r
