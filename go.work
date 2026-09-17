@@ -1,0 +1,19 @@
+// the workspace the sprite work builds in. the libraries are cloned beside
+// this file by bootstrap.sh rather than vendored: they are other repositories
+// and belong to themselves.
+//
+// the replace is load-bearing and not tidiness. libdaffy's own go.mod replaces
+// libtheme-css with a path from the layout it was committed in, which does not
+// exist in anybody else's; a workspace replace overrides a module's, so this
+// is the one line that makes a fresh clone build. it was found by cloning into
+// /tmp and running the readme, which is the only way that kind of thing is
+// ever found.
+go 1.26
+
+use (
+	.
+	./libs/libdaffy
+	./libs/libdaffy-sprite
+)
+
+replace github.com/janearc/libtheme-css => ./libs/libtheme-css

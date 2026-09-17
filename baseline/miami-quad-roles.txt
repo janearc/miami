@@ -1,0 +1,62 @@
+                                                                                                                                                                                                
+                                                                                                                                                                                                
+                                                                                                                                                                                                
+                                                                                                                                                                                                
+                                                                                                                                                                                                
+                                                                                   OOOOOOOOOOOO                                                                                                 
+                                                                                 OOSSSSSSSSSSSSOO                                                                                               
+                                                                             OOOOSSSSSSFFFFFSSSSSO                                                                                              
+                                                                          OOOBBBBBBBSFFFIIFFFFFSSSO                                                                                             
+                                                                         OBBBBBBBBBBBFFFFFFFFFFFMMO                                                                                             
+                                                                        OBBBBBBBBBBBBFFFFFFFFFFFMMOO                                                                                            
+                                                                       OBBBBBBBBBBBBSSSFFFFFFFFWWMMMO                                                                                           
+                                                                       OBBBBBBBBBBBSSSSSSSOWWWWWWWWWWO O                                                                                        
+                                                                       OBBBBBOONNNNNSSSSSOWWWWWWWWWWWWOMOO                                                                                      
+             OOOOOOOO            OOOOOOO                               OBBBBBONNNNNNNSSSOWWWWWWWWWWWWWWOMMO                                                                                     
+           OODDDDDDDDOOO      OOODDDDDDDOO                             OBBBBO ONNNNSSSSSOWWWWWWWWWWWWWWWOMMO                                                                                    
+          ODDOOOOOOODDDDO   OODDDDOOOOOOODO                             OBBO   OSSSSSSSSSWWWWWWWWWWWWWWWWOMMO                                                                                   
+           OO       OODDDOOODDDDOO       O                               OO     OSSSSSSSSOWWWWWWWWWWWWWWWWOMMO                                                                                  
+            OOOOOOOOOOODDDDDDDOOOOOOOOOOOO                                      OSSSSSSSSSOWWWWWWWWWWWWWWWWMMMO                                                                                 
+          OODDDDDDDDDDDODDDDDDODDDDDDDDDDDOO                                     OSSSSSSSSSOWWWWWWWWWWWWWWWOMMO                                                                                 
+         ODOOOOOOOOOODDDDDDDDDDDDOOOOOOOOOODO                                    OSSSSSSSSSSWWWWWWWWWWWWWWWYMMMO                                                                                
+          O  OOODDDDDDDDDDDDDDDDDDDDDO O   O                                      OSSSSSSSSSSWWWWWWWWWWYYYYYOMMO                                                                                
+            ODDOOOOOOOOOORDRROOOOOOOO ODO                                          OSSSSSSSSSOWWWWWYYYYYYYYYOMMO                                                                                
+             OO        OCCCRCO         O                                            OSSSSSSSSSOYYYYYYYYYYYYYYMO                                                                                 
+                       OCCRCCCO                                                     OSSSSSSSSSSOYYYYYYYYYYGGGO                                                                              bbbb
+                        OOORRRO                                                      OSSSSSSSSSSYYYYYGGGGGGUUO                                                                  bbbbbbbbbbbbbbbb
+                           ORRRO                                                      OOSSSSSSSSSGGGGGGUUUUUUO                                                      bbbbbbbbbbbbbbbbbbbbbbbbbbbb
+                           ORRRRO                                                       OOOSSSSSSSOUUUUUUUUUUO                                         bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb         
+                            ORRRO                                                          OLSSSSSSOUUUUUUUUUUO                            bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb                      
+                            ORRRRO                                                         OLLLSSSSSOUUUUUUUUUO                bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb                                   
+                             ORRRRO                                                        OLLLLLSSSSOUUUUUUUO     bbbbbbbbbbbbbbbbbbbbbbbbbbbbb                                                
+                              ORRRO                                                      OOLLLLLLLOTSSSOUUUUUObbbbbbbbbbbbbbbbbbbbb                                                             
+                              ORRRRO                                                    OLLLLLLLLLLLTTSSOUUUUObbbbbbbb                                                                          
+                               ORRRRO           cccccccc                             bbOLLLOOOOOOLLLTTTTTTOUOTO                                                                                 
+                                ORRRRO          cccccccc                     bbbbbbbbbbOLLObbb   OOLOTTTTTTTTTO                                                                                 
+                                ORRRRO          cccccccc            bbbbbbbbbbbbbbbbbbccOOcc       OOTTTTTTTTTTO                                                                                
+                                 ORRRRO         cccccccc      bbbbbbbbbbbb          cccccccc         OTTTTTTTTTO                                  cccccccccc                                    
+                    cccccccccccc ORRRRO         cccccccc bbbbbbb                    cccccccc          OTTTTTTTTO                                  cccccccccc                                    
+                    cccccccccccc  ORRRRO        ccccbbbbb                           cccccccc          OTTTTTTTTOcccccccc                          cccccccccc                                    
+                    cccccccccccc  ORRRRRO       cccccccc            cccccc          cccccccc           OTTTTTTTOcccccccc                          cccccccccc                          cccccccccc
+                    cccccccccccc  ORRRRROccccccccccccccc            cccccc          cccccccc           OTTTTTTTOcccccccc        cccccccccccc      cccccccccc                          cccccccccc
+  cccccccccc        cccccccccccc   ORRRRROcccccccccccccc            cccccc          ccccccccccccccccccccOTTTTTTTOccccccc        cccccccccccc      cccccccccc        cccccccccccc      cccccccccc
+  cccccccccc        cccccccccccc   ORRRRROcccccccccccccccccccccccccccccccc          ccccccccccccccccccccOTTTTTTTOccccccc        cccccccccccccccccccccccccccc        cccccccccccc      cccccccccc
+  cccccccccc        cccccccccccccccORRRRRROccccccccccccccccccccccccccccccc          cccccccccccccccccccccOTTTTTTOccccccc        cccccccccccccccccccccccccccccccccccccccccccccccc      cccccccccc
+  ccccccccccccccccccccccccccccccccccORRRRROccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccOTTTTTQOccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+  ccccccccccccccccccccccccccccccccccORRRRROcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccOQQQQQOccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+  ccccccccccccccccccccccccccccccccccORRRRRROccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccOQQQQQOccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+  cccccccccccccccccccccccccccccccccccORRRRROcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccOQQQQOccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+                                                                                                           OQQQQO                                               OOOOOOOOOOOOOOOOOOOOOO          
+                                                                                                           OQQQQO                                OOOOOOOOOOOOOOOAZAZZZZZZZZZAAAAAAAAAAO         
+                                                                                                            OQQQO                            OOOOAAAAAAAAAAAAAAAVVVVVVVVVVVVVVAAAAAAAAO         
+                                                                                                            OQQQO                         OOOAAAAKKKKKAAAAAAAAAAVkkkVVVVVVKKKKKAAAAAAAO         
+                                                                                                            OQQQO                        OAAAAAAKKJJJKKAAAAAAAAAAAAAAAAAAOKJJJJKOAAAAAO         
+                                                                                                             OQQQO                       OAAAAAAKKKJKKOAAAAOOOOOOOOOOOOOOOKKJJKKOOOOOO          
+                                                                                                             OQQQO                        OOOOOOOxxKxxxxxxxxxxxxxxxxxxxxxxxxKKxxO               
+                                                                                                             OQQQO                               OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO                
+                                                                                                              OOO                                                                               
+                                                                                                                                                                                                
+                                                                                                                                                                                                
+                                                                                                                                                                                                
+                                                                                                                                                                                                
+                                                                                                                                                                                                

@@ -1,0 +1,19 @@
+sprite blink
+
+frame 400ms
+art
+..KKKK..
+.KWWWWK.
+KWWEXWWK
+KWWWWWWK
+.KBYRRK.
+..KOOK..
+
+frame 200ms
+art
+..KKKK..
+.KWWWWK.
+KWWKKWWK
+KWWWWWWK
+.KBYRRK.
+..KOOK..

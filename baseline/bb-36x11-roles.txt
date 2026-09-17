@@ -1,0 +1,33 @@
+ppp     ppp                                                             
+   pp  pp                                                               
+    pppp  pppp                                                          
+pppppppppp                                         vv                   
+   ppppppp                          v   v vv                            
+ppppppppp                             vv                                
+     ppp                                                                
+     ppp                                                  pp   ppp      
+      pp                                      vvvv          ppp         
+      pp                                                  ppppppppp     
+       p                                                  pppppp        
+       pp                                                   pp          
+       pp                                                   pp          
+       pp                                                    p          
+       pp                                                    pp         
+       ppp gg     gg         gg    gg          gg             p         
+       ppp gg                gg                gg             p         
+        pp gg                gg                gg             p         
+        pp ggggg  gg gggg    ggggg ggggggg ggggggggggg        pp        
+        pp gg  ggggggggggg   gg ggggggggg  gg  gggg           pp        
+        pp gg  ggggggg  gg   gg ggggggg    gg  gggg           pp        
+        pppgg  ggggggg  gg   gg ggggggg    gg  gg    gg       pp        
+        pppgggggggggggg gg   gggggggggg    gggggg    gg       pp        
+        pppggggg  gg ggggg   ggggg gggg    gggggg ggggg       pp        
+        ppp             gg                                    pp        
+        ppp         gg ggg                                     pp       
+        ppp          gggg                                      pp       
+        ppp                                                    pp       
+        ppp                                                    pp       
+                                                                        
+                                                                        
+                                                                        
+                                                                        

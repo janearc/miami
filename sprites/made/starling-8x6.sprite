@@ -1,0 +1,17 @@
+# A starling head-on, wings level: the small stencil the flight stream beats.
+# Kept beside the full-size traced one, which is a different thing: this is
+# drawn to animate, that is drawn from a photograph.
+sprite starling-8x6
+
+art
+........
+VVKEXKVV
+..KRRK..
+..KKKK..
+...OO...
+........
+
+# the eye alone, for a blink that costs two cells
+pose blink
+at 3,1
+KK

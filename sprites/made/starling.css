@@ -1,0 +1,22 @@
+/* A colourway that binds the eleven roles, for a dark ground.
+ *
+ * The point of the lifted dark: on a background near #160d2b, a "dark mass"
+ * painted at the background's own lightness is not dark, it is absent. These
+ * roles are held at least 0.18 in oklab lightness clear of the ground, which
+ * is what makes a mostly-dark bird readable on a dark terminal.
+ *
+ * Colours are vaporwave's, bound to roles rather than to UI slots.
+ */
+:root {
+  --none: #160d2b;
+  --dark: #4c4570;
+  --wing: #6a5f93;
+  --light: #e8e2f2;
+  --stripe: #2a2340;
+  --beak-base: #f6b73c;
+  --beak-band: #f59a2e;
+  --beak-tip: #f5d142;
+  --feet: #e58fa8;
+  --pupil: #171226;
+  --eye-ring: #efe6c9;
+}
