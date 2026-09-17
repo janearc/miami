@@ -45,6 +45,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"os"
 
@@ -68,6 +69,10 @@ type Doc struct {
 	// layers is the picture this package started as, and still works.
 	Eye    *Eye    `json:"eye"`
 	Shapes []Shape `json:"shapes"`
+
+	// src is the document with its comments taken out, kept so the names
+	// it reads can be found wherever they are -- see Refs.
+	src []byte
 }
 
 // Layer is one gradient, exactly as grade means it.
@@ -108,8 +113,12 @@ func Load(path string) (*Doc, error) {
 // which one it was. For a caller holding bytes rather than a path: a document
 // compiled into a program, or one that arrived down a pipe.
 func Read(name string, b []byte) (*Doc, error) {
+	trimmed, err := io.ReadAll(newTrimmer(b))
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", name, err)
+	}
 	var d Doc
-	dec := json.NewDecoder(newTrimmer(b))
+	dec := json.NewDecoder(bytes.NewReader(trimmed))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&d); err != nil {
 		return nil, fmt.Errorf("%s: %w", name, err)
@@ -117,6 +126,7 @@ func Read(name string, b []byte) (*Doc, error) {
 	if d.Seconds <= 0 {
 		d.Seconds = 1
 	}
+	d.src = trimmed
 	return &d, nil
 }
 

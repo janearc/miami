@@ -81,6 +81,14 @@ type Drawer interface {
 // The caller's function is asked after each frame rather than before, so a
 // program that finishes instantly still shows one.
 func (s Screen) Run(d Drawer, more func(Frame) bool) error {
+	// before anything reaches the terminal: a drawer that knows it cannot
+	// draw what it was asked to says so here, with a name, rather than on
+	// a screen that has already been cleared.
+	if v, ok := d.(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return err
+		}
+	}
 	if s.Cols == 0 || s.Rows == 0 {
 		cols, rows := Size()
 		if s.Cols == 0 {
@@ -212,6 +220,16 @@ type Stage struct {
 	Colours  map[byte]color.RGBA
 	Overlays []Overlay
 
+	// Music is where a piece of music is, for a document that reads @beat,
+	// @bar, @beats or @level. Started is when its first sample went out,
+	// and the first frame if left zero.
+	//
+	// Latency comes off the offset: how long the player takes to make a
+	// sound once started. Score sets all three; see playhead.go.
+	Music   Playhead
+	Started time.Time
+	Latency time.Duration
+
 	// What a document built, and what it needs to move each frame.
 	eye     view.Eye
 	solids  []view.Solid
@@ -221,6 +239,9 @@ type Stage struct {
 	moving  []mover
 	named   map[string]any
 	at      scene.Ctx // the moment being drawn, for a texture that asks
+
+	refs      []string // every @name the document reads
+	heldBeats float64  // where @beats got to, kept once the music stops
 
 	mu sync.Mutex
 }
@@ -254,6 +275,9 @@ func NewStage(doc, colourway string) (*Stage, error) {
 		st.Colours = c
 	}
 	if st.Doc != nil {
+		if err := st.checkRefs(st.Doc); err != nil {
+			return nil, fmt.Errorf("%s: %w", doc, err)
+		}
 		if err := st.fromDoc(st.Doc); err != nil {
 			return nil, fmt.Errorf("%s: %w", doc, err)
 		}
@@ -274,7 +298,13 @@ func (s *Stage) Draw(f Frame, cols, rows int) [][]cells.Cell {
 	// it is: a texture reads this per subpixel and it has to be the frame
 	// being drawn rather than the one before.
 	if s.Doc != nil {
-		f.Scene = s.Doc.Ctx(f.Since.Seconds(), runtimeConsts(f.At))
+		run := runtimeConsts(f.At)
+		if s.Music != nil {
+			for k, v := range s.musicConsts(f) {
+				run[k] = v
+			}
+		}
+		f.Scene = s.Doc.Ctx(f.Since.Seconds(), run)
 	}
 	s.at = f.Scene
 	s.place(f)

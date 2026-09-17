@@ -21,13 +21,11 @@ import (
 // put behind an agent that will run it two hundred times without watching.
 func checkFile(path string) {
 	if strings.HasSuffix(path, ".json") {
-		// a scene is known by what it holds. it was known by "layers"
-		// alone until a scene could be shapes instead, and then a
-		// document with no layers went to the sprite reader, which
-		// failed on the first comment and blamed the comment.
-		if b, err := os.ReadFile(path); err == nil &&
-			(strings.Contains(string(b), "\"layers\"") ||
-				strings.Contains(string(b), "\"shapes\"")) {
+		// a scene is known by its top-level keys, not by the words in
+		// it. searching the text sent a sprite document that mentioned
+		// layers in a comment to the scene reader, and a scene made
+		// only of shapes to the sprite reader.
+		if b, err := os.ReadFile(path); err == nil && scene.IsScene(b) {
 			checkScene(path)
 			return
 		}
@@ -71,6 +69,11 @@ func checkScene(path string) {
 			what = " in " + sh.Texture.Kind
 		}
 		fmt.Printf("  %-9s %-8s%s\n", sh.Kind, name, what)
+	}
+	// the names it reads, because a name nothing supplies is what a stage
+	// refuses, and @beat and friends need a playhead attached to draw
+	if refs := d.Refs(); len(refs) > 0 {
+		fmt.Printf("  reads: @%s\n", strings.Join(refs, " @"))
 	}
 	for _, at := range []float64{0, d.Seconds / 2, d.Seconds} {
 		st, err := d.At(at)
