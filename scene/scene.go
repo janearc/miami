@@ -321,16 +321,53 @@ type Colour struct {
 	ease     string
 }
 
+// Hex is a colour as a document writes one: six hex digits, in whichever
+// case, with or without a hash in front.
+//
+// A type rather than a string, so that a colour nobody can draw is refused
+// when the document is read rather than drawn as something else.
+//
+// Swatch took any string and read anything but a lower-case hex digit as
+// nought: "FF6EC7" was nearly black and "#ff6ec7" a different colour, both
+// without a word.
+type Hex string
+
+// UnmarshalJSON reads a colour and refuses what cannot be one.
+func (h *Hex) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return fmt.Errorf("colour: %w", err)
+	}
+	if !grade.IsColour(s) {
+		return fmt.Errorf("%q is not a colour: six hex digits, such "+
+			"as ff6ec7, with or without a hash", s)
+	}
+	*h = Hex(s)
+	return nil
+}
+
 // UnmarshalJSON reads a colour: a hex string, or one that travels.
 func (c *Colour) UnmarshalJSON(b []byte) error {
 	var s string
 	if json.Unmarshal(b, &s) == nil {
+		if !grade.IsColour(s) {
+			return fmt.Errorf("%q is not a colour: six hex "+
+				"digits, such as ff6ec7, with or without a "+
+				"hash", s)
+		}
 		c.fixed = s
 		return nil
 	}
 	var raw struct{ From, To, Ease string }
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return fmt.Errorf("colour: %w", err)
+	}
+	for _, end := range []string{raw.From, raw.To} {
+		if !grade.IsColour(end) {
+			return fmt.Errorf("%q is not a colour: six hex "+
+				"digits, such as ff6ec7, with or without a "+
+				"hash", end)
+		}
 	}
 	c.from, c.to, c.ease = raw.From, raw.To, raw.Ease
 	return nil

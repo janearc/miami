@@ -3,6 +3,7 @@ package grade
 import (
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/janearc/libtheme-css/primitives/functions"
 	"github.com/janearc/libtheme-css/primitives/swatch"
@@ -28,26 +29,54 @@ import (
 // Swatch is a hex string as a physical colour. No leading hash and no short
 // form -- six hex digits, which is what a theme file writes.
 func Swatch(s string) swatch.Swatch {
-	var r, g, b uint8
-	for i, c := range []byte(s) {
-		v := byte(0)
+	r, g, b, _ := hex(s)
+	return srgb.RGB{R: float64(r) / 255, G: float64(g) / 255,
+		B: float64(b) / 255}.Swatch()
+}
+
+// IsColour is whether a string is six hex digits, however they are written.
+//
+// For whoever reads a document, so that a colour nobody can draw is refused
+// by name rather than drawn as something else. Swatch itself still answers,
+// because a library call in the middle of a frame is no place to stop.
+func IsColour(s string) bool {
+	_, _, _, ok := hex(s)
+	return ok
+}
+
+// hex is a colour's three bytes, and whether the string was one.
+//
+// Written as people write colours: spaces around it, a hash in front of it,
+// and in whichever case they had.
+//
+// It used to take any string and read anything but "0" to "9" and lower-case
+// "a" to "f" as nought, so "FF6EC7" was nearly black, "#ff6ec7" was a
+// different colour because the hash shifted every digit, "red" was black.
+//
+// None of those said anything. porter found it probing the ramp beside it.
+func hex(s string) (r, g, b uint8, ok bool) {
+	s = strings.TrimSpace(s)
+	s = strings.TrimPrefix(s, "#")
+	if len(s) != 6 {
+		return 0, 0, 0, false
+	}
+	var out [3]uint8
+	for i := 0; i < 6; i++ {
+		c := s[i]
+		var v byte
 		switch {
 		case c >= '0' && c <= '9':
 			v = c - '0'
 		case c >= 'a' && c <= 'f':
 			v = c - 'a' + 10
+		case c >= 'A' && c <= 'F':
+			v = c - 'A' + 10
+		default:
+			return 0, 0, 0, false
 		}
-		switch i / 2 {
-		case 0:
-			r = r<<4 | v
-		case 1:
-			g = g<<4 | v
-		case 2:
-			b = b<<4 | v
-		}
+		out[i/2] = out[i/2]<<4 | v
 	}
-	return srgb.RGB{R: float64(r) / 255, G: float64(g) / 255,
-		B: float64(b) / 255}.Swatch()
+	return out[0], out[1], out[2], true
 }
 
 // Ramp is a ramp written as alternating positions and hex colours:
