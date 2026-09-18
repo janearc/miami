@@ -56,6 +56,7 @@ import (
 	"github.com/janearc/libtheme-css/spaces/srgb"
 
 	"github.com/janearc/miami/grade"
+	colours "github.com/janearc/miami/internal/hex"
 )
 
 // Doc is a whole scene.
@@ -384,23 +385,12 @@ func (c Colour) at(x ctx) swatch.Swatch {
 	return ok.Mix.Mix(hex(c.from), hex(c.to), curve(c.ease, x.e))
 }
 
-// hex is a hex string as a physical colour.
+// hex is a colour written as text, as a physical colour. It reads what the
+// one parser reads, so a colour Read accepted is the colour Read draws.
 func hex(s string) swatch.Swatch {
-	var v [3]uint8
-	for i := 0; i < len(s) && i < 6; i++ {
-		d := byte(0)
-		switch ch := s[i]; {
-		case ch >= '0' && ch <= '9':
-			d = ch - '0'
-		case ch >= 'a' && ch <= 'f':
-			d = ch - 'a' + 10
-		case ch >= 'A' && ch <= 'F':
-			d = ch - 'A' + 10
-		}
-		v[i/2] = v[i/2]<<4 | d
-	}
-	return srgb.RGB{R: float64(v[0]) / 255, G: float64(v[1]) / 255,
-		B: float64(v[2]) / 255}.Swatch()
+	r, g, b, _ := colours.Bytes(s)
+	return srgb.RGB{R: float64(r) / 255, G: float64(g) / 255,
+		B: float64(b) / 255}.Swatch()
 }
 
 // clamp01 holds a number to nought and one.

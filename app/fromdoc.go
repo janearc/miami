@@ -165,7 +165,7 @@ func (s *Stage) addShape(sh scene.Shape) error {
 
 	case "clock":
 		d := &Digits{Font: sh.Font, Row: sh.Row, Col: sh.Col,
-			Ink: Ramp(sh.Ink), Scrim: sh.Scrim, Format: sh.Format,
+			Ink: ramp(sh.Ink), Scrim: sh.Scrim, Format: sh.Format,
 			Flicker: sh.Flicker}
 		s.Add(d)
 		s.remember(sh.Name, d)
@@ -173,7 +173,7 @@ func (s *Stage) addShape(sh scene.Shape) error {
 
 	case "text":
 		t := &Text{Font: sh.Font, Row: sh.Row, Col: sh.Col,
-			Ink: Ramp(sh.Ink), Scrim: sh.Scrim}
+			Ink: ramp(sh.Ink), Scrim: sh.Scrim}
 		t.Set(sh.Text)
 		s.Add(t)
 		s.remember(sh.Name, t)
@@ -182,7 +182,7 @@ func (s *Stage) addShape(sh scene.Shape) error {
 	case "log":
 		l := &Log{
 			Row: sh.Row, Col: sh.Col, Cols: sh.Cols,
-			Rows: sh.Rows, Ink: Ramp(sh.Ink), Scrim: sh.Scrim,
+			Rows: sh.Rows, Ink: ramp(sh.Ink), Scrim: sh.Scrim,
 		}
 		s.Add(l)
 		s.remember(sh.Name, l)
@@ -199,7 +199,7 @@ func (s *Stage) addShape(sh scene.Shape) error {
 
 	case "bar":
 		b := &Bar{Row: sh.Row, Col: sh.Col, Width: sh.Width,
-			Ink: Ramp(sh.Ink), Label: sh.Label, Scrim: sh.Scrim}
+			Ink: ramp(sh.Ink), Label: sh.Label, Scrim: sh.Scrim}
 		if sh.Value != nil {
 			v := *sh.Value
 			b.From = func(f Frame) float64 { return v.At(f.Scene) }
@@ -469,3 +469,14 @@ func (s *Stage) ownFill(name string, tex texture.Texture) texture.Texture {
 
 // Log is the box of that name, or nil.
 func (s *Stage) Log(name string) *Log { l, _ := s.find(name).(*Log); return l }
+
+// ramp is a document's ink as an overlay's ramp. The document's colours are
+// a checked type and an overlay's are plain strings, so this is where the one
+// becomes the other.
+func ramp(ink []scene.Hex) Ramp {
+	out := make(Ramp, len(ink))
+	for i, c := range ink {
+		out[i] = string(c)
+	}
+	return out
+}
