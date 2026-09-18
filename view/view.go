@@ -184,15 +184,26 @@ func (b Billboard) Render(_ Eye, t time.Duration, rows int) sprite.Frame {
 	if f.Height() == 0 {
 		return f
 	}
-	// keep its proportions: a daffy pixel is one column by half a row, and
-	// a sextant subcell is half a column by a third, so a sprite pixel is
-	// two subcells across and one and a half down
+	return Scale(f, wide(f, rows), rows)
+}
+
+// wide is how many subcells across a sprite of this shape is, drawn rows
+// subcells tall.
+//
+// A daffy pixel is one column by half a row and a sextant subcell is half a
+// column by a third, so a sprite pixel is two subcells across and one and a
+// half down. Keeping its proportions is therefore rows times the frame's
+// width over its height, times two over one and a half.
+//
+// That last factor was written as two thirds, which is the reciprocal, so
+// every billboard in the library has been drawn half as wide as its own
+// stencil since the line was written.
+func wide(f sprite.Frame, rows int) int {
 	fw, fh := float64(f.Width()), float64(f.Height())
-	w := int(float64(rows) * fw / fh * 2 / 3)
-	if w < 1 {
-		w = 1
+	if fh == 0 {
+		return 1
 	}
-	return Scale(f, w, rows)
+	return max(1, int(math.Round(float64(rows)*fw/fh*4/3)))
 }
 
 // Turning is a sprite drawn from several directions, which returns whichever
@@ -240,11 +251,7 @@ func (s Turning) Render(e Eye, t time.Duration, rows int) sprite.Frame {
 	if f.Height() == 0 {
 		return f
 	}
-	fw, fh := float64(f.Width()), float64(f.Height())
-	w := int(float64(rows) * fw / fh * 2 / 3)
-	if w < 1 {
-		w = 1
-	}
+	w := wide(f, rows)
 	return Scale(f, w, rows)
 }
 
