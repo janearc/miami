@@ -58,6 +58,7 @@ type Space struct {
 	Band    *Vec   `json:"band"`
 	Width   *Value `json:"width"`
 	Glow    *Value `json:"glow"`
+	Ambient string `json:"ambient"` // a hex colour: a lit sky
 	Gas     []Stop `json:"gas"`
 }
 

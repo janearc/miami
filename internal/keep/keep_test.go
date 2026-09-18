@@ -53,6 +53,30 @@ func TestTwoKeysInTurnBothStay(t *testing.T) {
 	}
 }
 
+// What goes is the least recently used, not the oldest put: a value asked for
+// in every round survives any number of new ones.
+//
+// This is the fixed camera beside a steered one. Every angle the steered
+// camera passes through is a new key, and on oldest-put the fixed camera's
+// result was thrown out every fourth round though it was wanted in all of
+// them.
+func TestTheLeastRecentlyUsedGoes(t *testing.T) {
+	c := New[int, string](4)
+	c.Put(-1, "fixed")
+	for i := range 40 {
+		if _, ok := c.Get(-1); !ok {
+			t.Fatalf("the fixed one went at round %d", i)
+		}
+		c.Put(i, "moving")
+	}
+	if _, ok := c.Get(-1); !ok {
+		t.Fatal("the fixed one went")
+	}
+	if n := c.Len(); n != 4 {
+		t.Fatalf("holding %d, the most is 4", n)
+	}
+}
+
 // A cache of nought holds one rather than nothing, so a caller that asks for
 // nonsense still gets a working cache.
 func TestNoughtHoldsOne(t *testing.T) {

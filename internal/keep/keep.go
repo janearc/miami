@@ -26,17 +26,33 @@ func New[K comparable, V any](max int) *Cache[K, V] {
 	return &Cache[K, V]{max: max}
 }
 
-// Get is the value under a key, and whether it was there.
+// Get is the value under a key, and whether it was there. Asking for a value
+// makes it the newest, so what is dropped is the least recently used rather
+// than the oldest put.
+//
+// The difference is a camera being steered beside one that is not. Every new
+// angle is a new key, so the moving camera puts a bake a frame; on oldest-put
+// the fixed camera's bake, put once at the start, would be pushed out every
+// fourth frame and traced again, though it was asked for in every one.
 func (c *Cache[K, V]) Get(k K) (V, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	for i, key := range c.keys {
 		if key == k {
-			return c.vals[i], true
+			v := c.vals[i]
+			c.newest(i)
+			return v, true
 		}
 	}
 	var zero V
 	return zero, false
+}
+
+// newest moves the value at i to the end, which is where the newest is.
+func (c *Cache[K, V]) newest(i int) {
+	k, v := c.keys[i], c.vals[i]
+	c.keys = append(append(c.keys[:i:i], c.keys[i+1:]...), k)
+	c.vals = append(append(c.vals[:i:i], c.vals[i+1:]...), v)
 }
 
 // Put stores a value, replacing what was under that key, and drops the oldest
@@ -47,6 +63,7 @@ func (c *Cache[K, V]) Put(k K, v V) {
 	for i, key := range c.keys {
 		if key == k {
 			c.vals[i] = v
+			c.newest(i)
 			return
 		}
 	}

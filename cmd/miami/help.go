@@ -51,6 +51,8 @@ var verbs = []verb{
 	{"anim", "[dir]", "rebuild every animation from the stencils"},
 	{"clock", "[cols rows fps]", "a vaporwave clock, made as it is shown"},
 	{"bench", "", "what a size costs, and which ceiling first"},
+	{"icon", "[size] [--dir dist]",
+		"the quasar as an app icon, dark and light"},
 	{"show", "<scene> [cols rows] [--t s] [--png]",
 		"scenery, live; or one frame, to a png"},
 	{"play", "<file.frames> [loop]", "play a frames file to this terminal"},

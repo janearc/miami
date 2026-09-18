@@ -390,6 +390,9 @@ func main() {
 	case "bench":
 		bench(os.Args[2:])
 		return
+	case "icon":
+		icon(os.Args[2:])
+		return
 	case "show":
 		show(os.Args[2:])
 		return
