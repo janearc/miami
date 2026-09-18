@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"time"
 )
 
@@ -204,21 +205,31 @@ func Probe() (Caps, error) {
 // the only bytes that can come back are the two answers, and after this the
 // decision about pixels is already made when the first report lands.
 //
+// The terminal times the read, not Go. os.Stdin.SetReadDeadline fails on a
+// tty -- "file type does not support deadline" -- so the first version of
+// this returned empty capabilities on every real terminal, and pixels were
+// never turned on anywhere.
+//
+// porter found it under a pty, which is the only place it could be found:
+// with no terminal the deadline is accepted and everything looks right.
+//
+// "stty min 0 time 2" is how a terminal is asked to do it: a read comes back
+// after two tenths of a second with whatever has arrived, or with nothing.
+// Raw mode is min 1 time 0, which is a read that waits for a key, and that is
+// what it is put back to.
+//
 // A terminal that answers neither leaves Caps empty, which is not an error.
 // miami is a library and this is a pointer: it degrades to cells, and says so
 // in a sentence if the caller asks.
 func probe(out *os.File) Caps {
-	fmt.Fprint(out, askCell+askPixels)
-	var t term
-	deadline := time.Now().Add(150 * time.Millisecond)
-	if err := os.Stdin.SetReadDeadline(deadline); err != nil {
-		// a terminal that cannot be given a deadline would block here
-		// until somebody typed, so it is not asked at all
+	if err := stty("min", "0", "time", "2"); err != nil {
 		return Caps{}
 	}
-	defer os.Stdin.SetReadDeadline(time.Time{})
+	defer stty("min", "1", "time", "0")
+	fmt.Fprint(out, askCell+askPixels)
+	var t term
 	buf := make([]byte, 64)
-	for time.Now().Before(deadline) {
+	for deadline := time.Now().Add(600 * time.Millisecond); ; {
 		n, err := os.Stdin.Read(buf)
 		for i := 0; i < n; i++ {
 			t.feed(buf[i], func(Key) {}, func(Mouse) {})
@@ -229,8 +240,18 @@ func probe(out *os.File) Caps {
 		if t.caps.Pixels && t.caps.CellW > 0 {
 			break
 		}
+		if time.Now().After(deadline) {
+			break
+		}
 	}
 	return t.caps
+}
+
+// stty tells the terminal on standard input something about itself.
+func stty(args ...string) error {
+	c := exec.Command("stty", args...)
+	c.Stdin = os.Stdin
+	return c.Run()
 }
 
 // modes are what to write to start reporting, given what the terminal can do.
