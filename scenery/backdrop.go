@@ -3,6 +3,7 @@ package scenery
 import (
 	"sync"
 
+	"github.com/janearc/miami/internal/keep"
 	"github.com/janearc/miami/internal/split"
 	"github.com/janearc/miami/light"
 	"github.com/janearc/miami/view"
@@ -17,9 +18,8 @@ import (
 type Backdrop struct {
 	Space Space
 
-	mu    sync.Mutex
-	key   backdropKey
-	skies []Sky
+	mu   sync.Mutex
+	kept *keep.Cache[backdropKey, []Sky]
 }
 
 // backdropKey is what a kept sky depends on.
@@ -43,7 +43,9 @@ func (d *Backdrop) Draw(b *light.Buffer, eye view.Eye, t float64) {
 // Forget drops the kept sky, for a Space changed while it was on screen.
 func (d *Backdrop) Forget() {
 	d.mu.Lock()
-	d.skies = nil
+	if d.kept != nil {
+		d.kept.Clear()
+	}
 	d.mu.Unlock()
 }
 
@@ -52,9 +54,12 @@ func (d *Backdrop) Forget() {
 func (d *Backdrop) skiesFor(w, h int, eye view.Eye) []Sky {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	if d.kept == nil {
+		d.kept = keep.New[backdropKey, []Sky](keptBakes)
+	}
 	key := backdropKey{w: w, h: h, eye: eye}
-	if d.skies != nil && d.key == key {
-		return d.skies
+	if s, ok := d.kept.Get(key); ok {
+		return s
 	}
 	lens := eye.Lens
 	if lens == 0 {
@@ -70,6 +75,6 @@ func (d *Backdrop) skiesFor(w, h int, eye view.Eye) []Sky {
 			}
 		}
 	})
-	d.key, d.skies = key, skies
+	d.kept.Put(key, skies)
 	return skies
 }
