@@ -52,5 +52,12 @@ the art to make room -- picking the one that fits the gap is optimising the
 wrong thing, and it shipped a card whose wordmark was punctuation.
 
 And do not judge a picture from its bytes. Render it and look: "miami png
-FILE.ansi", or --png on any page here.`
+FILE.ansi", or --png on any page here.
+
+Nor judge a test from its passing. Break what it guards and watch it fail; if
+it does not, that is a fact about one of three things, and the third is the
+one that survives being fixed. It is written down once, in compose's
+DESIGN.md, under "A mutation that does not bite" -- one copy rather than a
+copy here, because two of anything that must agree is the fault this library
+spent a night finding in five places.`
 }
