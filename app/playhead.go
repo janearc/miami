@@ -365,14 +365,18 @@ func (s *sound) stop() error {
 //	}
 //	defer func() {
 //		if err := stop(); err != nil {
-//			log.Println("the music would not stop:", err)
+//			log.Println("a pass of the music failed:", err)
 //		}
 //	}()
 //
-// The error stop gives back is worth reading rather than discarding. At the
-// end of a program there is little to do with it, but a game that scores a
-// second piece while the first will not stop has a sound it cannot end, and
-// this is the only place that says so.
+// What the error says is not that the sound would not stop -- by the time
+// stop returns, every pass has been killed and waited on. It is that a
+// restart failed while the piece was playing, so the music ended early and
+// the scene has been put to rest.
+//
+// Worth reading rather than discarding, because the picture and the sound
+// disagreed for as long as it took to find out: a game wants to know its
+// music died, and this is the only place that says so.
 //
 // period is how long one pass of the piece lasts, for a piece that loops. With
 // nought it plays once, and a playhead that keeps counting past the end will
@@ -426,10 +430,10 @@ func (s *Stage) Score(path string, p Playhead, period time.Duration) (
 		// something else: outside the lock, which a failing pass takes.
 		s.mu.Unlock()
 		if err := stop(); err != nil {
-			// it would not stop, so it is still playing under a
-			// scene that is following something else, and the
-			// caller holds no way to end it. saying only that it
-			// was superseded would hide that.
+			// a pass of this piece had already failed. the caller
+			// is handed no stop -- the later Score owns the scene
+			// -- so this error is the only place its music can be
+			// said to have died, and "superseded" alone hides it.
 			return nil, errors.Join(ErrSuperseded, err)
 		}
 		return nil, ErrSuperseded

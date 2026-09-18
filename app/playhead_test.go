@@ -615,18 +615,20 @@ func TestTheLaterScoreWinsARace(t *testing.T) {
 	}
 }
 
-// A superseded sound that will not stop is still playing, and saying only
-// that it was superseded hides that.
+// A superseded piece whose music had already died says both things.
+//
+// stop never means the sound would not stop: by the time it returns, every
+// pass has been killed and waited on. Its error means a restart failed while
+// the piece was playing, so the music ended early.
 //
 // The caller of the earlier Score is handed no stop -- the later Score owns
-// the scene now -- so this error is the only thing that can tell it a sound
-// is running that nothing can end. opezart found the same shape in four
-// places of his own after one note about one line; this is miami's one.
-func TestASupersededSoundThatWillNotStopSaysSo(t *testing.T) {
+// the scene now -- so this error is the only place that can say its music
+// died, and "superseded" alone hides it.
+func TestASupersededPieceSaysItsMusicDied(t *testing.T) {
 	was := play
 	defer func() { play = was }()
 
-	stubborn := errors.New("afplay will not die")
+	died := errors.New("a pass would not start")
 	entered, release := make(chan struct{}), make(chan struct{})
 	play = func(path string, _ time.Duration, _ func(error)) (
 		time.Time, func() error, error) {
@@ -635,7 +637,7 @@ func TestASupersededSoundThatWillNotStopSaysSo(t *testing.T) {
 		}
 		close(entered)
 		<-release
-		return time.Now(), func() error { return stubborn }, nil
+		return time.Now(), func() error { return died }, nil
 	}
 
 	s, err := stageFrom(t, bounceDoc)
@@ -657,8 +659,8 @@ func TestASupersededSoundThatWillNotStopSaysSo(t *testing.T) {
 	if !errors.Is(err, ErrSuperseded) {
 		t.Errorf("it no longer says it was superseded: %v", err)
 	}
-	if !errors.Is(err, stubborn) {
-		t.Errorf("a sound that would not stop is still playing and "+
-			"the error does not say so: %v", err)
+	if !errors.Is(err, died) {
+		t.Errorf("this piece's music had already died and the error "+
+			"does not say so: %v", err)
 	}
 }
