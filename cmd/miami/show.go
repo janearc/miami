@@ -62,6 +62,7 @@ func show(args []string) {
 		usage()
 	}
 	cols, rows, at, png, bird := 0, 0, 0.0, false, false
+	sheet := false
 	var rest []string
 	for i := 1; i < len(args); i++ {
 		switch {
@@ -72,6 +73,8 @@ func show(args []string) {
 			png = true
 		case args[i] == "--bird":
 			bird = true
+		case args[i] == "--sheet":
+			sheet = true
 		default:
 			rest = append(rest, args[i])
 		}
@@ -98,9 +101,32 @@ func show(args []string) {
 	}
 	built := time.Since(start)
 
+	if sheet {
+		stem := strings.TrimSuffix(filepath.Base(
+			strings.TrimPrefix(name, "@")), ".json")
+		contact(st, stem, cols, rows)
+		return
+	}
+
 	if !png {
-		sc := app.Screen{Cols: cols, Rows: rows, FPS: 24, Raw: true}
+		// the pointer comes with the keyboard: drag to turn the camera
+		// the hand is on, the wheel to come in and go out
+		sc := app.Screen{Cols: cols, Rows: rows, FPS: 24, Raw: true,
+			Mouse: true}
+		// what the terminal cannot do is said on the picture rather
+		// than printed before it: the screen is about to be cleared,
+		// so anything printed first is gone before it is read
+		note := &app.Log{Row: -2, Rows: 2, Scrim: 0.55}
+		st.Add(note)
+		said := false
 		proof.Must(sc.Run(st, func(f app.Frame) bool {
+			st.Point(f, sc.Cols, sc.Rows)
+			if !said {
+				said = true
+				if why := f.Caps.Missing(); why != "" {
+					note.Say(why)
+				}
+			}
 			for _, k := range f.Keys {
 				if k.Rune == 'q' || k.Rune == 3 {
 					return false

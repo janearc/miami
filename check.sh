@@ -43,6 +43,24 @@ for s in 144x44 80x40 80x25 72x22 36x11; do
 	cp "out/bb-$s.ansi" "out/bb-$s-roles.txt" regress/
 done
 
+# the pointer's probe can only fail on a real terminal, which is why the first
+# one shipped broken: os.Stdin takes no read deadline on a tty, so it answered
+# "this terminal has no pixels" everywhere and nothing said otherwise. every
+# unit test passed, because a test has no terminal.
+#
+# script gives a pty. the two answers are fed in as a terminal sends them, and
+# what comes back has to be the cell size that was in them.
+if command -v script >/dev/null 2>&1; then
+	said=$(printf '\033[6;38;19t\033[?1016;1$y' |
+		script -q /dev/null bin/miami probe 2>/dev/null | tr -d '\r')
+	case "$said" in
+	*"cell 19x38 px"*) ;;
+	*) echo "DIFFERS  miami probe on a pty did not read the terminal's answer"
+	   echo "         it said: $said"
+	   exit 1 ;;
+	esac
+fi
+
 # the icons are rendered rather than drawn, so the picture in dist/ and the
 # code that makes it can part company without a word. porter asked for this
 # after the first pair went out: a drifted icon is the quiet kind of wrong.

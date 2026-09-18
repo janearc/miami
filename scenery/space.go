@@ -102,6 +102,14 @@ func (s Space) band(d view.Vec) float64 {
 	return math.Exp(-off * off / (2 * w * w))
 }
 
+// bandLight is the colour of the galaxy's own glow: one temperature, the
+// average of a lot of stars, worked out once.
+//
+// It was worked out again for every ray that escaped a black hole -- a hundred
+// thousand a bake, each integrating Planck's law against the observer -- which
+// a profile put at a third of what a moved camera costs.
+var bandLight = light.Kelvin(5200)
+
 // gas is the nebula's light in a direction, and how much dust there hides
 // what is behind.
 //
@@ -126,7 +134,7 @@ func (s Space) gas(d view.Vec, band float64) (light.RGB, float64) {
 	}
 	if s.Glow > 0 && band > 0 {
 		n := noise.Fractal(seed+6, x*3, y*3, z*3, 3)
-		out = out.Plus(light.Kelvin(5200).Scale(s.Glow * band *
+		out = out.Plus(bandLight.Scale(s.Glow * band *
 			(0.55 + 0.45*n)))
 	}
 	if s.Dust > 0 {

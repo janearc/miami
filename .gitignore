@@ -37,3 +37,9 @@
 # checkout that had not bootstrapped could not build at all.
 /go.work
 /go.work.sum
+
+# a session's own scratch, not the project's: the irc listener's log and its
+# errors, and the test binaries "go test -c" and the profiler leave behind.
+# a 4.7MB scenery.test went in on 2026-09-18 with a "git add -A".
+/irc/
+*.test

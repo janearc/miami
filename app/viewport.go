@@ -20,8 +20,13 @@ import (
 
 // shot is one viewport as the stage holds it.
 type shot struct {
-	cam        view.Camera
-	first      bool // its eye is the stage's own, which a caller may turn
+	cam view.Camera
+	// eye is the eye this viewport draws through, and it can be turned in
+	// place: a hand dragging on a viewport turns the camera drawing it.
+	// The first viewport's is the stage's own, so a caller holding what
+	// Eye handed it steers the same camera a hand does.
+	eye        *view.Eye
+	first      bool
 	x, y, w, h float64
 	exposure   *scene.Value // the document's, read again every frame
 }
@@ -57,8 +62,16 @@ func (s *Stage) shoot(cams []scene.Camera, views []scene.Viewport) {
 	}
 	s.shots = s.shots[:0]
 	for _, v := range views {
+		first := v.Camera == cams[0].Name
+		eye := &s.eye
+		if !first {
+			// its own, so that turning this viewport does not turn
+			// another that happens to name the same camera
+			own := built[v.Camera].Eye
+			eye = &own
+		}
 		s.shots = append(s.shots, shot{
-			cam: built[v.Camera], first: v.Camera == cams[0].Name,
+			cam: built[v.Camera], eye: eye, first: first,
 			x: v.X, y: v.Y, w: v.W, h: v.H,
 			exposure: docs[v.Camera],
 		})
@@ -100,8 +113,8 @@ func (v shot) cells(cols, rows int) (x0, y0, x1, y1 int) {
 // with no opinion. Only a camera built by hand uses nought to say nothing.
 func (s *Stage) lookOf(v shot, f Frame, scale float64) look {
 	l := look{eye: v.cam.Eye, scale: scale}
-	if v.first {
-		l.eye = s.eye
+	if v.eye != nil {
+		l.eye = *v.eye
 	}
 	switch {
 	case v.exposure != nil:
