@@ -1,6 +1,7 @@
 package grade
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/janearc/libtheme-css/primitives/functions"
@@ -60,12 +61,52 @@ func Swatch(s string) swatch.Swatch {
 // That is the failure worth having: the other one is a picture that is quietly
 // the wrong colour and says nothing about it.
 func Ramp(stops ...any) functions.Ramp {
+	if len(stops)%2 != 0 {
+		panic(fmt.Sprintf("grade.Ramp: %d things, which is a place "+
+			"and a colour over and over and one left over; the "+
+			"last is %v", len(stops), stops[len(stops)-1]))
+	}
 	var s []functions.Stop
-	for i := 0; i < len(stops); i += 2 {
-		s = append(s, functions.Stop{At: stops[i].(float64),
-			Swatch: Swatch(stops[i+1].(string))})
+	for i := 0; i+1 < len(stops); i += 2 {
+		s = append(s, functions.Stop{At: at(stops[i]),
+			Swatch: Swatch(colour(stops[i+1]))})
 	}
 	return functions.New(ok.Mix, s...)
+}
+
+// colour is a stop's colour, which is six hex digits and no hash.
+//
+// Guarded for the same reason the number is, and because leaving one of the
+// two would be this change made in one field and not the one beside it:
+// Ramp(0, 0xff2200, ...) panicked with "interface {} is int, not string",
+// which is the message this set out to retire.
+func colour(v any) string {
+	if s, ok := v.(string); ok {
+		return s
+	}
+	panic(fmt.Sprintf("grade.Ramp: a stop is a colour as six hex digits, "+
+		"and %v is a %T", v, v))
+}
+
+// at is where a stop sits, from whatever number was written.
+//
+// An untyped nought or one in a call reaches here as an int, and asserting
+// float64 on it panicked with "interface {} is int, not float64", which says
+// nothing about the ramp it came from. Nought and one are the ends of every
+// ramp, so they are the two most likely things anybody writes.
+func at(v any) float64 {
+	switch n := v.(type) {
+	case float64:
+		return n
+	case float32:
+		return float64(n)
+	case int:
+		return float64(n)
+	}
+	panic(fmt.Sprintf("grade.Ramp: a stop sits at a number, and %v is a "+
+		"%T; the call is a place and a colour, over and over", v, v))
+	// a ramp has no name to give, so these say the function and the
+	// value: it is the call that is wrong, and the value is what finds it
 }
 
 // Hash2 is a number between nought and one from a pair of them, the same every

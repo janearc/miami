@@ -195,6 +195,21 @@ func (r Ramp) At(t float64) RGB {
 // spark adds to it, and neither asks what was there before. That is only
 // right if what is behind is drawn first, which is why bodies go through
 // scenery.Draw: it orders them furthest away first.
+//
+// Who owns a subpixel, for anything sharing a buffer:
+//
+//	a solid owns it; a light does not.
+//	a light reads the depth and never writes it.
+//	a buffer is drawn bodies first, then lights.
+//
+// There is no fourth arrangement, and both halves are tests in scenery. A
+// light that writes depth culls the body behind it, which is a glow with a
+// body-shaped hole around it. And a body is opaque where it draws, so a
+// light drawn before one is simply replaced.
+//
+// Derived by opezart in compose, by writing the smallest scene with one of
+// each in it and watching it fail both ways. This library already did it
+// everywhere and said it nowhere.
 type Buffer struct {
 	W, H  int
 	pix   []float32 // three a subpixel
