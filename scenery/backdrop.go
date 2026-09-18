@@ -23,10 +23,30 @@ type Backdrop struct {
 	kept *keep.Cache[backdropKey, []Sky]
 }
 
-// backdropKey is what a kept sky depends on.
+// backdropKey is what a kept sky depends on: the size of the frame, and which
+// way the eye is pointed.
+//
+// Not where the eye is. The sky is a function of direction, so a camera that
+// moves without turning sees the same sky, and one that moves twelve thousand
+// units sees exactly the same sky -- measured, nought subpixels different.
+//
+// The whole Eye was in here, so any movement at all threw the bake away and
+// paid for it again: a still camera cost 0.04ms and one drifting by a
+// nanometre cost 1.92ms. opezart found it by suspecting his own drift was
+// doing this and asking, which it was.
 type backdropKey struct {
-	w, h int
-	eye  view.Eye
+	w, h             int
+	yaw, pitch, lens float64
+}
+
+// skyKey is what a sky is kept under, for a frame this size seen this way.
+func skyKey(w, h int, eye view.Eye) backdropKey {
+	lens := eye.Lens
+	if lens == 0 {
+		lens = 1
+	}
+	return backdropKey{w: w, h: h, yaw: eye.Yaw, pitch: eye.Pitch,
+		lens: lens}
 }
 
 // Draw fills the frame with the sky, replacing what was there.
@@ -58,7 +78,7 @@ func (d *Backdrop) skiesFor(w, h int, eye view.Eye) []Sky {
 	if d.kept == nil {
 		d.kept = keep.New[backdropKey, []Sky](keptBakes)
 	}
-	key := backdropKey{w: w, h: h, eye: eye}
+	key := skyKey(w, h, eye)
 	if s, ok := d.kept.Get(key); ok {
 		return s
 	}
