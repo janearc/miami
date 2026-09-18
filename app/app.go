@@ -263,6 +263,7 @@ type Stage struct {
 	eye     view.Eye // the first camera's, and the one Eye hands out
 	seen    view.Eye // the eye of the picture being drawn; see picture
 	shots   []shot   // the document's viewports; none means one, filling
+	held    grab     // the viewport a hand has hold of, and its pivot
 	solids  []view.Solid
 	lights  []view.Light
 	sun     []bool      // per light: it is the sun, so the hour places it
