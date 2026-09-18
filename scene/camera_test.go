@@ -66,9 +66,14 @@ func TestTwoCamerasSideBySide(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(cams) != 2 || cams[1].Name != "axis" || cams[1].Exposure != 2 ||
-		cams[1].Pitch != 1.2 {
+	if len(cams) != 2 || cams[1].Name != "axis" || cams[1].Pitch != 1.2 {
 		t.Fatalf("cameras = %+v", cams)
+	}
+	if e := cams[1].Exposure; e == nil || e.At(Ctx{}) != 2 {
+		t.Fatalf("axis exposure = %v, want 2", e)
+	}
+	if cams[0].Exposure != nil {
+		t.Fatal("\"eye\" says nothing about exposure and was given one")
 	}
 	if len(views) != 2 || views[1].Camera != "axis" || views[1].X != 0.5 {
 		t.Fatalf("viewports = %+v", views)
@@ -131,5 +136,29 @@ func TestBadCamerasAreRefusedAtRead(t *testing.T) {
 			t.Errorf("%s: the refusal does not name the document: %v",
 				tc.name, err)
 		}
+	}
+}
+
+// Exposure follows the music like anything else in a document, and nought is
+// a number a document may mean. A camera that said nothing has a nil one, so
+// the two can be told apart by whoever brings the frame to the screen.
+func TestExposureIsABindingAndNoughtIsAskable(t *testing.T) {
+	d, err := read(t, `{"name":"x","const":{"level":0.25},
+	  "cameras":[{"name":"beat","exposure":"@level"},
+	             {"name":"dark","exposure":0},
+	             {"name":"quiet"}]}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cams, _, _ := d.Shots()
+	c := d.Ctx(0, nil)
+	if e := cams[0].Exposure; e == nil || e.At(c) != 0.25 {
+		t.Errorf("beat exposure = %v, want the constant 0.25", e)
+	}
+	if e := cams[1].Exposure; e == nil || e.At(c) != 0 {
+		t.Errorf("dark exposure = %v, want a nought that was asked for", e)
+	}
+	if cams[2].Exposure != nil {
+		t.Errorf("quiet said nothing and got %v", cams[2].Exposure)
 	}
 }

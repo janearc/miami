@@ -10,10 +10,17 @@ const MainCamera = "main"
 //
 // The eye's fields sit beside the name rather than under a key of their
 // own, so a camera reads the way "eye" always has, with two words added.
+//
+// Exposure is a binding, like everything else that may move with the music.
+// It is a pointer so that saying nothing and saying nought are different
+// documents, and the second one means a black frame.
+//
+// Layer.Gain met the same trap first: a number that reached nought
+// legitimately and was read as absent.
 type Camera struct {
 	Name string `json:"name"`
 	Eye
-	Exposure float64 `json:"exposure"`
+	Exposure *Value `json:"exposure"`
 
 	// Default says the document described no camera at all, so the
 	// stage should use its own rather than an eye made of zeroes.
