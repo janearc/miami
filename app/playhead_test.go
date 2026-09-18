@@ -614,3 +614,53 @@ func TestTheLaterScoreWinsARace(t *testing.T) {
 		t.Error("the superseded piece was left playing")
 	}
 }
+
+// A superseded piece whose music had already died says both things.
+//
+// stop never means the sound would not stop: by the time it returns, every
+// pass has been killed and waited on. Its error means a restart failed while
+// the piece was playing, so the music ended early.
+//
+// The caller of the earlier Score is handed no stop -- the later Score owns
+// the scene now -- so this error is the only place that can say its music
+// died, and "superseded" alone hides it.
+func TestASupersededPieceSaysItsMusicDied(t *testing.T) {
+	was := play
+	defer func() { play = was }()
+
+	died := errors.New("a pass would not start")
+	entered, release := make(chan struct{}), make(chan struct{})
+	play = func(path string, _ time.Duration, _ func(error)) (
+		time.Time, func() error, error) {
+		if path != "a" {
+			return time.Now(), func() error { return nil }, nil
+		}
+		close(entered)
+		<-release
+		return time.Now(), func() error { return died }, nil
+	}
+
+	s, err := stageFrom(t, bounceDoc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	errA := make(chan error, 1)
+	go func() {
+		_, err := s.Score("a", fakeHead{}, 0)
+		errA <- err
+	}()
+	<-entered
+	if _, err := s.Score("b", otherHead{}, 0); err != nil {
+		t.Fatal(err)
+	}
+	close(release)
+
+	err = <-errA
+	if !errors.Is(err, ErrSuperseded) {
+		t.Errorf("it no longer says it was superseded: %v", err)
+	}
+	if !errors.Is(err, died) {
+		t.Errorf("this piece's music had already died and the error "+
+			"does not say so: %v", err)
+	}
+}

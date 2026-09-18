@@ -359,6 +359,25 @@ func (s *sound) stop() error {
 // Score starts a piece and attaches its playhead, in one call: the thing a game
 // actually wants. The stop it returns ends the sound.
 //
+//	stop, err := st.Score(wav, piece, piece.LoopPeriod())
+//	if err != nil {
+//		return err // the scene still draws; it draws at rest
+//	}
+//	defer func() {
+//		if err := stop(); err != nil {
+//			log.Println("a pass of the music failed:", err)
+//		}
+//	}()
+//
+// What the error says is not that the sound would not stop -- by the time
+// stop returns, every pass has been killed and waited on. It is that a
+// restart failed while the piece was playing, so the music ended early and
+// the scene has been put to rest.
+//
+// Worth reading rather than discarding, because the picture and the sound
+// disagreed for as long as it took to find out: a game wants to know its
+// music died, and this is the only place that says so.
+//
 // period is how long one pass of the piece lasts, for a piece that loops. With
 // nought it plays once, and a playhead that keeps counting past the end will
 // move the scene to silence -- so a looping piece needs its period, and the
@@ -410,7 +429,13 @@ func (s *Stage) Score(path string, p Playhead, period time.Duration) (
 		// this sound stops rather than play under a scene following
 		// something else: outside the lock, which a failing pass takes.
 		s.mu.Unlock()
-		stop()
+		if err := stop(); err != nil {
+			// a pass of this piece had already failed. the caller
+			// is handed no stop -- the later Score owns the scene
+			// -- so this error is the only place its music can be
+			// said to have died, and "superseded" alone hides it.
+			return nil, errors.Join(ErrSuperseded, err)
+		}
 		return nil, ErrSuperseded
 	}
 	s.musicGen = gen
