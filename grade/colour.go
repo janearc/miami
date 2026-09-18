@@ -1,6 +1,7 @@
 package grade
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/janearc/libtheme-css/primitives/functions"
@@ -61,11 +62,30 @@ func Swatch(s string) swatch.Swatch {
 // the wrong colour and says nothing about it.
 func Ramp(stops ...any) functions.Ramp {
 	var s []functions.Stop
-	for i := 0; i < len(stops); i += 2 {
-		s = append(s, functions.Stop{At: stops[i].(float64),
+	for i := 0; i+1 < len(stops); i += 2 {
+		s = append(s, functions.Stop{At: at(stops[i]),
 			Swatch: Swatch(stops[i+1].(string))})
 	}
 	return functions.New(ok.Mix, s...)
+}
+
+// at is where a stop sits, from whatever number was written.
+//
+// An untyped nought or one in a call reaches here as an int, and asserting
+// float64 on it panicked with "interface {} is int, not float64", which says
+// nothing about the ramp it came from. Nought and one are the ends of every
+// ramp, so they are the two most likely things anybody writes.
+func at(v any) float64 {
+	switch n := v.(type) {
+	case float64:
+		return n
+	case float32:
+		return float64(n)
+	case int:
+		return float64(n)
+	}
+	panic(fmt.Sprintf("grade.Ramp: a stop sits at a number, and %v is a "+
+		"%T; the call is a place and a colour, over and over", v, v))
 }
 
 // Hash2 is a number between nought and one from a pair of them, the same every

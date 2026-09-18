@@ -1,0 +1,56 @@
+package light
+
+import (
+	"strings"
+	"testing"
+)
+
+// A ramp's ends are the two places anybody writes by hand, and nought and one
+// are untyped ints in a call. Asserting float64 on them panicked with
+// "interface {} is int, not float64", which names neither the ramp nor the
+// stop. Found writing a test for this library, in this library.
+func TestARampTakesTheNumbersPeopleWrite(t *testing.T) {
+	want := HexRamp(0.0, "ff2200", 1.0, "00ff44")
+	for _, got := range []Ramp{
+		HexRamp(0, "ff2200", 1, "00ff44"),
+		HexRamp(0, "ff2200", 1.0, "00ff44"),
+		HexRamp(float32(0), "ff2200", float32(1), "00ff44"),
+	} {
+		for _, at := range []float64{0, 0.25, 0.5, 1} {
+			if got.At(at) != want.At(at) {
+				t.Errorf("at %g: %v, want %v", at, got.At(at),
+					want.At(at))
+			}
+		}
+	}
+}
+
+// And a stop that is not a number at all says so, naming what it got.
+func TestARampSaysWhatIsWrongWithAStop(t *testing.T) {
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatal("a ramp took a stop that is not a number")
+		}
+		said := strings.ToLower(strings.TrimSpace(
+			strings.Join(strings.Fields(toString(r)), " ")))
+		for _, want := range []string{"ramp", "string"} {
+			if !strings.Contains(said, want) {
+				t.Errorf("the panic does not mention %q: %s",
+					want, said)
+			}
+		}
+	}()
+	HexRamp("nought", "ff2200", 1.0, "00ff44")
+}
+
+// toString is whatever recover gave, as text.
+func toString(v any) string {
+	if s, ok := v.(string); ok {
+		return s
+	}
+	if e, ok := v.(error); ok {
+		return e.Error()
+	}
+	return ""
+}

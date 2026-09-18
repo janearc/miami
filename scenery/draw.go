@@ -14,7 +14,8 @@ type Body interface {
 }
 
 // Draw puts bodies into a frame furthest first, whatever order they are given
-// in.
+// in. Lights -- particles, a glow, anything that adds rather than replaces --
+// are drawn after it returns, never before: see light.Buffer.
 //
 // The order matters and cannot be left to the caller. A body's silhouette
 // crosses a subpixel rather than stopping at its edge, so an edge subpixel
