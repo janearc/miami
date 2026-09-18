@@ -79,7 +79,7 @@ func Libtheme(sh grade.Sheet) grade.Stack {
 		}
 		stops := make([]any, 0, len(run)*2)
 		for k, c := range run {
-			stops = append(stops, float64(k)/float64(len(run)-1), c)
+			stops = append(stops, spread(k, len(run)), c)
 		}
 		st = append(st, grade.Layer{
 			Name: "band",
@@ -213,4 +213,20 @@ func PageRamp() functions.Ramp {
 		0.0, "120631", 0.3, "5a2071", 0.55, "c63f6b", 0.8, "ff8f4a",
 		1.0, "ffd08a",
 	)
+}
+
+// spread is where the k-th of n colours sits along a ramp: the first at
+// nought, the last at one, the rest evenly between.
+//
+// One colour is the whole ramp. Dividing by n-1 made that nought over nought,
+// and a stop placed at a NaN was taken without a word.
+//
+// It came out looking right, a ramp of one stop being that colour wherever it
+// is read, which is the kind of right that stops the day a second stop
+// arrives. porter found it reading the callers of grade.Ramp.
+func spread(k, n int) float64 {
+	if n <= 1 {
+		return 0
+	}
+	return float64(k) / float64(n-1)
 }
