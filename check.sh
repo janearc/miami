@@ -22,6 +22,14 @@ if ! cmp -s app/builtin/starling.css sprites/made/starling.css; then
 	exit 1
 fi
 
+# the 404 license lives at the top, where a reader and github look for it,
+# and in licenses/ beside the MIT license some of the code is under. the
+# same gate, for the same reason.
+if ! cmp -s LICENSE.txt licenses/LICENSE.404.txt; then
+	echo "DIFFERS  licenses/LICENSE.404.txt is not LICENSE.txt"
+	exit 1
+fi
+
 rm -rf regress && mkdir -p regress out
 bin/miami macaw term 34 > regress/macaw.ansi 2>/dev/null
 bin/miami palm term 22 > regress/palm.ansi 2>/dev/null

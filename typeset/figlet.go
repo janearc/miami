@@ -1,3 +1,6 @@
+// This file is licensed under the MIT license, in `licenses/LICENSE.mit.txt`.
+// The rest of miami is under the 404 license, in `LICENSE.txt`.
+
 package typeset
 
 import (
