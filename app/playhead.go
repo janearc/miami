@@ -359,6 +359,21 @@ func (s *sound) stop() error {
 // Score starts a piece and attaches its playhead, in one call: the thing a game
 // actually wants. The stop it returns ends the sound.
 //
+//	stop, err := st.Score(wav, piece, piece.LoopPeriod())
+//	if err != nil {
+//		return err // the scene still draws; it draws at rest
+//	}
+//	defer func() {
+//		if err := stop(); err != nil {
+//			log.Println("the music would not stop:", err)
+//		}
+//	}()
+//
+// The error stop gives back is worth reading rather than discarding. At the
+// end of a program there is little to do with it, but a game that scores a
+// second piece while the first will not stop has a sound it cannot end, and
+// this is the only place that says so.
+//
 // period is how long one pass of the piece lasts, for a piece that loops. With
 // nought it plays once, and a playhead that keeps counting past the end will
 // move the scene to silence -- so a looping piece needs its period, and the
