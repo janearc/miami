@@ -177,3 +177,39 @@ func TestDrawAddsLightAndRespectsDepth(t *testing.T) {
 		t.Fatalf("dust behind a wall added %v", hidden)
 	}
 }
+
+// An emitter that cannot throw anything throws nothing, rather than working
+// out places that are not numbers.
+//
+// A spiral divides by its radius, so with no radius every particle's place
+// was a NaN: Draw dropped them all and nothing said why. Found by opezart.
+func TestAnEmitterWithNoSizeThrowsNothing(t *testing.T) {
+	for _, e := range []Emitter{
+		{Kind: Spiral, Axis: view.Vec{Y: 1}, Rate: 40, Life: 7,
+			Speed: 3},
+		{Kind: Drift, Axis: view.Vec{X: 1}, Rate: 40, Life: 7,
+			Speed: 1},
+		{Kind: Fountain, Axis: view.Vec{Y: 1}, Rate: 0, Life: 7},
+	} {
+		n := 0
+		e.Alive(5, func(p Particle) {
+			n++
+			if math.IsNaN(p.At.X) || math.IsNaN(p.At.Y) ||
+				math.IsNaN(p.At.Z) {
+				t.Fatalf("kind %d: a particle at %v", e.Kind, p.At)
+			}
+		})
+		if n != 0 {
+			t.Errorf("kind %d: threw %d particles with nothing to "+
+				"throw them from", e.Kind, n)
+		}
+	}
+	// and one that can, for contrast
+	full := Emitter{Kind: Spiral, Axis: view.Vec{Y: 1}, Rate: 40, Life: 7,
+		Speed: 3, Radius: 6, Inner: 2}
+	n := 0
+	full.Alive(5, func(Particle) { n++ })
+	if n == 0 {
+		t.Error("a spiral with a radius threw nothing either")
+	}
+}

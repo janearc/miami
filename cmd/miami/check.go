@@ -19,7 +19,11 @@ import (
 // that matches nothing is a report rather than a crash. It is also
 // deterministic -- same file, same output -- so it can be diffed, tested, and
 // put behind an agent that will run it two hundred times without watching.
-func checkFile(path string) {
+func checkFile(args []string) {
+	if len(args) < 1 {
+		usage()
+	}
+	path := args[0]
 	if strings.HasSuffix(path, ".json") {
 		// a scene is known by its top-level keys, not by the words in
 		// it. searching the text sent a sprite document that mentioned

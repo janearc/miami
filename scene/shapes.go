@@ -76,6 +76,18 @@ func (v Vec) At(c Ctx) (x, y, z float64) {
 // that was not placed can be told from one placed at nought.
 func (v Vec) Set() bool { return v.X.Set() || v.Y.Set() || v.Z.Set() }
 
+// Fixed is the value as a plain number, and false if it is a binding.
+//
+// It is for refusing a number that cannot work before anything is drawn. A
+// binding cannot be judged at read: it may be nought now and right later, or
+// read a constant nobody has supplied yet.
+func (v Value) Fixed() (float64, bool) {
+	if v.fixed == nil {
+		return 0, false
+	}
+	return *v.fixed, true
+}
+
 // Set is whether the document gave the value at all.
 func (v Value) Set() bool {
 	return v.fixed != nil || v.ref != "" || v.from != nil ||

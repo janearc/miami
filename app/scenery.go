@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"image/color"
+	"math"
 	"sort"
 	"strings"
 
@@ -32,7 +33,8 @@ import (
 
 // piece is one piece of scenery on a stage.
 type piece struct {
-	order  int // backdrops, then solids, then light
+	order  int                        // backdrops, then solids, then light
+	away   func(eye view.Eye) float64 // furthest drawn first
 	draw   func(b *light.Buffer, eye view.Eye, t float64)
 	update func(c scene.Ctx) // reads the document's numbers again
 }
@@ -89,8 +91,23 @@ func (s *Stage) drawScenery(sh grade.Sheet, f Frame) [][]color.RGBA {
 		}
 	}
 	t := f.Since.Seconds()
-	for _, p := range s.scenery {
-		p.update(f.Scene)
+	for i := range s.scenery {
+		s.scenery[i].update(f.Scene)
+	}
+	// furthest first, worked out every frame because a body may have
+	// moved.
+	//
+	// An edge subpixel holds part of a body and part of what is behind it,
+	// and drawn nearest first the far one is kept out of the part it
+	// should share. The order a document lists them in is not it.
+	order := append([]piece(nil), s.scenery...)
+	sort.SliceStable(order, func(i, j int) bool {
+		if order[i].order != order[j].order {
+			return order[i].order < order[j].order
+		}
+		return away(order[i], s.eye) > away(order[j], s.eye)
+	})
+	for _, p := range order {
 		p.draw(b, s.eye, t)
 	}
 	s.traced(b, f)
@@ -280,7 +297,7 @@ func holePiece(sh scene.Shape, c scene.Ctx) (piece, error) {
 		}
 	}
 	update(c)
-	return piece{order: 0, draw: h.Draw, update: update}, nil
+	return piece{order: 0, draw: h.Draw, away: h.Away, update: update}, nil
 }
 
 // biomeNames are the biomes a document may colour, in their order.
@@ -338,7 +355,7 @@ func planetPiece(sh scene.Shape, at scene.Ctx) (piece, error) {
 		}
 	}
 	update(at)
-	return piece{order: 1, draw: p.Draw, update: update}, nil
+	return piece{order: 1, draw: p.Draw, away: p.Away, update: update}, nil
 }
 
 // colourBiomes lays a world block's colours over a planet's.
@@ -428,4 +445,14 @@ func names[T any](m map[string]T) string {
 	}
 	sort.Strings(out)
 	return strings.Join(out, ", ")
+}
+
+// away is how far a piece of scenery is from the eye, and infinitely far for
+// one that does not say: a sky, and particles, which are added rather than
+// composed and so do not care.
+func away(p piece, eye view.Eye) float64 {
+	if p.away == nil {
+		return math.Inf(1)
+	}
+	return p.away(eye)
 }

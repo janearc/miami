@@ -1,6 +1,7 @@
 package scenery
 
 import (
+	"math"
 	"sync"
 
 	"github.com/janearc/miami/internal/keep"
@@ -78,3 +79,6 @@ func (d *Backdrop) skiesFor(w, h int, eye view.Eye) []Sky {
 	d.kept.Put(key, skies)
 	return skies
 }
+
+// Away is how far the sky is: further than anything, since it is the sky.
+func (d *Backdrop) Away(view.Eye) float64 { return math.Inf(1) }
