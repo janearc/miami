@@ -241,7 +241,7 @@ func spaceFrom(b *scene.Space, base scenery.Space,
 		sp.Band = vecAt(*b.Band, c)
 	}
 	if b.Ambient != "" {
-		sp.Ambient = light.Hex(b.Ambient)
+		sp.Ambient = light.Hex(string(b.Ambient))
 	}
 	if len(b.Gas) > 0 {
 		sp.Gas = light.Bake(scene.RampAt(b.Gas, c))
@@ -373,7 +373,7 @@ func colourBiomes(p *scenery.Planet, spec *scene.World) error {
 			return fmt.Errorf("no biome %q; there is %s", name,
 				strings.Join(biomeNames, ", "))
 		}
-		p.Colours[i] = light.Hex(hex)
+		p.Colours[i] = light.Hex(string(hex))
 	}
 	for name, g := range spec.Glow {
 		i, ok := index[name]
@@ -384,7 +384,7 @@ func colourBiomes(p *scenery.Planet, spec *scene.World) error {
 		p.Glow[i] = g
 	}
 	if spec.Air != "" {
-		p.Air = light.Hex(spec.Air)
+		p.Air = light.Hex(string(spec.Air))
 	}
 	return nil
 }

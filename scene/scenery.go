@@ -58,7 +58,7 @@ type Space struct {
 	Band    *Vec   `json:"band"`
 	Width   *Value `json:"width"`
 	Glow    *Value `json:"glow"`
-	Ambient string `json:"ambient"` // a hex colour: a lit sky
+	Ambient Hex    `json:"ambient"` // a lit sky
 	Gas     []Stop `json:"gas"`
 }
 
@@ -76,13 +76,13 @@ type World struct {
 	Lines    *Value `json:"lines"`
 	Relief   *Value `json:"relief"`
 	Clouds   *Value `json:"clouds"`
-	Air      string `json:"air"` // a hex colour
+	Air      Hex    `json:"air"`
 	AirDepth *Value `json:"airdepth"`
 	Cities   *Value `json:"cities"`
 
 	// Colours and Glow are by biome name: deep, sea, ice, beach, desert,
 	// grass, forest, jungle, tundra, rock, snow.
-	Colours map[string]string  `json:"colours"`
+	Colours map[string]Hex     `json:"colours"`
 	Glow    map[string]float64 `json:"glow"`
 }
 

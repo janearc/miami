@@ -137,16 +137,16 @@ type Shape struct {
 	Sun bool `json:"sun"` // sky: know the time of day. light: be the sun.
 
 	// Written over the top.
-	Row     int      `json:"row"` // negative counts from the bottom
-	Col     int      `json:"col"` // -1 centres it
-	Ink     []string `json:"ink"` // hex colours; the house ramp if empty
-	Scrim   float64  `json:"scrim"`
-	Font    string   `json:"font"`
-	Format  string   `json:"format"`  // clock: a go time layout
-	Flicker bool     `json:"flicker"` // clock: separators out half a second
-	Text    string   `json:"text"`
-	Label   string   `json:"label"`
-	Width   int      `json:"width"`
+	Row     int     `json:"row"` // negative counts from the bottom
+	Col     int     `json:"col"` // -1 centres it
+	Ink     []Hex   `json:"ink"` // the house ramp if empty
+	Scrim   float64 `json:"scrim"`
+	Font    string  `json:"font"`
+	Format  string  `json:"format"`  // clock: a go time layout
+	Flicker bool    `json:"flicker"` // clock: separators out half a second
+	Text    string  `json:"text"`
+	Label   string  `json:"label"`
+	Width   int     `json:"width"`
 
 	// Rune is an emoji's codepoint, as hex: "1F32B" and not the glyph.
 	//

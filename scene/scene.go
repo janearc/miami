@@ -56,6 +56,7 @@ import (
 	"github.com/janearc/libtheme-css/spaces/srgb"
 
 	"github.com/janearc/miami/grade"
+	colours "github.com/janearc/miami/internal/hex"
 )
 
 // Doc is a whole scene.
@@ -321,16 +322,53 @@ type Colour struct {
 	ease     string
 }
 
+// Hex is a colour as a document writes one: six hex digits, in whichever
+// case, with or without a hash in front.
+//
+// A type rather than a string, so that a colour nobody can draw is refused
+// when the document is read rather than drawn as something else.
+//
+// Swatch took any string and read anything but a lower-case hex digit as
+// nought: "FF6EC7" was nearly black and "#ff6ec7" a different colour, both
+// without a word.
+type Hex string
+
+// UnmarshalJSON reads a colour and refuses what cannot be one.
+func (h *Hex) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return fmt.Errorf("colour: %w", err)
+	}
+	if !grade.IsColour(s) {
+		return fmt.Errorf("%q is not a colour: six hex digits, such "+
+			"as ff6ec7, with or without a hash", s)
+	}
+	*h = Hex(s)
+	return nil
+}
+
 // UnmarshalJSON reads a colour: a hex string, or one that travels.
 func (c *Colour) UnmarshalJSON(b []byte) error {
 	var s string
 	if json.Unmarshal(b, &s) == nil {
+		if !grade.IsColour(s) {
+			return fmt.Errorf("%q is not a colour: six hex "+
+				"digits, such as ff6ec7, with or without a "+
+				"hash", s)
+		}
 		c.fixed = s
 		return nil
 	}
 	var raw struct{ From, To, Ease string }
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return fmt.Errorf("colour: %w", err)
+	}
+	for _, end := range []string{raw.From, raw.To} {
+		if !grade.IsColour(end) {
+			return fmt.Errorf("%q is not a colour: six hex "+
+				"digits, such as ff6ec7, with or without a "+
+				"hash", end)
+		}
 	}
 	c.from, c.to, c.ease = raw.From, raw.To, raw.Ease
 	return nil
@@ -347,23 +385,12 @@ func (c Colour) at(x ctx) swatch.Swatch {
 	return ok.Mix.Mix(hex(c.from), hex(c.to), curve(c.ease, x.e))
 }
 
-// hex is a hex string as a physical colour.
+// hex is a colour written as text, as a physical colour. It reads what the
+// one parser reads, so a colour Read accepted is the colour Read draws.
 func hex(s string) swatch.Swatch {
-	var v [3]uint8
-	for i := 0; i < len(s) && i < 6; i++ {
-		d := byte(0)
-		switch ch := s[i]; {
-		case ch >= '0' && ch <= '9':
-			d = ch - '0'
-		case ch >= 'a' && ch <= 'f':
-			d = ch - 'a' + 10
-		case ch >= 'A' && ch <= 'F':
-			d = ch - 'A' + 10
-		}
-		v[i/2] = v[i/2]<<4 | d
-	}
-	return srgb.RGB{R: float64(v[0]) / 255, G: float64(v[1]) / 255,
-		B: float64(v[2]) / 255}.Swatch()
+	r, g, b, _ := colours.Bytes(s)
+	return srgb.RGB{R: float64(r) / 255, G: float64(g) / 255,
+		B: float64(b) / 255}.Swatch()
 }
 
 // clamp01 holds a number to nought and one.

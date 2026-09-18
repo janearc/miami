@@ -1,6 +1,7 @@
 package paint
 
 import (
+	"github.com/janearc/miami/internal/hex"
 	"image/color"
 	"math"
 
@@ -129,22 +130,12 @@ func HueApart(a, b color.RGBA) float64 {
 	return d
 }
 
-// Hex is a hex colour as a terminal colour. Six digits, no hash.
+// Hex is a colour written as text, as a terminal colour: six digits, in
+// either case, with or without a hash. What is not a colour is black, and
+// whoever reads a document refuses it before it reaches here.
 func Hex(s string) color.RGBA {
-	var v [3]uint8
-	for i := 0; i < len(s) && i < 6; i++ {
-		d := byte(0)
-		switch c := s[i]; {
-		case c >= '0' && c <= '9':
-			d = c - '0'
-		case c >= 'a' && c <= 'f':
-			d = c - 'a' + 10
-		case c >= 'A' && c <= 'F':
-			d = c - 'A' + 10
-		}
-		v[i/2] = v[i/2]<<4 | d
-	}
-	return color.RGBA{v[0], v[1], v[2], 255}
+	r, g, b, _ := hex.Bytes(s)
+	return color.RGBA{r, g, b, 255}
 }
 
 // Blend is two hex colours mixed in oklab, which is the library's own line

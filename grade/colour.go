@@ -2,6 +2,7 @@ package grade
 
 import (
 	"fmt"
+	"github.com/janearc/miami/internal/hex"
 	"math"
 
 	"github.com/janearc/libtheme-css/primitives/functions"
@@ -28,27 +29,17 @@ import (
 // Swatch is a hex string as a physical colour. No leading hash and no short
 // form -- six hex digits, which is what a theme file writes.
 func Swatch(s string) swatch.Swatch {
-	var r, g, b uint8
-	for i, c := range []byte(s) {
-		v := byte(0)
-		switch {
-		case c >= '0' && c <= '9':
-			v = c - '0'
-		case c >= 'a' && c <= 'f':
-			v = c - 'a' + 10
-		}
-		switch i / 2 {
-		case 0:
-			r = r<<4 | v
-		case 1:
-			g = g<<4 | v
-		case 2:
-			b = b<<4 | v
-		}
-	}
+	r, g, b, _ := hex.Bytes(s)
 	return srgb.RGB{R: float64(r) / 255, G: float64(g) / 255,
 		B: float64(b) / 255}.Swatch()
 }
+
+// IsColour is whether a string is six hex digits, however they are written.
+//
+// For whoever reads a document, so that a colour nobody can draw is refused
+// by name rather than drawn as something else. Swatch itself still answers,
+// because a library call in the middle of a frame is no place to stop.
+func IsColour(s string) bool { return hex.Is(s) }
 
 // Ramp is a ramp written as alternating positions and hex colours:
 //
