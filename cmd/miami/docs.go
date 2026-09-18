@@ -65,6 +65,10 @@ var docPages = []docPage{
 		"page_library.go", libraryPage,
 	},
 	{
+		"scenery", "black holes, worlds and particles, in a document",
+		"page_scenery.go", sceneryPage,
+	},
+	{
 		"traps", "the refusals, and what each cost to find",
 		"page_traps.go", trapsPage,
 	},

@@ -33,6 +33,15 @@ type Space struct {
 	// Dust is how much the dark lanes hide of what is behind them.
 	Dust float64
 
+	// Ambient is light from every direction alike: a sky rather than the
+	// dark between stars.
+	//
+	// It is what a black hole against daylight needs. Being the same
+	// whichever way a ray leaves, it is not bent into anything, so the
+	// shadow stays a black disc cut out of it while the stars and the gas
+	// around it are still smeared by the lens.
+	Ambient light.RGB
+
 	// Band is the axis of a galaxy's plane, so the band of it runs round
 	// the sky square to this. A zero axis is no band. Width is in radians
 	// either side of the plane, and Glow is the band's own light.
@@ -74,7 +83,8 @@ func (s Space) Look(dir view.Vec, pixel float64) Sky {
 		gas, dust = s.gas(d, band)
 	}
 	keep := 1 - dust
-	return Sky{Light: gas.Plus(stars.Scale(keep)), Star: star * keep,
+	lit := s.Ambient.Plus(gas).Plus(stars.Scale(keep))
+	return Sky{Light: lit, Star: star * keep,
 		Phase: phase, Twinkle: s.Twinkle}
 }
 

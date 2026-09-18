@@ -220,6 +220,9 @@ func spaceFrom(b *scene.Space, base scenery.Space,
 	if b.Band != nil {
 		sp.Band = vecAt(*b.Band, c)
 	}
+	if b.Ambient != "" {
+		sp.Ambient = light.Hex(b.Ambient)
+	}
 	if len(b.Gas) > 0 {
 		sp.Gas = light.Bake(scene.RampAt(b.Gas, c))
 	}
