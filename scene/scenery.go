@@ -174,6 +174,14 @@ func (s *Shape) sceneryBlocks() error {
 //
 // So: absent stays absent and means the look's, and a number the document
 // actually wrote has to be one that works.
+//
+// Two numbers cannot tell the difference and are the exception: a planet's
+// radius and a hole's samples are a float64 and an int on Shape rather than a
+// *Value, so a written nought looks exactly like nothing written and is taken
+// as the look's own. Only their negatives are refused.
+//
+// Making them pointers would close it, and would change Shape, which every
+// kind of shape shares.
 func (s *Shape) sceneryNumbers() error {
 	if s.Kind == "planet" && s.Radius < 0 {
 		return fmt.Errorf("a planet's radius is %g; leave it out for "+

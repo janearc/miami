@@ -69,6 +69,13 @@ type Planet struct {
 
 // Draw paints the planet over the frame where it is nearer than what is
 // there, with its atmosphere glowing past its edge.
+//
+// Draw two bodies through this and the nearer one must go last, or its edge
+// blends against a background the far one has not painted yet: an edge
+// subpixel holds part of each.
+//
+// Use scenery.Draw, which takes the list and orders it. opezart measured 388
+// subpixels differing by call order here, against none through the drawer.
 func (p *Planet) Draw(b *light.Buffer, eye view.Eye, t float64) {
 	w := p.worldFor()
 	sun := unit(p.Sun)
