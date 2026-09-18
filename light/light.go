@@ -211,15 +211,37 @@ func New(w, h int) *Buffer {
 	return b
 }
 
-// At is the light at a subpixel.
+// inside is whether a point is on the frame.
+//
+// Every way in and out of the buffer asks, because whoever is drawing has
+// usually worked the point out from a projection or a radius and cannot
+// always know: a spark half off the edge, a glow that reaches past it.
+//
+// Add said so and clipped from the start. The others indexed the slice and
+// took what they found: a panic off the right edge, which opezart hit writing
+// a note's depth at an odd terminal size.
+//
+// Off the left it was worse. An x of minus one on row two is a valid index
+// for the end of row one, so it wrote to the wrong cell and said nothing.
+func (b *Buffer) inside(x, y int) bool {
+	return x >= 0 && y >= 0 && x < b.W && y < b.H
+}
+
+// At is the light at a subpixel, and black off the frame.
 func (b *Buffer) At(x, y int) RGB {
+	if !b.inside(x, y) {
+		return RGB{}
+	}
 	i := (y*b.W + x) * 3
 	return RGB{float64(b.pix[i]), float64(b.pix[i+1]),
 		float64(b.pix[i+2])}
 }
 
-// Set replaces the light at a subpixel.
+// Set replaces the light at a subpixel. Off the frame it does nothing.
 func (b *Buffer) Set(x, y int, c RGB) {
+	if !b.inside(x, y) {
+		return
+	}
 	i := (y*b.W + x) * 3
 	b.pix[i], b.pix[i+1], b.pix[i+2] = float32(c.R), float32(c.G),
 		float32(c.B)
@@ -228,7 +250,7 @@ func (b *Buffer) Set(x, y int, c RGB) {
 // Add puts more light on a subpixel. Outside the frame it does nothing, so a
 // spark half off the edge needs no clipping by whoever drew it.
 func (b *Buffer) Add(x, y int, c RGB) {
-	if x < 0 || y < 0 || x >= b.W || y >= b.H {
+	if !b.inside(x, y) {
 		return
 	}
 	i := (y*b.W + x) * 3
@@ -243,13 +265,20 @@ func (b *Buffer) Over(x, y int, c RGB, a float64) {
 }
 
 // Depth is how far away the nearest thing drawn at a subpixel is, in world
-// units, and infinite where nothing solid has been.
+// units, and infinite where nothing solid has been or off the frame.
 func (b *Buffer) Depth(x, y int) float64 {
+	if !b.inside(x, y) {
+		return math.Inf(1)
+	}
 	return float64(b.depth[y*b.W+x])
 }
 
-// SetDepth records how far away the thing just drawn at a subpixel is.
+// SetDepth records how far away the thing just drawn at a subpixel is. Off
+// the frame it does nothing.
 func (b *Buffer) SetDepth(x, y int, d float64) {
+	if !b.inside(x, y) {
+		return
+	}
 	b.depth[y*b.W+x] = float32(d)
 }
 
