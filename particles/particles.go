@@ -82,9 +82,17 @@ type Particle struct {
 }
 
 // Alive calls do with every particle alive at t, in the order they were born.
+//
+// An emitter that cannot throw anything throws nothing: no rate, no life, or
+// -- for the two kinds whose size is what they are -- no radius. A spiral of
+// no radius used to divide by it, which made every particle's place a NaN and
+// drew nothing while saying nothing.
 func (e Emitter) Alive(t float64, do func(Particle)) {
 	if e.Life <= 0 || e.Rate <= 0 {
 		return
+	}
+	if (e.Kind == Spiral || e.Kind == Drift) && e.Radius <= 0 {
+		return // a ring of no radius, a box of no size
 	}
 	if e.Kind == Drift {
 		n := int64(e.Rate * e.Life)

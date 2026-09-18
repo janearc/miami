@@ -160,6 +160,75 @@ func (s *Shape) sceneryBlocks() error {
 		return fmt.Errorf(`an emitter needs an "emit" block saying ` +
 			`what kind: fountain, jet, spiral or drift`)
 	}
+	return s.sceneryNumbers()
+}
+
+// sceneryNumbers refuses a number that cannot draw anything.
+//
+// Two kinds of wrong, and both were accepted before. A spiral with no radius
+// divided by nought, so every particle's place became a NaN and the emitter
+// drew nothing while saying nothing.
+//
+// And an explicit minus sign was thrown away, because the code asked whether
+// a number was above nought, which a document that said nothing also answers.
+//
+// So: absent stays absent and means the look's, and a number the document
+// actually wrote has to be one that works.
+func (s *Shape) sceneryNumbers() error {
+	if s.Kind == "planet" && s.Radius < 0 {
+		return fmt.Errorf("a planet's radius is %g; leave it out for "+
+			"the look's own", s.Radius)
+	}
+	if s.Hole != nil && s.Hole.Samples < 0 {
+		return fmt.Errorf("a hole samples %d rays; it is how many "+
+			"a side an edge gets", s.Hole.Samples)
+	}
+	if s.World != nil {
+		for _, f := range []struct {
+			name string
+			v    *Value
+		}{{"tiles", s.World.Tiles}, {"plates", s.World.Plates}} {
+			if err := above(f.name, f.v, 0); err != nil {
+				return err
+			}
+		}
+	}
+	if s.Emit != nil {
+		return s.Emit.numbers()
+	}
+	return nil
+}
+
+// numbers refuses an emitter that cannot throw anything.
+func (e *Emit) numbers() error {
+	for _, f := range []struct {
+		name string
+		v    *Value
+	}{{"rate", e.Rate}, {"life", e.Life}, {"radius", e.Radius}} {
+		if err := above(f.name, f.v, 0); err != nil {
+			return err
+		}
+	}
+	// a spiral turns about a ring and a drift fills a box, and neither has
+	// a sensible size to fall back on
+	needs := e.Kind == "spiral" || e.Kind == "drift"
+	if needs && e.Radius == nil {
+		return fmt.Errorf("a %s needs a radius: the ring it starts "+
+			"on, or the box it fills", e.Kind)
+	}
+	return nil
+}
+
+// above refuses a number the document wrote that is not above a floor. A
+// binding is left alone: what it is worth cannot be known until it is drawn.
+func above(name string, v *Value, floor float64) error {
+	if v == nil {
+		return nil
+	}
+	if n, ok := v.Fixed(); ok && n <= floor {
+		return fmt.Errorf("%s is %g; it must be more than %g", name, n,
+			floor)
+	}
 	return nil
 }
 

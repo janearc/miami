@@ -484,3 +484,10 @@ func emission(r, lambda, at float64, key bakeKey) (heat, glow float64) {
 
 // clamp01 holds a number to nought and one.
 func clamp01(v float64) float64 { return math.Max(0, math.Min(1, v)) }
+
+// Away is how far the hole is from the eye, for a drawer putting bodies in
+// order. A hole is usually the furthest thing in a frame, and behind
+// everything it bends.
+func (h *BlackHole) Away(eye view.Eye) float64 {
+	return length(sub(h.At, eye.At))
+}

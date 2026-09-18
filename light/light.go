@@ -147,6 +147,11 @@ func (r Ramp) At(t float64) RGB {
 
 // Buffer is a frame of light, and how far away whatever was drawn at each
 // subpixel is.
+//
+// One light a subpixel. A surface replaces what is there, an atmosphere or a
+// spark adds to it, and neither asks what was there before. That is only
+// right if what is behind is drawn first, which is why bodies go through
+// scenery.Draw: it orders them furthest away first.
 type Buffer struct {
 	W, H  int
 	pix   []float32 // three a subpixel

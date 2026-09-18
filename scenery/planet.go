@@ -128,13 +128,17 @@ func (p *Planet) subpixel(b *light.Buffer, eye view.Eye, w *world,
 	// how close the ray passes to the middle, as a share of the radius
 	near := math.Sqrt(math.Max(0, dot(oc, oc)-half*half/a)) / p.Radius
 	depthMid := -half / a // depth of the closest approach
-	if depthMid <= 0 || depthMid > b.Depth(x, y) {
-		return
+	if depthMid <= 0 {
+		return // behind the camera
 	}
 	if disc < 0 {
 		p.halo(b, x, y, eye, dir, near, depthMid, sun)
 		return
 	}
+	// where the ray enters the sphere, which is always nearer than its
+	// closest approach to the middle. Culling on the closest approach hid
+	// surface that was in front of what culled it: with a planet at 4.2 of
+	// radius 1 the surface is entered at 3.2, and a wall at 3.7 hid it.
 	depth := (-half - math.Sqrt(disc)) / a
 	if depth <= 0 || depth > b.Depth(x, y) {
 		return
@@ -254,6 +258,13 @@ func (p *Planet) halo(b *light.Buffer, x, y int, eye view.Eye, dir view.Vec,
 	if near > 1+thick {
 		return
 	}
+	// air is light on the way to the eye, so anything nearer hides it. It
+	// is added rather than laid over, which is only right because what is
+	// behind was drawn first: Draw orders bodies furthest away first, and
+	// without that a far planet's face erased a near planet's air.
+	if depth > b.Depth(x, y) {
+		return
+	}
 	glow := math.Pow(1-(near-1)/thick, 2)
 	closest := add(eye.At, scale(dir, depth))
 	side := clamp01(dot(unit(sub(closest, p.At)), sun) + 0.4)
@@ -272,4 +283,10 @@ func (p *Planet) worldFor() *world {
 		p.world, p.made = newWorld(tr), tr
 	}
 	return p.world
+}
+
+// Away is how far the planet's middle is from the eye, for a drawer putting
+// bodies in order.
+func (p *Planet) Away(eye view.Eye) float64 {
+	return length(sub(p.At, eye.At))
 }
