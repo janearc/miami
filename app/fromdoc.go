@@ -101,7 +101,7 @@ func (s *Stage) addShape(sh scene.Shape) error {
 				w, h := float64(g.W), float64(g.H)
 				aspect := (h * 4) / (w * 3)
 				sun := view.SunAt(at)
-				return sky.At(g, sun, s.eye.HorizonV(aspect))
+				return sky.At(g, sun, s.seen.HorizonV(aspect))
 			}
 		}
 		return nil

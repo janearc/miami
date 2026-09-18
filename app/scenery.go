@@ -78,7 +78,9 @@ func (s *Stage) addScenery(sh scene.Shape, c scene.Ctx) (bool, error) {
 
 // drawScenery is the frame as light: the stage's painted layers, the
 // scenery, and the glow, brought down to subpixels.
-func (s *Stage) drawScenery(sh grade.Sheet, f Frame) [][]color.RGBA {
+func (s *Stage) drawScenery(
+	sh grade.Sheet, f Frame, v look,
+) [][]color.RGBA {
 	b := light.New(sh.W, sh.H)
 	switch {
 	case s.Sky != nil:
@@ -91,18 +93,18 @@ func (s *Stage) drawScenery(sh grade.Sheet, f Frame) [][]color.RGBA {
 	t := f.Since.Seconds()
 	for _, p := range s.scenery {
 		p.update(f.Scene)
-		p.draw(b, s.eye, t)
+		p.draw(b, v.eye, t)
 	}
 	s.traced(b, f)
-	s.sprites(b, f)
+	s.sprites(b, f, v.eye)
 	g := glowOf(s.Doc)
 	var spread []light.Glow
 	for _, sc := range g.Spread {
-		spread = append(spread, light.Glow{Radius: sc.Radius,
+		spread = append(spread, light.Glow{Radius: v.radius(sc.Radius),
 			Strength: sc.Strength})
 	}
 	b.Bloom(g.Threshold, spread...)
-	return b.RGBA(g.Exposure)
+	return b.RGBA(v.exposed(g.Exposure))
 }
 
 // traced puts the ray-traced solids into the frame as light.
@@ -131,8 +133,8 @@ func (s *Stage) traced(b *light.Buffer, f Frame) {
 // This is what lets a bird fly behind a disk. Drawn into the buffer rather
 // than over the picture afterwards, a sprite is also subject to the frame's
 // exposure and spreads its own glow, like everything else in the scene.
-func (s *Stage) sprites(b *light.Buffer, f Frame) {
-	for _, p := range view.Resolve(s.Objects, s.eye, f.Since, b.W, b.H) {
+func (s *Stage) sprites(b *light.Buffer, f Frame, eye view.Eye) {
+	for _, p := range view.Resolve(s.Objects, eye, f.Since, b.W, b.H) {
 		for y, row := range p.Frame.Art {
 			py := p.Y + y
 			if py < 0 || py >= b.H {
