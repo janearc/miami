@@ -58,6 +58,41 @@ for pair in libdaffy:libdaffy-road libdaffy-sprite:libdaffy-sprite \
 	echo "clone libs/$repo"
 done
 
+# the workspace, written here rather than kept in the repository.
+#
+# it names libs/, which is not in the repository, so tracked it made every
+# checkout that had not been bootstrapped fail to build -- including a plain
+# git worktree, where the error is "cannot load module libs/libdaffy-sprite
+# listed in go.work file" and says nothing about what to run.
+#
+# without it the module builds against the published libraries, which is what
+# anyone cloning gets and what the release is cut from. With it the local
+# trees win, which is what working on two repositories at once needs.
+#
+# the replace is what makes it build, not tidiness: libdaffy's own go.mod
+# replaces libtheme-css with a path from the layout it was committed in, which
+# exists nowhere else, and a workspace replace overrides a module's.
+if [ -d libs/libdaffy ] && [ -d libs/libdaffy-sprite ] &&
+	[ -d libs/libtheme-css ]; then
+	cat > go.work <<'WORK'
+go 1.26
+
+use (
+	.
+	./libs/libdaffy
+	./libs/libdaffy-sprite
+)
+
+replace github.com/janearc/libtheme-css => ./libs/libtheme-css
+WORK
+	echo "wrote go.work (the libraries beside this one are used)"
+elif [ -f go.work ]; then
+	rm -f go.work go.work.sum
+	echo "removed go.work (the libraries are not here)"
+else
+	echo "no go.work (building against the published libraries)"
+fi
+
 # the player, if its tree came down. sprites/bin is where SPRITES.md looks.
 #
 # it needs its own workspace for two reasons. built from in here it would pick
