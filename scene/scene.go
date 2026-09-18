@@ -70,6 +70,12 @@ type Doc struct {
 	Eye    *Eye    `json:"eye"`
 	Shapes []Shape `json:"shapes"`
 
+	// Cameras and Viewports are more than one picture of the scene at
+	// once. A document with neither is one camera filling the sheet, which
+	// is what "eye" has always meant; see Shots.
+	Cameras   []Camera   `json:"cameras"`
+	Viewports []Viewport `json:"viewports"`
+
 	// Glow is how a frame with scenery in it is brought to the screen.
 	// Without scenery it is not read.
 	Glow *Glow `json:"glow"`
@@ -131,6 +137,11 @@ func Read(name string, b []byte) (*Doc, error) {
 		d.Seconds = 1
 	}
 	d.src = trimmed
+	// refused here, with the document's name, rather than when a stage is
+	// built from it and the name is gone
+	if _, _, err := d.Shots(); err != nil {
+		return nil, fmt.Errorf("%s: %w", name, err)
+	}
 	return &d, nil
 }
 
