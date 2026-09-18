@@ -31,3 +31,9 @@
 /.config/
 /go/
 /Library/
+
+# the workspace, written by bootstrap.sh when the libraries are beside it.
+# tracked, it named directories that are not in the repository, so any
+# checkout that had not bootstrapped could not build at all.
+/go.work
+/go.work.sum
