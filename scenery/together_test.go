@@ -53,11 +53,13 @@ func lit(t *testing.T, body *Planet, e particles.Emitter) light.RGB {
 }
 
 // A light in front of a body adds to it: the body is still there and the
-// light is on top of it.
+// light is on top of it. Nothing is taken away -- no channel goes down.
 //
-// This is the half that fails when a light writes depth. The light's own
-// depth then culls the body behind it, and the middle of the frame comes out
-// as the light alone with a body-shaped hole around it.
+// This one does not fail when a light writes depth, and an earlier version of
+// this comment said it did. porter ran the mutation: with the bodies drawn
+// first there is nothing left behind the light to cull, so the third test is
+// the one that catches it. A comment that names the wrong test is worse than
+// no comment, because the next person stops looking.
 func TestALightInFrontOfABodyAddsToIt(t *testing.T) {
 	body := globe(6)
 	alone := lit(t, body, particles.Emitter{})
@@ -100,6 +102,10 @@ func TestALightBehindABodyIsHiddenByIt(t *testing.T) {
 
 // And the order is the contract, not a preference: drawn first, the light is
 // lost, because the body replaces the subpixel it covers.
+//
+// This is also the test that catches a light writing its own depth, which is
+// the mistake I recommended to opezart: the light writes depth 4, the body at
+// 6 is then culled where the light is, and what is left is not the body alone.
 //
 // This is why scenery.Draw takes the bodies as a list rather than trusting
 // the caller, and why a stage draws its lights last.
