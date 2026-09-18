@@ -68,15 +68,22 @@ func Ramp(stops ...any) functions.Ramp {
 // colour is a stop's colour, which is six hex digits and no hash.
 //
 // Guarded for the same reason the number is, and because leaving one of the
-// two would be this change made in one field and not the one beside it:
-// Ramp(0, 0xff2200, ...) panicked with "interface {} is int, not string",
-// which is the message this set out to retire.
+// two would be this change made in one field and not the one beside it.
+//
+// The string has to be a colour as well as a string. A document is told when
+// it writes one that is not; a go caller writing Ramp(0.0, "red", ...) got a
+// black stop and no word, which is the same silence one caller along.
 func colour(v any) string {
-	if s, ok := v.(string); ok {
-		return s
+	s, ok := v.(string)
+	if !ok {
+		panic(fmt.Sprintf("grade.Ramp: a stop is a colour as six hex "+
+			"digits, and %v is a %T", v, v))
 	}
-	panic(fmt.Sprintf("grade.Ramp: a stop is a colour as six hex digits, "+
-		"and %v is a %T", v, v))
+	if !hex.Is(s) {
+		panic(fmt.Sprintf("grade.Ramp: %q is not a colour: six hex "+
+			"digits, such as ff6ec7, with or without a hash", s))
+	}
+	return s
 }
 
 // at is where a stop sits, from whatever number was written.

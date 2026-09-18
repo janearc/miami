@@ -72,6 +72,13 @@ func TestARampRefusesAPlaceWithNoColour(t *testing.T) {
 			[]any{0.0, "ff2200", 1.0}, "left over"},
 		{"a colour that is not a string",
 			[]any{0.0, 0xff2200, 1.0, "00ff44"}, "hex digits"},
+		// a document is told when it writes a colour nobody can
+		// draw. a go caller got a black stop and no word, which is
+		// the same silence one caller along. porter's note.
+		{"a string that is not a colour",
+			[]any{0.0, "red", 1.0, "00ff44"}, "not a colour"},
+		{"a colour missing a digit",
+			[]any{0.0, "ff6ec", 1.0, "00ff44"}, "not a colour"},
 	} {
 		func() {
 			defer func() {
