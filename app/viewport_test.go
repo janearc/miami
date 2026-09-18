@@ -120,6 +120,28 @@ func TestAGlowScalesWithItsViewport(t *testing.T) {
 	}
 }
 
+// The two-camera scene that ships loads, passes its checks, and has light on
+// both sides of the sheet. It is public surface, so it is held to what the
+// other built-in scenery scenes are held to.
+func TestTheQuasarTwiceDraws(t *testing.T) {
+	st, err := NewStage("@quasar-twice", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := st.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	cs := draw(st, 2)
+	left, right := half(cs, 0, 30), half(cs, 30, 60)
+	if lightOf(left) < 5000 || lightOf(right) < 5000 {
+		t.Fatalf("a dark half: left %v, right %v",
+			lightOf(left), lightOf(right))
+	}
+	if fmt.Sprint(left) == fmt.Sprint(right) {
+		t.Fatal("the side and the axis drew the same picture")
+	}
+}
+
 // half is the columns from a up to b of every row.
 func half(cs [][]cells.Cell, a, b int) [][]cells.Cell {
 	out := make([][]cells.Cell, len(cs))
