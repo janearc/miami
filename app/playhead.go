@@ -425,7 +425,13 @@ func (s *Stage) Score(path string, p Playhead, period time.Duration) (
 		// this sound stops rather than play under a scene following
 		// something else: outside the lock, which a failing pass takes.
 		s.mu.Unlock()
-		stop()
+		if err := stop(); err != nil {
+			// it would not stop, so it is still playing under a
+			// scene that is following something else, and the
+			// caller holds no way to end it. saying only that it
+			// was superseded would hide that.
+			return nil, errors.Join(ErrSuperseded, err)
+		}
 		return nil, ErrSuperseded
 	}
 	s.musicGen = gen

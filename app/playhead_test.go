@@ -614,3 +614,51 @@ func TestTheLaterScoreWinsARace(t *testing.T) {
 		t.Error("the superseded piece was left playing")
 	}
 }
+
+// A superseded sound that will not stop is still playing, and saying only
+// that it was superseded hides that.
+//
+// The caller of the earlier Score is handed no stop -- the later Score owns
+// the scene now -- so this error is the only thing that can tell it a sound
+// is running that nothing can end. opezart found the same shape in four
+// places of his own after one note about one line; this is miami's one.
+func TestASupersededSoundThatWillNotStopSaysSo(t *testing.T) {
+	was := play
+	defer func() { play = was }()
+
+	stubborn := errors.New("afplay will not die")
+	entered, release := make(chan struct{}), make(chan struct{})
+	play = func(path string, _ time.Duration, _ func(error)) (
+		time.Time, func() error, error) {
+		if path != "a" {
+			return time.Now(), func() error { return nil }, nil
+		}
+		close(entered)
+		<-release
+		return time.Now(), func() error { return stubborn }, nil
+	}
+
+	s, err := stageFrom(t, bounceDoc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	errA := make(chan error, 1)
+	go func() {
+		_, err := s.Score("a", fakeHead{}, 0)
+		errA <- err
+	}()
+	<-entered
+	if _, err := s.Score("b", otherHead{}, 0); err != nil {
+		t.Fatal(err)
+	}
+	close(release)
+
+	err = <-errA
+	if !errors.Is(err, ErrSuperseded) {
+		t.Errorf("it no longer says it was superseded: %v", err)
+	}
+	if !errors.Is(err, stubborn) {
+		t.Errorf("a sound that would not stop is still playing and "+
+			"the error does not say so: %v", err)
+	}
+}
