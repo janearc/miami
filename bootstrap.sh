@@ -39,6 +39,12 @@ for pair in libdaffy:libdaffy-road libdaffy-sprite:libdaffy-sprite \
 			echo "skip  libs/$repo (no $url)"
 			continue
 		fi
+	elif [ -d "$HOME/mesh/frontier/roots/$from.git" ]; then
+		# bandersnatch is on this machine and not on github, so a
+		# fresh clone here would skip it and say so for ever. the
+		# frontier root is tried first when it is there, and the
+		# github url is still what a machine without one gets.
+		url="$HOME/mesh/frontier/roots/$from.git"
 	else
 		url="https://github.com/janearc/$repo.git"
 	fi

@@ -46,6 +46,30 @@ func Display(c RGB) color.RGBA {
 	return color.RGBA{encode(c.R), encode(c.G), encode(c.B), 255}
 }
 
+// FromRGBA is Display undone: a colour a colourway chose, as light.
+//
+// A sprite's roles are dressed in colours picked to be looked at, so they are
+// display colours, and light is what the frame is made of. Anything drawn into
+// the buffer has to arrive in the same units as the rest, or a bird over a
+// black hole is lit by a different sun than the disk.
+func FromRGBA(c color.RGBA) RGB {
+	return RGB{decode[c.R], decode[c.G], decode[c.B]}
+}
+
+// decode is the sRGB curve backwards, one entry a byte.
+var decode = func() [256]float64 {
+	var t [256]float64
+	for i := range t {
+		v := float64(i) / 255
+		if v <= 0.04045 {
+			t[i] = v / 12.92
+		} else {
+			t[i] = math.Pow((v+0.055)/1.055, 2.4)
+		}
+	}
+	return t
+}()
+
 // fit pulls a light toward its own grey until every channel is between nought
 // and one.
 func fit(c RGB) RGB {
