@@ -4,6 +4,7 @@ import (
 	"math"
 	"sync"
 
+	"github.com/janearc/miami/internal/keep"
 	"github.com/janearc/miami/internal/split"
 	"github.com/janearc/miami/light"
 	"github.com/janearc/miami/noise"
@@ -69,8 +70,17 @@ type BlackHole struct {
 	Samples int
 
 	mu    sync.Mutex
-	baked *bake
+	bakes *keep.Cache[bakeKey, *bake]
 }
+
+// keptBakes is how many baked sets of rays a hole holds: enough for a few
+// cameras on one scene, and for the frame after a resize.
+//
+// One was enough until there were two cameras, and then it was 1.3 seconds a
+// frame instead of 18 milliseconds, because two cameras taking turns threw
+// each other's rays away. Each is a few megabytes at a terminal's size, so
+// this is a small number on purpose.
+const keptBakes = 4
 
 // bake is everything about the rays that does not change with time.
 type bake struct {
@@ -143,7 +153,9 @@ func (h *BlackHole) Draw(b *light.Buffer, eye view.Eye, t float64) {
 // them again: for a sky changed while the hole was on screen.
 func (h *BlackHole) Forget() {
 	h.mu.Lock()
-	h.baked = nil
+	if h.bakes != nil {
+		h.bakes.Clear()
+	}
 	h.mu.Unlock()
 }
 
@@ -268,15 +280,19 @@ func (h *BlackHole) streaks(seed uint64, r, ang float64) float64 {
 func (h *BlackHole) bakeFor(w, ht int, eye view.Eye) *bake {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+	if h.bakes == nil {
+		h.bakes = keep.New[bakeKey, *bake](keptBakes)
+	}
 	inner, outer := h.edges()
 	key := bakeKey{w: w, h: ht, eye: eye, at: h.At, axis: h.Axis,
 		mass: h.Mass, inner: inner, outer: outer, beaming: h.Beaming,
 		spin: math.Copysign(1, h.Turn), samples: h.Samples}
-	if h.baked != nil && h.baked.key == key {
-		return h.baked
+	if b, ok := h.bakes.Get(key); ok {
+		return b
 	}
-	h.baked = newBaker(h, key).bake()
-	return h.baked
+	b := newBaker(h, key).bake()
+	h.bakes.Put(key, b)
+	return b
 }
 
 // baker traces one bake.

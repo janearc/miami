@@ -85,16 +85,54 @@ func TestTheCrossfadeDoesNotPulse(t *testing.T) {
 // The rays are traced once for a size and a camera, and kept.
 func TestTheBakeIsKept(t *testing.T) {
 	h := Ember()
-	frame(h, 0)
-	first := h.baked
-	frame(h, 2)
-	if h.baked != first {
+	one := view.Eye{Lens: 1, Near: 0.05}
+	first := h.bakeFor(120, 66, one)
+	if again := h.bakeFor(120, 66, one); again != first {
 		t.Fatal("the same size and camera baked again")
 	}
-	b := light.New(120, 66)
-	h.Draw(b, view.Eye{Lens: 1.1, Near: 0.05}, 0)
-	if h.baked == first {
+	if other := h.bakeFor(120, 66, view.Eye{Lens: 1.1, Near: 0.05}); other ==
+		first {
 		t.Fatal("a new lens used the old bake")
+	}
+}
+
+// Two cameras on one hole keep their own rays, so neither throws the other's
+// away and both are traced once rather than once a frame.
+//
+// A hole that kept one bake made this 1.3 seconds a frame instead of 18
+// milliseconds as soon as a document had two viewports. No clock is needed to
+// see it: ask for A, then B, then A, and the third answer must be the first
+// one rather than a new one.
+func TestTwoCamerasDoNotEvictEachOther(t *testing.T) {
+	h := Ember()
+	a := view.Eye{Lens: 1, Near: 0.05}
+	b := view.Eye{At: view.Vec{X: 40, Z: 40}, Lens: 1, Near: 0.05,
+		Yaw: -0.8}
+	first := h.bakeFor(120, 66, a)
+	h.bakeFor(120, 66, b)
+	if again := h.bakeFor(120, 66, a); again != first {
+		t.Fatal("the second camera threw the first camera's rays away")
+	}
+	// and a hole holds a few, not an unbounded number
+	for i := range 20 {
+		h.bakeFor(120, 66, view.Eye{Lens: 1 + float64(i)/50, Near: 0.05})
+	}
+	if n := h.bakes.Len(); n > keptBakes {
+		t.Fatalf("holding %d bakes, the most it may hold is %d", n,
+			keptBakes)
+	}
+}
+
+// A backdrop keeps a sky per camera for the same reason.
+func TestTwoCamerasKeepTwoSkies(t *testing.T) {
+	d := &Backdrop{Space: Night()}
+	a := view.Eye{Lens: 1, Near: 0.05}
+	b := view.Eye{Lens: 1, Near: 0.05, Yaw: 1.2}
+	first := d.skiesFor(40, 20, a)
+	d.skiesFor(40, 20, b)
+	again := d.skiesFor(40, 20, a)
+	if &again[0] != &first[0] {
+		t.Fatal("the second camera threw the first camera's sky away")
 	}
 }
 
