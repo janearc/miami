@@ -35,6 +35,20 @@ for s in 144x44 80x40 80x25 72x22 36x11; do
 	cp "out/bb-$s.ansi" "out/bb-$s-roles.txt" regress/
 done
 
+# the icons are rendered rather than drawn, so the picture in dist/ and the
+# code that makes it can part company without a word. porter asked for this
+# after the first pair went out: a drifted icon is the quiet kind of wrong.
+for i in dark light; do
+	cp "dist/miami-icon-$i-1024.png" "regress/miami-icon-$i.was"
+done
+bin/miami icon 1024 > /dev/null
+for i in dark light; do
+	if ! cmp -s "regress/miami-icon-$i.was" "dist/miami-icon-$i-1024.png"; then
+		echo "DIFFERS  dist/miami-icon-$i-1024.png"
+		exit 1
+	fi
+done
+
 # the cards in dist/ are what other repositories put in their readmes, and
 # nothing was comparing them. cassowary had been stale since the first commit
 # in this repository: the colour code moved underneath it several times --
