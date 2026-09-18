@@ -244,7 +244,8 @@ type Stage struct {
 	Latency time.Duration
 
 	// What a document built, and what it needs to move each frame.
-	eye     view.Eye
+	eye     view.Eye // the first camera's, and the one Eye hands out
+	shots   []shot   // the document's viewports; none means one, filling
 	solids  []view.Solid
 	lights  []view.Light
 	sun     []bool      // per light: it is the sun, so the hour places it
