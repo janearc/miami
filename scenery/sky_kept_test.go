@@ -2,13 +2,18 @@ package scenery
 
 import (
 	"testing"
-	"time"
 
 	"github.com/janearc/miami/light"
 	"github.com/janearc/miami/view"
 )
 
 // A camera that moves without turning sees the sky it already had.
+//
+// Counted rather than timed. The first version of this decided with a clock --
+// a moved camera must not cost much more than a still one -- which passed
+// twenty times out of twenty and is still a test that can be wrong on a busy
+// machine. keep.Cache knows how many skies it is holding, so one bake and
+// then two is the same claim with nothing to be unlucky about. porter's note.
 //
 // The sky is a function of direction: where the eye is cannot change it, and
 // a camera drifting through space is drawing the same stars. The whole Eye
@@ -19,40 +24,31 @@ import (
 // opezart found it by suspecting his own corridor's drift was doing exactly
 // this, and asking rather than working around it.
 func TestASkyIsKeptWhileTheCameraOnlyMoves(t *testing.T) {
-	if testing.Short() {
-		t.Skip("timing")
-	}
 	d := &Backdrop{Space: Night()}
-	b := light.New(200, 90)
+	b := light.New(120, 60)
 	eye := view.Eye{At: view.Vec{Z: -10}, Lens: 1}
-	d.Draw(b, eye, 0) // the bake, untimed
-
-	took := func(e view.Eye) time.Duration {
-		start := time.Now()
-		d.Draw(b, e, 0)
-		return time.Since(start)
+	d.Draw(b, eye, 0)
+	if n := d.kept.Len(); n != 1 {
+		t.Fatalf("one camera made %d skies", n)
 	}
-	kept := took(eye)
-
-	// moved, a long way, and moved by almost nothing
+	// moved, a long way and by almost nothing: the same sky each time
 	for _, at := range []view.Vec{{X: 900, Y: -400, Z: 12345},
-		{X: 1e-9, Z: -10}} {
+		{X: 1e-9, Z: -10}, {Z: 4000}} {
 		moved := eye
 		moved.At = at
-		if d := took(moved); d > 8*kept+time.Millisecond {
-			t.Errorf("a camera at %v paid %v for a sky it "+
-				"already had; standing still costs %v", at, d,
-				kept)
+		d.Draw(b, moved, 0)
+		if n := d.kept.Len(); n != 1 {
+			t.Errorf("a camera at %v made a second sky: %d kept",
+				at, n)
 		}
 	}
-
-	// and turning is a different sky, which must be worked out
+	// turning is a different sky, and has to be worked out
 	turned := eye
 	turned.Yaw = 0.3
-	if d := took(turned); d <= kept {
-		t.Errorf("a camera that turned cost %v and standing still "+
-			"costs %v: the sky it is looking at is not being "+
-			"worked out", d, kept)
+	d.Draw(b, turned, 0)
+	if n := d.kept.Len(); n != 2 {
+		t.Errorf("a camera that turned left %d skies kept, want 2:"+
+			" the sky it is looking at is not being worked out", n)
 	}
 }
 
