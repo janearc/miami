@@ -36,36 +36,90 @@ func write(path string, b []byte) error {
 // An agent that reads them does not have to pay for them again, and that is
 // most of what "teach agents how to use it" can mean.
 
-type verb struct{ name, args, what string }
+// verb is one command: what it is called, what it takes, what it does, and
+// the function that does it.
+//
+// do is nil for the one row that is not a verb at all -- the scene name -- and
+// main treats a nil do as "this is not a verb", which is exactly what that row
+// says.
+type verb struct {
+	name, args string
+	do         func(args []string)
+	what       string
+}
 
-var verbs = []verb{
-	{"card", "<name>", "a repository card, 75 by 17, colour escapes only"},
-	{"emoji", "<hex> [cols] [n] [word] [font]", "an emoji, as cells"},
-	{"scene", "<file.json> [cols rows]", "a document, and its go twin"},
-	{"fly", "[cols rows secs fps]", "a starling crossing a dusk"},
-	{"flock", "[cols rows secs]", "nine birds at nine depths"},
-	{"ball", "[cols rows secs]", "a checkered ball, spinning and moving"},
-	{"dusk", "[cols rows]", "six samples across the twenty seconds"},
-	{"sunset", "[cols rows]", "the vaporwave stack, and each layer"},
-	{"sunsetanim", "[cols rows n]", "the same, with its effects running"},
-	{"anim", "[dir]", "rebuild every animation from the stencils"},
-	{"clock", "[cols rows fps]", "a vaporwave clock, made as it is shown"},
-	{"bench", "", "what a size costs, and which ceiling first"},
-	{"icon", "[size] [--dir dist]",
-		"the quasar as an app icon, dark and light"},
-	{"show", "<scene> [cols rows] [--t s] [--png]",
-		"scenery, live; or one frame, to a png"},
-	{"play", "<file.frames> [loop]", "play a frames file to this terminal"},
-	{"check", "<file>", "what a document holds, and what is wrong"},
-	{"docs", "[page] [--png|--go]", "the documentation, painted"},
-	{"png", "<file.ansi> [out.png]", "an ansi file as a png, to look at"},
-	{"sprite", "[cols]", "emit the dolphin stencil"},
-	{"bulbsprite", "[cols]", "emit the bulb stencil, cold"},
-	{"word", "<text> [cols]", "set a word as a stencil"},
-	{"bb", "<cols> <rows>", "the big.birds negative-space piece"},
-	{"lights", "", "the roadside sign"},
-	{"miami", "[term]", "the composite scene"},
-	{"<scene>", "<png|sil|roles|term> [cols]", "macaw, palm, car"},
+// verbs is filled in init rather than declared with its contents, because a
+// verb calls usage when it is given the wrong arguments and usage prints this
+// table: as a plain initialiser that is a cycle the compiler will not take.
+var verbs []verb
+
+// init fills the table. Every entry is one verb, and the last is the row that
+// is not one: a scene name, which main falls through to.
+func init() {
+	verbs = []verb{
+		{"card", "<name>", card,
+			"a repository card, 75 by 17, colour escapes only"},
+		{"emoji", "<hex> [cols] [n] [word] [font]", emojiCells,
+			"an emoji, as cells"},
+		{"scene", "<file.json> [cols rows]", document,
+			"a document, and its go twin"},
+		{"fly", "[cols rows secs fps]", fly,
+			"a starling crossing a dusk"},
+		{"flock", "[cols rows secs]", flock,
+			"nine birds at nine depths"},
+		{"ball", "[cols rows secs]", ball,
+			"a checkered ball, spinning and moving"},
+		{"shadow", "[cols rows secs]", shadow,
+			"a ball, a floor, and a cast shadow"},
+		{"dusk", "[cols rows]", dusk,
+			"six samples across the twenty seconds"},
+		{"sunset", "[cols rows]", sunset,
+			"the vaporwave stack, and each layer"},
+		{"sunsetanim", "[cols rows n]", sunsetAnim,
+			"the same, with its effects running"},
+		{"anim", "[dir]", anim,
+			"rebuild every animation from the stencils"},
+		{"clock", "[cols rows fps]", clock,
+			"a vaporwave clock, made as it is shown"},
+		{"bench", "", bench,
+			"what a size costs, and which ceiling first"},
+		{"icon", "[size] [--dir dist]", icon,
+			"the quasar as an app icon, dark and light"},
+		{"show", "<scene> [cols rows] [--t s] [--png]", show,
+			"scenery, live; or one frame, to a png"},
+		{"play", "<file.frames> [loop]", play,
+			"play a frames file to this terminal"},
+		{"check", "<file>", checkFile,
+			"what a document holds, and what is wrong"},
+		{"docs", "[page] [--png|--go]", docs,
+			"the documentation, painted"},
+		{"png", "<file.ansi> [out.png]", asPNG,
+			"an ansi file as a png, to look at"},
+		{"sprite", "[cols]", dolphinStencil,
+			"emit the dolphin stencil"},
+		{"bulbsprite", "[cols]", bulbStencil,
+			"emit the bulb stencil, cold"},
+		{"word", "<text> [cols]", word,
+			"set a word as a stencil"},
+		{"bb", "<cols> <rows>", bigBirds,
+			"the big.birds negative-space piece"},
+		{"bulb", "<cols> <rows>", bulb,
+			"one bulb, rendered and silhouetted"},
+		{"dolphins", "[cols]", dolphins,
+			"the pod: silhouette, grey, and a page"},
+		{"lights", "", lights,
+			"the roadside sign"},
+		{"specimen", "", specimen,
+			"the type specimen, at manpage width"},
+		{"faces", "<file.flf>...", faces,
+			"what letterforms a figlet file holds"},
+		{"miami", "[term]", miami,
+			"the composite scene"},
+		{"miami-quad", "", miamiQuad,
+			"the composite scene at quarter height"},
+		{"<scene>", "<png|sil|roles|term> [cols]", nil,
+			"macaw, palm, car"},
+	}
 }
 
 // about is what miami is, in the words the bare command prints.
