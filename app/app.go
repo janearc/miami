@@ -176,12 +176,16 @@ func (s Screen) Run(d Drawer, more func(Frame) bool) error {
 
 		cs := d.Draw(f, s.Cols, s.Rows)
 		fmt.Fprint(out, "\x1b[?2026h")
-		if prev == nil {
-			fmt.Fprint(out, "\x1b[H")
-			fmt.Fprint(out, cells.ANSI(cs))
-		} else {
-			fmt.Fprint(out, cells.Delta(prev, cs))
-		}
+		// every cell placed where it goes, first frame included.
+		//
+		// cells.ANSI ends every row with a newline, which is right for
+		// a file and wrong for a screen: a picture as tall as the
+		// terminal scrolls on the newline after its last row.
+		//
+		// The top row goes off, everything lands a row too high, and
+		// since later frames are only what changed it never comes
+		// back. opezart found it in a 43-row tmux pane.
+		fmt.Fprint(out, cells.Delta(prev, cs))
 		fmt.Fprint(out, "\x1b[?2026l")
 		prev = cs
 

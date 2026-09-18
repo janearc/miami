@@ -68,3 +68,41 @@ func timed(do func()) time.Duration {
 func ms(d time.Duration) float64 {
 	return float64(d) / float64(time.Millisecond)
 }
+
+// A drag must not cost the camera that is standing still.
+//
+// Two viewports of one hole share that hole's bakes, and there are four
+// slots. A drag makes a new eye every sample, so the question porter's brief
+// asks is whether those push the resting camera's bake out: if they do, the
+// still picture is re-baked every frame for the whole drag, and the frame
+// costs twice what the drag alone would.
+//
+// It survives because the slots are least-recently-used and the resting eye is
+// used every frame: what the drag evicts is its own older samples.
+func TestADragDoesNotEvictTheCameraStandingStill(t *testing.T) {
+	if testing.Short() {
+		t.Skip("timing")
+	}
+	h := Quasar()
+	b := light.New(320, 136)
+	resting := view.Eye{At: view.Vec{Z: -14}, Lens: 1}
+	dragged := view.Eye{At: view.Vec{X: 3, Z: -14}, Lens: 1}
+	h.Draw(b, resting, 0) // both baked once, and not timed
+	h.Draw(b, dragged, 0)
+	first := timed(func() { h.Draw(b, resting, 0) })
+	worst := time.Duration(0)
+	for i := range 12 { // a drag: a new eye every frame
+		e := dragged
+		e.At.X += 0.03 * float64(i+1)
+		h.Draw(b, e, 0)
+		if d := timed(func() { h.Draw(b, resting, 0) }); d > worst {
+			worst = d
+		}
+	}
+	fmt.Printf("resting camera during a drag: %.1fms, and %.1fms before "+
+		"the drag began\n", ms(worst), ms(first))
+	if worst > 8*first+time.Millisecond {
+		t.Errorf("the resting camera cost %v during the drag and %v"+
+			" before it: its bake is being evicted", worst, first)
+	}
+}
