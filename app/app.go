@@ -36,7 +36,6 @@ import (
 	"time"
 
 	"github.com/janearc/miami/cells"
-	"github.com/janearc/miami/compose"
 	"github.com/janearc/miami/grade"
 	"github.com/janearc/miami/scene"
 	"github.com/janearc/miami/view"
@@ -244,7 +243,9 @@ type Stage struct {
 	Latency time.Duration
 
 	// What a document built, and what it needs to move each frame.
-	eye     view.Eye
+	eye     view.Eye // the first camera's, and the one Eye hands out
+	seen    view.Eye // the eye of the picture being drawn; see picture
+	shots   []shot   // the document's viewports; none means one, filling
 	solids  []view.Solid
 	lights  []view.Light
 	sun     []bool      // per light: it is the sun, so the hour places it
@@ -277,7 +278,7 @@ func (s *Stage) now() scene.Ctx { return s.at }
 func NewStage(doc, colourway string) (*Stage, error) {
 	// a stage whose document names no eye still has one, and it is the
 	// camera the sprites used to build for themselves
-	st := &Stage{eye: view.DefaultEye()}
+	st := &Stage{eye: view.DefaultEye(), seen: view.DefaultEye()}
 	if doc != "" {
 		d, err := loadScene(doc)
 		if err != nil {
@@ -331,45 +332,7 @@ func (s *Stage) Draw(f Frame, cols, rows int) [][]cells.Cell {
 	s.at = f.Scene
 	s.place(f)
 
-	sh := grade.Sextants(cols, rows)
-	var px [][]color.RGBA
-	switch {
-	case len(s.scenery) > 0:
-		px = s.drawScenery(sh, f)
-	case s.Sky != nil:
-		px = sh.Paint(s.Sky(sh, f.At))
-	case s.Doc != nil:
-		st, err := s.Doc.At(f.Since.Seconds())
-		if err == nil {
-			px = sh.Paint(st)
-		}
-	}
-	if px == nil {
-		px = make([][]color.RGBA, rows*3)
-		for y := range px {
-			px[y] = make([]color.RGBA, cols*2)
-			for x := range px[y] {
-				px[y][x] = color.RGBA{10, 9, 16, 255}
-			}
-		}
-	}
-
-	// with scenery, the solids and the sprites were drawn into the light
-	// the frame is made of, before the glow and the exposure. Without it
-	// they go over the picture, as they always have.
-	if len(s.scenery) == 0 {
-		if s.Lit != nil {
-			compose.Blit(
-				px, s.Lit.Trace(f.Since, cols, rows), s.Colours,
-				0, 0,
-			)
-		}
-		for _, p := range view.Resolve(
-			s.Objects, s.eye, f.Since, sh.W, sh.H,
-		) {
-			compose.Blit(px, p.Frame, s.Colours, p.X, p.Y)
-		}
-	}
+	px := s.pictures(f, cols, rows)
 
 	cs := cells.ToCells(px, 2, 3)
 	s.mu.Lock()

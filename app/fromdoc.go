@@ -64,12 +64,11 @@ func runtimeConsts(at time.Time) map[string]float64 {
 
 // fromDoc builds everything a document describes.
 func (s *Stage) fromDoc(d *scene.Doc) error {
-	if d.Eye != nil {
-		s.eye = view.Eye{
-			At: vecAt(d.Eye.At, scene.Ctx{}), Lens: d.Eye.Lens,
-			Near: d.Eye.Near, Yaw: d.Eye.Yaw, Pitch: d.Eye.Pitch,
-		}
+	cams, views, err := d.Shots()
+	if err != nil {
+		return err
 	}
+	s.shoot(cams, views)
 	for i, sh := range d.Shapes {
 		if err := s.addShape(sh); err != nil {
 			return fmt.Errorf("shape %d (%s): %w", i, sh.Kind, err)
@@ -102,7 +101,7 @@ func (s *Stage) addShape(sh scene.Shape) error {
 				w, h := float64(g.W), float64(g.H)
 				aspect := (h * 4) / (w * 3)
 				sun := view.SunAt(at)
-				return sky.At(g, sun, s.eye.HorizonV(aspect))
+				return sky.At(g, sun, s.seen.HorizonV(aspect))
 			}
 		}
 		return nil

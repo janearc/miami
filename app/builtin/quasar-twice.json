@@ -1,0 +1,45 @@
+{
+  // The quasar, twice: from where it has always been seen, and from along
+  // the axis its jets leave by, so the disk is a ring and the jet is a point.
+  //
+  // One scene and two cameras. Nothing about the hole or the jets is said
+  // twice, and nothing in them knows there are two pictures of it.
+  "name": "quasar-twice",
+  "seconds": 60,
+
+  "eye": { "lens": 1, "near": 0.05 },
+
+  // sixty-two units out along the jet axis from the hole, looking back
+  // down it. The exposure is lower because the disk is face-on from here
+  // and nearly all of it is in the picture at once.
+  "cameras": [
+    { "name": "axis", "at": { "x": 18.7, "y": 49.5, "z": 34.2 },
+      "lens": 1, "near": 0.05, "yaw": -0.6857, "pitch": 0.9527,
+      "exposure": 0.8 }
+  ],
+
+  "viewports": [
+    { "camera": "main", "x": 0,   "y": 0, "w": 0.5, "h": 1 },
+    { "camera": "axis", "x": 0.5, "y": 0, "w": 0.5, "h": 1 }
+  ],
+
+  "shapes": [
+    { "kind": "blackhole", "at": { "x": -4, "y": -1, "z": 62 },
+      "hole": { "look": "quasar" } },
+
+    { "kind": "emitter", "at": { "x": -4, "y": -1, "z": 62 },
+      "emit": { "kind": "jet", "seed": 5,
+        "axis": { "x": 0.45, "y": 1, "z": -0.55 },
+        "rate": 220, "life": 2.2, "speed": 30, "spread": 0.035,
+        "wobble": 0.06, "size": 0.18, "light": 1.6, "streak": 0.05,
+        "ramp": [ { "at": 0, "c": "f4f0ff" }, { "at": 0.35, "c": "c9a0ff" },
+                  { "at": 1, "c": "5a2a8a" } ] } },
+
+    { "kind": "emitter", "at": { "x": 0, "y": 0, "z": 6 },
+      "emit": { "kind": "drift", "seed": 2,
+        "axis": { "x": 0.3, "y": 0.2, "z": -1 },
+        "rate": 40, "life": 6, "speed": 0.8, "radius": 5,
+        "size": 0.006, "light": 0.9, "streak": 0.3,
+        "ramp": [ { "at": 0, "c": "e8dcff" }, { "at": 1, "c": "a890c8" } ] } }
+  ]
+}
