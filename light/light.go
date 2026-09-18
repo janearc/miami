@@ -26,6 +26,7 @@ package light
 
 import (
 	"math"
+	"sync/atomic"
 
 	"github.com/janearc/libtheme-css/primitives/functions"
 	"github.com/janearc/libtheme-css/primitives/swatch"
@@ -99,12 +100,54 @@ func Hex(s string) RGB { return FromSwatch(grade.Swatch(s)) }
 // Kelvin is the colour of a black body at a temperature, at a luminance of
 // one. A star's colour and a disk's heat are both this, and neither is typed
 // in: libtheme integrates Planck's law against the observer.
+//
+// Answers already worked out are kept, because the integration is expensive
+// and a sky asks for the same star's temperature once for every ray that
+// lands near it. A profile of a black hole drawn for a camera that had moved
+// put a third of the whole frame inside Planck's law.
+//
+// What is kept is the answer to the exact temperature asked for, so this is a
+// speed change and not a picture change: every artefact the gate compares is
+// the same bytes with it as without.
 func Kelvin(k float64) RGB {
+	slot := &kelvins[kelvinSlot(k)]
+	if got := slot.Load(); got != nil && got.k == k {
+		return got.c
+	}
 	c := FromSwatch(swatch.Planckian(k))
 	if y := c.Y(); y > 0 {
-		return c.Scale(1 / y)
+		c = c.Scale(1 / y)
+	} else {
+		c = RGB{}
 	}
-	return RGB{}
+	slot.Store(&kelvin{k: k, c: c})
+	return c
+}
+
+// kelvin is one temperature and the colour it came out as.
+type kelvin struct {
+	k float64
+	c RGB
+}
+
+// kelvins holds the last answer for each slot: one temperature per slot, no
+// chaining, so a second temperature landing on a slot takes it over.
+//
+// Direct-mapped rather than a map with a lock, because this is asked from
+// every row of a bake at once and the rows are drawn in parallel: a lock here
+// serialises them, which a profile of the first attempt showed as threads
+// asleep. A stale or lost entry costs one integration and nothing else.
+var kelvins [1 << 13]atomic.Pointer[kelvin]
+
+// kelvinSlot is which slot a temperature belongs in. The bits of the float are
+// mixed, because temperatures arrive in runs -- a sky's stars are a smooth
+// function of a hash -- and the low bits alone would pile up in a few slots.
+func kelvinSlot(k float64) uint64 {
+	h := math.Float64bits(k)
+	h ^= h >> 33
+	h *= 0xff51afd7ed558ccd
+	h ^= h >> 29
+	return h & (uint64(len(kelvins)) - 1)
 }
 
 // Ramp is a libtheme ramp sampled into light, for asking a hundred thousand
