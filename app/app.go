@@ -48,6 +48,14 @@ type Frame struct {
 	Keys  []Key
 	N     int // how many frames have been drawn
 
+	// Mouse is what the pointer did since the last frame: every press,
+	// release and wheel notch in order, and where the pointer ended up.
+	// Empty unless the screen was asked for the pointer.
+	Mouse []Mouse
+	// Caps is what the terminal turned out to be able to report. Its
+	// Missing method is a sentence for a person when it cannot do pixels.
+	Caps Caps
+
 	// Scene is the same moment as a document sees it: the scene's own
 	// clock, its constants, and the few things only the program knows --
 	// the hour, the sun's height, how much of the day is gone.
@@ -67,7 +75,11 @@ type Screen struct {
 	Cols, Rows int
 	FPS        int
 	Raw        bool // take over the keyboard; false leaves stdin alone
-	Out        *os.File
+	// Mouse takes the pointer as well, which needs Raw: the reports come
+	// up the same stdin the keys do. A terminal that cannot report by
+	// pixel reports by cell instead, and Frame.Caps says which.
+	Mouse bool
+	Out   *os.File
 }
 
 // Drawer is anything that can produce a frame of cells.
@@ -108,13 +120,33 @@ func (s Screen) Run(d Drawer, more func(Frame) bool) error {
 	restore := func() { fmt.Fprint(out, "\x1b[?25h\x1b[0m\n") }
 	var unraw func()
 	keys := make(chan Key, 32)
+	// a drag reports faster than frames are drawn, so the pointer's
+	// channel holds a good deal more than the keyboard's: what overflows
+	// is not dropped, it is the reader goroutine blocking, and a blocked
+	// reader is a frame acting on a stale pointer.
+	mice := make(chan Mouse, 512)
+	var caps Caps
+	unmouse := func() {}
 	if s.Raw {
 		unraw = rawMode()
-		go readKeys(keys)
+		t := new(term)
+		if s.Mouse {
+			// asked before anything is turned on, so the answers
+			// are the only bytes that can come back
+			caps = probe(out)
+			t.caps = caps
+			fmt.Fprint(out, caps.modes())
+			t.pixels = caps.Pixels && caps.CellW > 0
+			unmouse = func() { fmt.Fprint(out, mouseOff) }
+		}
+		go readInput(t, keys, mice)
 	} else {
 		unraw = func() {}
 	}
-	stop := func() { unraw(); restore() }
+	// the pointer goes off where the cursor comes back, signal path
+	// included: a terminal left reporting every motion prints escapes at
+	// the shell for every twitch of the hand.
+	stop := func() { unmouse(); unraw(); restore() }
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
@@ -127,16 +159,20 @@ func (s Screen) Run(d Drawer, more func(Frame) bool) error {
 	var prev [][]cells.Cell
 	for n := 0; ; n++ {
 		start := time.Now()
-		f := Frame{At: start, Since: start.Sub(begin), N: n}
+		f := Frame{At: start, Since: start.Sub(begin), N: n, Caps: caps}
 		for {
 			select {
 			case k := <-keys:
 				f.Keys = append(f.Keys, k)
 				continue
+			case m := <-mice:
+				f.Mouse = append(f.Mouse, m)
+				continue
 			default:
 			}
 			break
 		}
+		f.Mouse = coalesce(f.Mouse)
 
 		cs := d.Draw(f, s.Cols, s.Rows)
 		fmt.Fprint(out, "\x1b[?2026h")
@@ -185,29 +221,10 @@ func rawMode() func() {
 	}
 }
 
-// readKeys turns bytes into keys. Arrows arrive as three bytes and are named
-// rather than passed through, so a caller never has to know that.
-func readKeys(out chan<- Key) {
-	buf := make([]byte, 32)
-	for {
-		n, err := os.Stdin.Read(buf)
-		if err != nil || n == 0 {
-			return
-		}
-		for i := 0; i < n; i++ {
-			if buf[i] == 0x1b && i+2 < n && buf[i+1] == '[' {
-				name := map[byte]string{'A': "up", 'B': "down",
-					'C': "right", 'D': "left"}[buf[i+2]]
-				if name != "" {
-					out <- Key{Name: name}
-					i += 2
-					continue
-				}
-			}
-			out <- Key{Rune: rune(buf[i])}
-		}
-	}
-}
+// Keys used to be read here, by taking a bufferful and looking for an escape,
+// a bracket and a letter next to each other in it. That is in input.go now,
+// as a machine fed one byte at a time, because a pointer report is cut in
+// half by a read boundary several times a second and an arrow key never is.
 
 // Overlay is something drawn over the scene: type, a bar, a readout.
 type Overlay interface {
