@@ -69,9 +69,9 @@ done
 # anyone cloning gets and what the release is cut from. With it the local
 # trees win, which is what working on two repositories at once needs.
 #
-# the replace is load-bearing and not tidiness: libdaffy's own go.mod replaces
-# libtheme-css with a path from the layout it was committed in, which exists
-# nowhere else, and a workspace replace overrides a module's.
+# the replace is what makes it build, not tidiness: libdaffy's own go.mod
+# replaces libtheme-css with a path from the layout it was committed in, which
+# exists nowhere else, and a workspace replace overrides a module's.
 if [ -d libs/libdaffy ] && [ -d libs/libdaffy-sprite ] &&
 	[ -d libs/libtheme-css ]; then
 	cat > go.work <<'WORK'
@@ -86,8 +86,10 @@ use (
 replace github.com/janearc/libtheme-css => ./libs/libtheme-css
 WORK
 	echo "wrote go.work (the libraries beside this one are used)"
-else
+elif [ -f go.work ]; then
 	rm -f go.work go.work.sum
+	echo "removed go.work (the libraries are not here)"
+else
 	echo "no go.work (building against the published libraries)"
 fi
 
