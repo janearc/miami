@@ -69,6 +69,10 @@ var docPages = []docPage{
 		"page_scenery.go", sceneryPage,
 	},
 	{
+		"pointer", "a hand on the picture, and what it turns",
+		"page_pointer.go", pointerPage,
+	},
+	{
 		"traps", "the refusals, and what each cost to find",
 		"page_traps.go", trapsPage,
 	},

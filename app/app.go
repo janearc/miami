@@ -202,6 +202,18 @@ func (s Screen) Run(d Drawer, more func(Frame) bool) error {
 // stty rather than a termios binding because it is on every machine this runs
 // on, and a keyboard is not worth a dependency.
 func rawMode() func() {
+	undo, err := raw()
+	if err != nil {
+		// not a terminal: it still draws, it just cannot be steered
+		return func() {}
+	}
+	return undo
+}
+
+// raw is rawMode, and says why when it cannot: a verb that exists to ask the
+// terminal a question has to be able to report that there was no terminal to
+// ask.
+func raw() (func(), error) {
 	// stty reads the terminal on its standard input, and a command's input
 	// is /dev/null unless it is given one. Size had the same fault first.
 	//
@@ -212,17 +224,16 @@ func rawMode() func() {
 	get.Stdin = os.Stdin
 	saved, err := get.Output()
 	if err != nil {
-		// not a terminal: it still draws, it just cannot be steered
-		return func() {}
+		return nil, err
 	}
-	raw := exec.Command("stty", "raw", "-echo")
-	raw.Stdin = os.Stdin
-	raw.Run()
+	on := exec.Command("stty", "raw", "-echo")
+	on.Stdin = os.Stdin
+	on.Run()
 	return func() {
 		c := exec.Command("stty", strings.TrimSpace(string(saved)))
 		c.Stdin = os.Stdin
 		c.Run()
-	}
+	}, nil
 }
 
 // Keys used to be read here, by taking a bufferful and looking for an escape,

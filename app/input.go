@@ -184,6 +184,20 @@ func (t *term) mouse(up bool) (Mouse, bool) {
 // else is slower than this by three orders of magnitude.
 const escGap = 40 * time.Millisecond
 
+// Probe asks the terminal what it can do about the pointer, and puts it back
+// the way it was found.
+//
+// For a verb that reports rather than draws. Run does this for itself, at the
+// moment it already holds the terminal.
+func Probe() (Caps, error) {
+	undo, err := raw()
+	if err != nil {
+		return Caps{}, err
+	}
+	defer undo()
+	return probe(os.Stdout), nil
+}
+
 // probe asks the terminal what it can do, and waits a moment for the answer.
 //
 // Asked before any reporting is turned on, so nothing can arrive out of order:
