@@ -68,18 +68,33 @@ func (t *term) feed(b byte, key func(Key), point func(Mouse)) {
 }
 
 // csi gathers one byte of a CSI sequence and acts on the last of them.
+//
+// An escape inside a sequence abandons it and starts the next one, which is
+// what a terminal does and what recovers from a sequence cut short: without
+// it the half-finished one goes on eating bytes and swallows the sequence
+// after it whole.
+//
+// The numbers are bounded. A sequence carrying nothing but semicolons is a
+// list that grows for as long as somebody sends them, and a pointer's
+// numbers are three.
 func (t *term) csi(b byte, key func(Key), point func(Mouse)) {
 	switch {
+	case b == 0x1b:
+		t.state, t.priv = afterEsc, 0
+		t.num, t.got = t.num[:0], false
 	case marker(b) && len(t.num) == 0 && !t.got:
 		t.priv = b
 	case b >= '0' && b <= '9':
 		if !t.got {
+			if len(t.num) >= maxNums {
+				return // said enough; the rest is noise
+			}
 			t.num = append(t.num, 0)
 			t.got = true
 		}
 		t.num[len(t.num)-1] = t.num[len(t.num)-1]*10 + int(b-'0')
 	case b == ';':
-		if !t.got {
+		if !t.got && len(t.num) < maxNums {
 			t.num = append(t.num, 0)
 		}
 		t.got = false
@@ -90,6 +105,10 @@ func (t *term) csi(b byte, key func(Key), point func(Mouse)) {
 		t.state = ground
 	}
 }
+
+// maxNums is how many numbers a sequence may carry here. The longest this
+// reads is three, and a terminal's own limit is sixteen.
+const maxNums = 16
 
 // marker is whether a byte is the private marker a sequence may start with,
 // which says what kind of sequence it is: '<' is a pointer report.

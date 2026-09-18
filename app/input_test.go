@@ -199,3 +199,38 @@ func TestOnlyTheLastMoveOfARunSurvives(t *testing.T) {
 		}
 	}
 }
+
+// An escape inside a sequence abandons it and starts the next one.
+//
+// A terminal does this, and without it a sequence cut short goes on eating
+// bytes: the report after it is swallowed whole and the pointer stops moving
+// until something happens to end the sequence that is still open.
+func TestAnEscapeInsideASequenceStartsOver(t *testing.T) {
+	// a report cut off after its first number, then a whole one
+	got := events([]string{"\x1b[6;38;19t\x1b[?1016;1$y" +
+		"\x1b[<0;40" + "\x1b[<0;12;7M"})
+	want := "press button 0 px 11,6 cell 0,0 sub 1,0"
+	if len(got) != 1 || got[0] != want {
+		t.Errorf("got %v, want one report: %q", got, want)
+	}
+}
+
+// A sequence carrying nothing but semicolons does not grow without end.
+func TestASequenceOfSemicolonsIsBounded(t *testing.T) {
+	tm := &term{}
+	for _, b := range []byte("\x1b[") {
+		tm.feed(b, func(Key) {}, func(Mouse) {})
+	}
+	for range 10000 {
+		tm.feed(';', func(Key) {}, func(Mouse) {})
+	}
+	if len(tm.num) > maxNums {
+		t.Errorf("ten thousand semicolons made %d numbers; the cap is"+
+			" %d", len(tm.num), maxNums)
+	}
+	// and it still finishes the sequence rather than being stuck in it
+	tm.feed('t', func(Key) {}, func(Mouse) {})
+	if tm.state != ground {
+		t.Error("the sequence never ended")
+	}
+}

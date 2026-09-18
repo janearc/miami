@@ -13,10 +13,9 @@ import (
 // drawing where the hand is. Two viewports side by side are two things to
 // take hold of, which is the whole reason this is not a method on one eye.
 //
-// What it turns about is the point on that camera's line of sight nearest the
-// middle of the scene, worked out when the button goes down and kept for the
-// whole drag: a pivot that is worked out again every sample walks away under
-// the hand as the camera moves.
+// What it turns about is worked out when the button goes down and kept for the
+// whole drag: straight ahead at the distance of the nearest body, or, on a
+// stage with nothing in it, the geometry in view.Eye.Pivot. See pivotFor.
 
 // grab is a drag in progress.
 //
