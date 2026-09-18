@@ -72,6 +72,17 @@ func (v Vec) At(c Ctx) (x, y, z float64) {
 	return v.X.At(c), v.Y.At(c), v.Z.At(c)
 }
 
+// Set is whether the document gave any coordinate of the point, so a shape
+// that was not placed can be told from one placed at nought.
+func (v Vec) Set() bool { return v.X.Set() || v.Y.Set() || v.Z.Set() }
+
+// Set is whether the document gave the value at all.
+func (v Value) Set() bool {
+	return v.fixed != nil || v.ref != "" || v.from != nil ||
+		v.period != nil || len(v.mul) > 0 || len(v.add) > 0 ||
+		v.clamp != nil || v.abs != nil
+}
+
 // Eye is the camera.
 type Eye struct {
 	At    Vec     `json:"at"`
@@ -142,6 +153,12 @@ type Shape struct {
 	// binding evaluated every frame, nought to one. A bar without it is the
 	// program's to Set, which is the usual case.
 	Value *Value `json:"value"`
+
+	// Scenery: one block, for the kind that has it. See scenery.go.
+	Hole  *Hole  `json:"hole"`
+	World *World `json:"world"`
+	Space *Space `json:"space"`
+	Emit  *Emit  `json:"emit"`
 }
 
 // kinds is every shape a document may name.
@@ -149,6 +166,7 @@ var kinds = map[string]bool{
 	"sky": true, "floor": true, "sphere": true, "cylinder": true,
 	"light": true, "clock": true, "text": true, "bar": true,
 	"emoji": true, "log": true,
+	"space": true, "blackhole": true, "planet": true, "emitter": true,
 }
 
 // UnmarshalJSON reads a shape and refuses one whose kind is not a kind.
@@ -178,13 +196,13 @@ func (s *Shape) UnmarshalJSON(b []byte) error {
 			"so a program can find it", p.Kind)
 	}
 	*s = Shape(p)
-	return nil
+	return s.sceneryBlocks()
 }
 
 // kindList is the kinds, in a fixed order, for an error a person has to read.
 func kindList() string {
 	return "sky, floor, sphere, cylinder, light, clock, " +
-		"text, bar, emoji, log"
+		"text, bar, emoji, log, space, blackhole, planet, emitter"
 }
 
 // Texture is a pattern, as a document says it.

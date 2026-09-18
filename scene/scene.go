@@ -70,6 +70,10 @@ type Doc struct {
 	Eye    *Eye    `json:"eye"`
 	Shapes []Shape `json:"shapes"`
 
+	// Glow is how a frame with scenery in it is brought to the screen.
+	// Without scenery it is not read.
+	Glow *Glow `json:"glow"`
+
 	// src is the document with its comments taken out, kept so the names
 	// it reads can be found wherever they are -- see Refs.
 	src []byte

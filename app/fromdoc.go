@@ -86,6 +86,15 @@ func (s *Stage) fromDoc(d *scene.Doc) error {
 // addShape puts one shape where it belongs: in space, in the backdrop, or over
 // the top. Which of those it is the only thing its kind decides.
 func (s *Stage) addShape(sh scene.Shape) error {
+	// scenery is read at the scene's start with the document's own
+	// constants; see scenery.go
+	var start scene.Ctx
+	if s.Doc != nil {
+		start = s.Doc.Ctx(0, nil)
+	}
+	if ok, err := s.addScenery(sh, start); ok {
+		return err
+	}
 	switch sh.Kind {
 	case "sky":
 		if sh.Sun {

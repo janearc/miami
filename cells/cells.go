@@ -10,6 +10,8 @@ import (
 
 	"github.com/janearc/libtheme-css/spaces/ok"
 	"github.com/janearc/libtheme-css/spaces/srgb"
+
+	"github.com/janearc/miami/internal/split"
 )
 
 // sextants: 2 wide by 3 tall subcells, bit 0 top-left through bit 5
@@ -59,38 +61,32 @@ func dist2(a, b color.RGBA) int {
 	return dr*dr + dg*dg + db*db
 }
 
-// mean averages colours. Right for a photograph, where the group stands for a
-// continuum; wrong for flat art, which is what fitFlat is for.
-func mean(cs []color.RGBA) color.RGBA {
-	if len(cs) == 0 {
-		return color.RGBA{0, 0, 0, 255}
-	}
-	var r, g, b int
-	for _, c := range cs {
-		r += int(c.R)
-		g += int(c.G)
-		b += int(c.B)
-	}
-	n := len(cs)
-	return color.RGBA{uint8(r / n), uint8(g / n), uint8(b / n), 255}
-}
-
 // fit picks the two colours and the subcell mask that minimise squared error
 // over the group. exhaustive over all 2^n masks, which is 64 at worst.
+//
+// It is the same sum mean and dist2 would do, done without building the two
+// groups. The first version appended every subcell into an "on" slice and an
+// "off" slice, for every mask of every cell, and at full screen the allocator
+// was half the cost of a frame.
+//
+// The means still truncate the way mean does, on purpose: a mean rounded
+// differently picks a different mask on a near tie, and every picture already
+// made would move by a cell.
 func fit(sub []color.RGBA, glyph func(int) rune) Cell {
 	n := len(sub)
 	bestErr := -1
 	best := Cell{Glyph: ' '}
 	for mask := 0; mask < (1 << n); mask++ {
-		var on, off []color.RGBA
+		var sum [2][3]int // [off, on] by channel
+		var count [2]int
 		for i := 0; i < n; i++ {
-			if mask&(1<<i) != 0 {
-				on = append(on, sub[i])
-			} else {
-				off = append(off, sub[i])
-			}
+			k := (mask >> i) & 1
+			sum[k][0] += int(sub[i].R)
+			sum[k][1] += int(sub[i].G)
+			sum[k][2] += int(sub[i].B)
+			count[k]++
 		}
-		fg, bg := mean(on), mean(off)
+		bg, fg := meanOf(sum[0], count[0]), meanOf(sum[1], count[1])
 		e := 0
 		for i := 0; i < n; i++ {
 			if mask&(1<<i) != 0 {
@@ -107,7 +103,21 @@ func fit(sub []color.RGBA, glyph func(int) rune) Cell {
 	return best
 }
 
+// meanOf averages colours from sums already taken, truncating. Right for a
+// photograph, where the group stands for a continuum; wrong for flat art,
+// which is what fitFlat is for.
+func meanOf(sum [3]int, n int) color.RGBA {
+	if n == 0 {
+		return color.RGBA{0, 0, 0, 255}
+	}
+	return color.RGBA{uint8(sum[0] / n), uint8(sum[1] / n),
+		uint8(sum[2] / n), 255}
+}
+
 // ToCells folds the pixel field into terminal cells. sub is 2x3 or 2x2.
+//
+// Rows are fitted on every core at once. A cell is fitted from its own
+// subcells and nothing else, so the order they are done in cannot change one.
 func ToCells(rgb [][]color.RGBA, subW, subH int) [][]Cell {
 	glyph := sextant
 	if subH == 2 {
@@ -116,21 +126,23 @@ func ToCells(rgb [][]color.RGBA, subW, subH int) [][]Cell {
 	rows := len(rgb) / subH
 	cols := len(rgb[0]) / subW
 	out := make([][]Cell, rows)
-	for r := 0; r < rows; r++ {
-		line := make([]Cell, cols)
-		for c := 0; c < cols; c++ {
-			sub := make([]color.RGBA, 0, subW*subH)
-			for y := 0; y < subH; y++ {
-				for x := 0; x < subW; x++ {
-					sub = append(
-						sub, rgb[r*subH+y][c*subW+x],
-					)
+	split.Rows(rows, func(lo, hi int) {
+		var buf [6]color.RGBA
+		for r := lo; r < hi; r++ {
+			line := make([]Cell, cols)
+			for c := 0; c < cols; c++ {
+				sub := buf[:0]
+				for y := 0; y < subH; y++ {
+					for x := 0; x < subW; x++ {
+						sub = append(sub,
+							rgb[r*subH+y][c*subW+x])
+					}
 				}
+				line[c] = fit(sub, glyph)
 			}
-			line[c] = fit(sub, glyph)
+			out[r] = line
 		}
-		out[r] = line
-	}
+	})
 	return out
 }
 

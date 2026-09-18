@@ -163,7 +163,15 @@ func (s Screen) Run(d Drawer, more func(Frame) bool) error {
 // stty rather than a termios binding because it is on every machine this runs
 // on, and a keyboard is not worth a dependency.
 func rawMode() func() {
-	saved, err := exec.Command("stty", "-g").Output()
+	// stty reads the terminal on its standard input, and a command's input
+	// is /dev/null unless it is given one. Size had the same fault first.
+	//
+	// asked that way it failed every time, raw mode was never set, and a
+	// key sat in the line buffer until enter: q did nothing, and ctrl-c
+	// was the only way out.
+	get := exec.Command("stty", "-g")
+	get.Stdin = os.Stdin
+	saved, err := get.Output()
 	if err != nil {
 		// not a terminal: it still draws, it just cannot be steered
 		return func() {}
@@ -244,6 +252,7 @@ type Stage struct {
 	moving  []mover
 	named   map[string]any
 	at      scene.Ctx // the moment being drawn, for a texture that asks
+	scenery []piece   // space, black holes, planets, particles
 
 	refs      []string // every @name the document reads
 	heldBeats float64  // where @beats got to, kept once the music stops
@@ -323,6 +332,8 @@ func (s *Stage) Draw(f Frame, cols, rows int) [][]cells.Cell {
 	sh := grade.Sextants(cols, rows)
 	var px [][]color.RGBA
 	switch {
+	case len(s.scenery) > 0:
+		px = s.drawScenery(sh, f)
 	case s.Sky != nil:
 		px = sh.Paint(s.Sky(sh, f.At))
 	case s.Doc != nil:

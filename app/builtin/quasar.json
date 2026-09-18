@@ -1,0 +1,31 @@
+{
+  // A black hole feeding hard, in front of the galaxy it lives in.
+  //
+  // The disk is tipped toward the camera, and the jets leave along its axis
+  // from both poles. Each jet particle keeps the direction the axis had when
+  // it left, so the axis turning slowly draws the jets as a long curve.
+  "name": "quasar",
+  "seconds": 60,
+
+  "eye": { "lens": 1, "near": 0.05 },
+
+  "shapes": [
+    { "kind": "blackhole", "at": { "x": -4, "y": -1, "z": 62 },
+      "hole": { "look": "quasar" } },
+
+    { "kind": "emitter", "at": { "x": -4, "y": -1, "z": 62 },
+      "emit": { "kind": "jet", "seed": 5,
+        "axis": { "x": 0.45, "y": 1, "z": -0.55 },
+        "rate": 220, "life": 2.2, "speed": 30, "spread": 0.035,
+        "wobble": 0.06, "size": 0.18, "light": 1.6, "streak": 0.05,
+        "ramp": [ { "at": 0, "c": "f4f0ff" }, { "at": 0.35, "c": "c9a0ff" },
+                  { "at": 1, "c": "5a2a8a" } ] } },
+
+    { "kind": "emitter", "at": { "x": 0, "y": 0, "z": 6 },
+      "emit": { "kind": "drift", "seed": 2,
+        "axis": { "x": 0.3, "y": 0.2, "z": -1 },
+        "rate": 40, "life": 6, "speed": 0.8, "radius": 5,
+        "size": 0.006, "light": 0.9, "streak": 0.3,
+        "ramp": [ { "at": 0, "c": "e8dcff" }, { "at": 1, "c": "a890c8" } ] } }
+  ]
+}

@@ -38,6 +38,8 @@ import (
 	"github.com/janearc/libtheme-css/primitives/functions"
 	"github.com/janearc/libtheme-css/primitives/swatch"
 	"github.com/janearc/libtheme-css/spaces/srgb"
+
+	"github.com/janearc/miami/internal/split"
 )
 
 // Blend is how a layer meets what is already painted.
@@ -164,15 +166,22 @@ func (s Sheet) UV(x, y int) (u, v float64) {
 // Paint evaluates the stack over the sheet and returns sRGB subpixels, ready
 // for the cell fitter. Colours outside sRGB are pulled to the edge of the gamut
 // rather than clipped per channel, which would swing the hue.
+//
+// Rows are painted on every core at once, so a field MUST be safe to ask from
+// several goroutines. Every field here is a function of where it is asked
+// and of values fixed before painting starts, which is the rule to keep.
 func (s Sheet) Paint(st Stack) [][]color.RGBA {
 	out := make([][]color.RGBA, s.H)
-	for y := 0; y < s.H; y++ {
-		out[y] = make([]color.RGBA, s.W)
-		for x := 0; x < s.W; x++ {
-			u, v := s.UV(x, y)
-			out[y][x] = ToRGBA(st.At(u, v))
+	split.Rows(s.H, func(lo, hi int) {
+		for y := lo; y < hi; y++ {
+			row := make([]color.RGBA, s.W)
+			for x := 0; x < s.W; x++ {
+				u, v := s.UV(x, y)
+				row[x] = ToRGBA(st.At(u, v))
+			}
+			out[y] = row
 		}
-	}
+	})
 	return out
 }
 

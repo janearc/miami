@@ -6,6 +6,7 @@ import (
 
 	sprite "github.com/janearc/libdaffy-sprite"
 
+	"github.com/janearc/miami/internal/split"
 	"github.com/janearc/miami/texture"
 )
 
@@ -165,30 +166,24 @@ type Lit struct {
 
 // Trace renders a frame of roles by casting rays.
 func (s Lit) Trace(t time.Duration, cols, rows int) sprite.Frame {
+	// the picture plane is one unit out and as wide as the sheet; Eye.Ray
+	// says how a subpixel maps onto it, for this and everything else
 	w, h := cols*2, rows*3
-	// the picture plane is one unit out and as wide as the sheet. a subcell
-	// is half a column by a third of a row, so on a cell twice as tall as
-	// it is wide the sheet is four rows high for every three columns across
-	// -- the same correction as everywhere else, applied once, here.
-	aspect := (float64(h) * 4) / (float64(w) * 3)
-	lens := s.Eye.Lens
-	if lens == 0 {
-		lens = 1
-	}
-	secs := t.Seconds()
+	secs, from := t.Seconds(), s.Eye.At
 
+	// on every core: a ray asks the shapes questions and changes nothing
+	// about them, so rows cannot see each other
 	art := make([]string, h)
-	for y := 0; y < h; y++ {
+	split.Rows(h, func(lo, hi int) {
 		row := make([]byte, w)
-		py := (0.5 - (float64(y)+0.5)/float64(h)) * aspect
-		for x := 0; x < w; x++ {
-			px := (float64(x)+0.5)/float64(w) - 0.5
-			eye := Ray{At: s.Eye.At,
-				Dir: s.Eye.Aim(Vec{px / lens, py / lens, 1})}
-			row[x] = s.shade(eye, secs)
+		for y := lo; y < hi; y++ {
+			for x := 0; x < w; x++ {
+				d := s.Eye.Ray(x, y, w, h)
+				row[x] = s.shade(Ray{At: from, Dir: d}, secs)
+			}
+			art[y] = string(row)
 		}
-		art[y] = string(row)
-	}
+	})
 	return sprite.Frame{Art: art}
 }
 
