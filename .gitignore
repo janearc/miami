@@ -3,6 +3,10 @@
 /bin/
 /sprites/bin/
 
+# what "go build ./cmd/roll" leaves at the root. unignored, it marked the
+# tree dirty and stamped every game build after it dirty too.
+/roll
+
 # the sibling libraries, cloned by bootstrap.sh rather than vendored. they
 # are other repositories and belong to themselves; go.work expects them here.
 /libs/
